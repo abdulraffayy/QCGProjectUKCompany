@@ -82,6 +82,28 @@ const ContentGenerator: React.FC = () => {
       });
       return;
     }
+    
+    // For academic content, require marking criteria to enforce integration
+    if (contentType !== "video" && !markingAssessmentResult) {
+      toast({
+        title: "Marking Criteria Required",
+        description: "Please add marking criteria to your content before generating",
+        variant: "destructive"
+      });
+      setActiveTab("marking-criteria");
+      return;
+    }
+    
+    // Always require assessment for all content types
+    if (!includeAssessment) {
+      toast({
+        title: "Assessment Required",
+        description: "You must include assessment materials with your content as per QAQF requirements",
+        variant: "destructive"
+      });
+      setActiveTab("assessment");
+      return;
+    }
 
     setIsGenerating(true);
     
