@@ -219,13 +219,46 @@ const ContentGenerator: React.FC = () => {
         
         <div className="mb-4">
           <Label className="block text-sm font-medium text-neutral-700 mb-1">Content Type</Label>
-          <div className="w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
             <Button 
-              variant="default"
-              className="mr-2"
+              variant={contentType === "academic_paper" ? "default" : "outline"}
+              className="w-full justify-start"
               onClick={() => setContentType("academic_paper")}
             >
+              <span className="material-icons text-sm mr-2">description</span>
               Academic Paper
+            </Button>
+            <Button 
+              variant={contentType === "assignment" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => setContentType("assignment")}
+            >
+              <span className="material-icons text-sm mr-2">assignment</span>
+              Assignment
+            </Button>
+            <Button 
+              variant={contentType === "lecture_notes" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => setContentType("lecture_notes")}
+            >
+              <span className="material-icons text-sm mr-2">menu_book</span>
+              Lecture Notes
+            </Button>
+            <Button 
+              variant={contentType === "course_outline" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => setContentType("course_outline")}
+            >
+              <span className="material-icons text-sm mr-2">list_alt</span>
+              Course Outline
+            </Button>
+            <Button 
+              variant={contentType === "teaching_resource" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => setContentType("teaching_resource")}
+            >
+              <span className="material-icons text-sm mr-2">school</span>
+              Teaching Resource
             </Button>
           </div>
         </div>
