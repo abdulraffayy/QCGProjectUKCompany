@@ -7,7 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { QAQFLevels, AnimationStyles, DurationOptions } from "@/lib/qaqf";
+import { QAQFLevels } from "@/lib/qaqf";
+
+// Define animation styles and duration options as simple arrays since the complex objects are causing issues
+const AnimationStyles = [
+  "2D Animation",
+  "3D Animation", 
+  "Motion Graphics",
+  "Whiteboard Animation",
+  "Character Animation"
+];
+
+const DurationOptions = [
+  "2-3 minutes",
+  "5-7 minutes", 
+  "10-15 minutes",
+  "20+ minutes"
+];
 
 const VideoGenerator: React.FC = () => {
   const { toast } = useToast();
@@ -60,7 +76,7 @@ const VideoGenerator: React.FC = () => {
             className="mt-4 md:mt-0"
             onClick={handleGenerateVideo}
             disabled={isGenerating}
-            variant="accent"
+            variant="default"
           >
             {isGenerating ? (
               <>
@@ -93,7 +109,7 @@ const VideoGenerator: React.FC = () => {
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
                 <h4 className="text-white font-medium">{title || "AI in Educational Technologies"}</h4>
                 <p className="text-white text-opacity-80 text-sm">
-                  QAQF Level {qaqfLevel || "8"} - {qaqfLevel ? QAQFLevels.find(l => l.level.toString() === qaqfLevel)?.name : "Specialist"} Implementation
+                  {qaqfLevel ? QAQFLevels.find(l => l.id.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
                 </p>
               </div>
             </div>
@@ -117,8 +133,8 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {AnimationStyles.map((style, index) => (
-                    <SelectItem key={index} value={style}>
-                      {style}
+                    <SelectItem key={index} value={style.id}>
+                      {style.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -133,8 +149,8 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {DurationOptions.map((option, index) => (
-                    <SelectItem key={index} value={option}>
-                      {option}
+                    <SelectItem key={index} value={option.id}>
+                      {option.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -149,8 +165,8 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {QAQFLevels.map((level) => (
-                    <SelectItem key={level.id} value={level.level.toString()}>
-                      Level {level.level} - {level.name}
+                    <SelectItem key={level.id} value={level.id.toString()}>
+                      {level.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
