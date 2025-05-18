@@ -248,6 +248,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OpenAI Endpoints for QAQF Content Generation
+  
+  // Generate academic content based on QAQF framework
+  app.post('/api/generate/content', async (req: Request, res: Response) => {
+    try {
+      // Validate the request data
+      const requestData = contentGenerationSchema.parse(req.body);
+      
+      // Generate content
+      const generatedContent = await generateContent(requestData);
+      
+      res.json(generatedContent);
+    } catch (error) {
+      console.error('Error generating content:', error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Invalid content generation request', 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: 'Failed to generate content', 
+        error: error.message 
+      });
+    }
+  });
+  
+  // Verify content against QAQF framework
+  app.post('/api/verify/content', async (req: Request, res: Response) => {
+    try {
+      const { content, qaqfLevel } = req.body;
+      
+      if (!content || !qaqfLevel) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: content and qaqfLevel are required' 
+        });
+      }
+      
+      // Verify content
+      const verificationResults = await verifyContent(content, qaqfLevel);
+      
+      res.json(verificationResults);
+    } catch (error) {
+      console.error('Error verifying content:', error);
+      res.status(500).json({ 
+        message: 'Failed to verify content', 
+        error: error.message 
+      });
+    }
+  });
+  
+  // Check content against British standards
+  app.post('/api/check/british-standards', async (req: Request, res: Response) => {
+    try {
+      const { content } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ 
+          message: 'Missing required field: content is required' 
+        });
+      }
+      
+      // Check British standards
+      const standardsCheck = await checkBritishStandards(content);
+      
+      res.json(standardsCheck);
+    } catch (error) {
+      console.error('Error checking British standards:', error);
+      res.status(500).json({ 
+        message: 'Failed to check British standards', 
+        error: error.message 
+      });
+    }
+  });
+  
+  // File upload endpoint for content sources (PDFs, audio transcriptions, etc.)
+  app.post('/api/upload/source', async (req: Request, res: Response) => {
+    try {
+      // Note: To fully implement this, we would need to set up file handling middleware (e.g., multer)
+      // This is a placeholder for future implementation
+      res.status(200).json({ 
+        message: 'Source uploaded successfully',
+        sourceId: 'temp-source-id', // This would be a reference to the uploaded file
+        sourceType: req.body.type || 'unknown'
+      });
+    } catch (error) {
+      console.error('Error uploading source:', error);
+      res.status(500).json({ 
+        message: 'Failed to upload source', 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

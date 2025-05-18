@@ -8,6 +8,8 @@ export interface GenerateContentRequest {
   subject: string;
   characteristics: string[];
   additionalInstructions?: string;
+  sourceType?: "internal" | "uploaded";
+  sourceContent?: string;
 }
 
 export interface GenerateContentResponse {
@@ -31,40 +33,117 @@ export interface GenerateVideoResponse {
   thumbnailUrl: string;
 }
 
-// Generate academic content
-export async function generateAcademicContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-  const response = await apiRequest("POST", "/api/generate/content", request);
-  return await response.json();
-}
-
-// Generate video content (simplified mock for demonstration)
-export async function generateVideo(request: GenerateVideoRequest): Promise<GenerateVideoResponse> {
-  // In a real implementation, this would connect to video generation services 
-  const response = await apiRequest("POST", "/api/generate/video", request);
-  return await response.json();
-}
-
-// Verify content against QAQF framework
-export async function verifyContent(content: string, qaqfLevel: number): Promise<{
+export interface VerificationResponse {
   score: number;
   feedback: string;
   characteristics: Record<string, number>;
-}> {
-  const response = await apiRequest("POST", "/api/verify/content", {
-    content,
-    qaqfLevel
-  });
-  return await response.json();
 }
 
-// Check content against British standards
-export async function checkBritishStandards(content: string): Promise<{
+export interface BritishStandardsResponse {
   compliant: boolean;
   issues: string[];
   suggestions: string[];
-}> {
-  const response = await apiRequest("POST", "/api/check/british-standards", {
-    content
-  });
-  return await response.json();
+}
+
+export interface UploadSourceResponse {
+  message: string;
+  sourceId: string;
+  sourceType: string;
+}
+
+// Generate academic content
+export async function generateAcademicContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
+  try {
+    const response = await apiRequest("POST", "/api/generate/content", request);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to generate content');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error generating academic content:", error);
+    throw error;
+  }
+}
+
+// Generate video content
+export async function generateVideo(request: GenerateVideoRequest): Promise<GenerateVideoResponse> {
+  try {
+    const response = await apiRequest("POST", "/api/generate/video", request);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to generate video');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error generating video:", error);
+    throw error;
+  }
+}
+
+// Verify content against QAQF framework
+export async function verifyContent(content: string, qaqfLevel: number): Promise<VerificationResponse> {
+  try {
+    const response = await apiRequest("POST", "/api/verify/content", {
+      content,
+      qaqfLevel
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to verify content');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error verifying content:", error);
+    throw error;
+  }
+}
+
+// Check content against British standards
+export async function checkBritishStandards(content: string): Promise<BritishStandardsResponse> {
+  try {
+    const response = await apiRequest("POST", "/api/check/british-standards", {
+      content
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to check British standards');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error checking British standards:", error);
+    throw error;
+  }
+}
+
+// Upload source content (PDF, text, audio transcript)
+export async function uploadSource(file: File): Promise<UploadSourceResponse> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', file.type);
+    
+    const response = await fetch('/api/upload/source', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to upload source');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error uploading source:", error);
+    throw error;
+  }
 }
