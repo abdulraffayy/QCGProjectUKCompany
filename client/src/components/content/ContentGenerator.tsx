@@ -290,10 +290,10 @@ const ContentGenerator: React.FC = () => {
               </div>
               
               <div>
-                <Label className="block text-sm font-medium text-neutral-700 mb-1">Subject</Label>
+                <Label className="block text-sm font-medium text-neutral-700 mb-1">Module title</Label>
                 <Input
                   type="text"
-                  placeholder="Enter subject or topic"
+                  placeholder="Enter module title"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                 />
