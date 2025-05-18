@@ -216,6 +216,135 @@ const ContentGeneratorPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                
+                {/* Preview of content generated from template */}
+                <div className="border rounded-md p-4">
+                  <h4 className="font-medium mb-2">Content Preview</h4>
+                  <Tabs defaultValue="content">
+                    <TabsList className="mb-3">
+                      <TabsTrigger value="content">Content</TabsTrigger>
+                      <TabsTrigger value="learning">Learning Objectives</TabsTrigger>
+                      <TabsTrigger value="assessment">Assessment</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="content" className="bg-white p-3 border rounded-md">
+                      <h5 className="text-sm font-semibold mb-2">{previewTemplate.name}: Introduction</h5>
+                      <div className="text-sm text-neutral-700 space-y-2">
+                        <p>This module introduces students to the core concepts of {previewTemplate.name.toLowerCase()} at QAQF Level {previewTemplate.qaqfLevel}. The content is structured to provide a comprehensive understanding of the subject matter while adhering to academic standards.</p>
+                        <p>The content follows a logical progression, starting with foundational concepts and building toward more complex applications. Each section includes relevant examples and case studies to illustrate key points.</p>
+                        {previewTemplate.qaqfLevel > 5 && (
+                          <p>Advanced theoretical frameworks are integrated throughout, with emphasis on critical analysis and evaluation of competing perspectives. Students will engage with current research and develop sophisticated understanding of the field.</p>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="learning" className="bg-white p-3 border rounded-md">
+                      <h5 className="text-sm font-semibold mb-2">Learning Objectives</h5>
+                      <ul className="text-sm text-neutral-700 space-y-1 list-disc pl-5">
+                        <li>Understand the core principles and concepts of {previewTemplate.name.toLowerCase()}</li>
+                        <li>Analyze and interpret key frameworks within the subject area</li>
+                        {previewTemplate.qaqfLevel <= 3 ? (
+                          <>
+                            <li>Identify and describe foundational elements of the discipline</li>
+                            <li>Apply basic concepts to simple scenarios</li>
+                          </>
+                        ) : previewTemplate.qaqfLevel <= 6 ? (
+                          <>
+                            <li>Apply theoretical knowledge to practical scenarios</li>
+                            <li>Develop critical thinking skills through analytical exercises</li>
+                            <li>Synthesize information from multiple sources</li>
+                          </>
+                        ) : (
+                          <>
+                            <li>Evaluate competing theoretical frameworks and methodologies</li>
+                            <li>Create innovative solutions to complex problems</li>
+                            <li>Develop advanced research skills and methodological approaches</li>
+                            <li>Critically engage with cutting-edge developments in the field</li>
+                          </>
+                        )}
+                      </ul>
+                    </TabsContent>
+                    
+                    <TabsContent value="assessment" className="bg-white p-3 border rounded-md">
+                      <h5 className="text-sm font-semibold mb-2">Assessment Structure</h5>
+                      <div className="text-sm text-neutral-700 space-y-3">
+                        {previewTemplate.qaqfLevel <= 3 ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">assignment</span>
+                              <div>
+                                <p className="font-medium">Multiple Choice Quiz (30%)</p>
+                                <p className="text-xs text-neutral-500">Basic comprehension check of core concepts</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">description</span>
+                              <div>
+                                <p className="font-medium">Short Answer Questions (40%)</p>
+                                <p className="text-xs text-neutral-500">Brief explanations of key principles</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">assignment_turned_in</span>
+                              <div>
+                                <p className="font-medium">Simple Application Exercise (30%)</p>
+                                <p className="text-xs text-neutral-500">Apply concepts to straightforward scenarios</p>
+                              </div>
+                            </div>
+                          </>
+                        ) : previewTemplate.qaqfLevel <= 6 ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">description</span>
+                              <div>
+                                <p className="font-medium">Case Study Analysis (40%)</p>
+                                <p className="text-xs text-neutral-500">In-depth analysis of real-world applications</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">assignment</span>
+                              <div>
+                                <p className="font-medium">Research Project (30%)</p>
+                                <p className="text-xs text-neutral-500">Independent investigation of selected topics</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">groups</span>
+                              <div>
+                                <p className="font-medium">Group Presentation (30%)</p>
+                                <p className="text-xs text-neutral-500">Collaborative analysis and presentation</p>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">psychology</span>
+                              <div>
+                                <p className="font-medium">Critical Analysis Paper (40%)</p>
+                                <p className="text-xs text-neutral-500">Advanced theoretical evaluation</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">science</span>
+                              <div>
+                                <p className="font-medium">Research Project (40%)</p>
+                                <p className="text-xs text-neutral-500">Original research with methodological rigor</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons text-primary text-sm">military_tech</span>
+                              <div>
+                                <p className="font-medium">Advanced Problem Solving (20%)</p>
+                                <p className="text-xs text-neutral-500">Complex scenarios requiring innovative solutions</p>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
               </div>
               
               <div className="flex justify-end gap-3">
