@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const ContentGeneratorPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create");
+  const [previewTemplate, setPreviewTemplate] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   return (
@@ -99,7 +102,15 @@ const ContentGeneratorPage: React.FC = () => {
                   </div>
                   <p className="text-sm text-neutral-600 mb-4">{template.description}</p>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setPreviewTemplate(template);
+                        setShowPreview(true);
+                      }}
+                    >
                       <span className="material-icons text-sm mr-1">visibility</span>
                       Preview
                     </Button>
@@ -142,6 +153,92 @@ const ContentGeneratorPage: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+      {/* Template Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="sm:max-w-[600px]">
+          {previewTemplate && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <span className="material-icons">{previewTemplate.icon}</span>
+                  {previewTemplate.name} Template
+                </DialogTitle>
+                <DialogDescription>
+                  Preview of the {previewTemplate.name} template for QAQF Level {previewTemplate.qaqfLevel}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium">Template Details</h3>
+                  <Badge className={previewTemplate.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800" : 
+                                  previewTemplate.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800" : 
+                                  "bg-violet-100 text-violet-800"}>
+                    QAQF Level {previewTemplate.qaqfLevel}
+                  </Badge>
+                </div>
+                
+                <div className="border rounded-md p-4 bg-neutral-50">
+                  <h4 className="font-medium mb-2">Description</h4>
+                  <p className="text-sm text-neutral-700">{previewTemplate.description}</p>
+                </div>
+                
+                <div className="border rounded-md p-4 bg-neutral-50">
+                  <h4 className="font-medium mb-2">Template Structure</h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="material-icons text-primary">check_circle</span>
+                      <div>
+                        <p className="font-medium">Learning Objectives</p>
+                        <p className="text-neutral-600">Clear objectives aligned with QAQF Level {previewTemplate.qaqfLevel} requirements</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="material-icons text-primary">check_circle</span>
+                      <div>
+                        <p className="font-medium">Content Framework</p>
+                        <p className="text-neutral-600">Pre-structured content sections with appropriate complexity</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="material-icons text-primary">check_circle</span>
+                      <div>
+                        <p className="font-medium">Assessment Types</p>
+                        <p className="text-neutral-600">Integrated assessments matching the QAQF level</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="material-icons text-primary">check_circle</span>
+                      <div>
+                        <p className="font-medium">Teaching Resources</p>
+                        <p className="text-neutral-600">Suggested materials and resources for delivery</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setShowPreview(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setShowPreview(false);
+                  toast({
+                    title: `Template Selected: ${previewTemplate.name}`,
+                    description: `Starting with QAQF Level ${previewTemplate.qaqfLevel} template`,
+                  });
+                  setTimeout(() => {
+                    setActiveTab("create");
+                  }, 500);
+                }}>
+                  Use This Template
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
