@@ -233,7 +233,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
             </div>
           
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="mb-6">
-              <TabsList className="grid grid-cols-3">
+              <TabsList className="grid grid-cols-4">
                 <TabsTrigger value="content">
                   <span className="material-icons text-sm mr-1">description</span>
                   Content
@@ -241,6 +241,10 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 <TabsTrigger value="characteristics">
                   <span className="material-icons text-sm mr-1">category</span>
                   Characteristics
+                </TabsTrigger>
+                <TabsTrigger value="module">
+                  <span className="material-icons text-sm mr-1">menu_book</span>
+                  Module
                 </TabsTrigger>
                 <TabsTrigger value="metadata">
                   <span className="material-icons text-sm mr-1">info</span>
@@ -281,6 +285,78 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
               </TabsContent>
               
 
+              <TabsContent value="module" className="mt-4">
+                <div className="border rounded-md p-4 bg-white">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-medium mb-2">Module Layout</h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      Generate lesson plans and content modules based on this course. Select a template to blend with this course content.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                        <div className="flex items-center mb-2">
+                          <span className="material-icons text-primary mr-2">school</span>
+                          <h4 className="font-medium">Lesson Plan</h4>
+                        </div>
+                        <p className="text-sm text-neutral-600 mb-3">
+                          Create a structured lesson plan with objectives, activities, and assessments aligned with the course content.
+                        </p>
+                        <Button size="sm" className="w-full">Generate Lesson Plan</Button>
+                      </div>
+                      
+                      <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                        <div className="flex items-center mb-2">
+                          <span className="material-icons text-primary mr-2">menu_book</span>
+                          <h4 className="font-medium">Study Materials</h4>
+                        </div>
+                        <p className="text-sm text-neutral-600 mb-3">
+                          Generate supplementary study materials based on this course content including handouts and reading guides.
+                        </p>
+                        <Button size="sm" className="w-full">Create Study Materials</Button>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-medium mb-2">Apply Templates</h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      Enhance this course content by applying one of these templates to create additional modules.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {[
+                        {
+                          name: "Assessment Module",
+                          icon: "quiz",
+                          description: "Add comprehensive assessments aligned with this course"
+                        },
+                        {
+                          name: "Interactive Activities",
+                          icon: "extension",
+                          description: "Generate hands-on activities for practical learning"
+                        },
+                        {
+                          name: "Discussion Topics",
+                          icon: "forum",
+                          description: "Create thought-provoking discussion prompts and guides"
+                        }
+                      ].map((template, index) => (
+                        <div key={index} className="border rounded-md p-3 hover:border-primary hover:bg-primary/5 cursor-pointer transition-all">
+                          <div className="flex items-center mb-2">
+                            <span className="material-icons text-primary mr-2">{template.icon}</span>
+                            <h4 className="font-medium text-sm">{template.name}</h4>
+                          </div>
+                          <p className="text-xs text-neutral-600 mb-3">
+                            {template.description}
+                          </p>
+                          <Button variant="outline" size="sm" className="w-full text-xs">
+                            Apply Template
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
               
               <TabsContent value="metadata" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
@@ -328,14 +404,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
       
       {showWorkflowButtons && selectedContent && (
         <CardFooter className="bg-neutral-50 border-t flex flex-wrap gap-2">
-          <Button onClick={handleExport} variant="outline" className="flex items-center">
-            <span className="material-icons text-sm mr-1">download</span>
-            Export
-          </Button>
-          <Button onClick={handleShare} variant="outline" className="flex items-center">
-            <span className="material-icons text-sm mr-1">share</span>
-            Share
-          </Button>
           <div className="flex-grow"></div>
           <Button className="flex items-center">
             <span className="material-icons text-sm mr-1">edit</span>
