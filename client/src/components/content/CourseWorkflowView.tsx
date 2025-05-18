@@ -192,7 +192,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
       {contents.length > 1 && (
         <CardHeader className="pb-0">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <CardTitle>Recent Courses</CardTitle>
+            <CardTitle>Course Title</CardTitle>
             <div className="flex flex-wrap gap-2">
               {contents.map((content) => (
                 <Button
