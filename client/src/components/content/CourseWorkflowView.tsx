@@ -233,7 +233,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
             </div>
           
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="mb-6">
-              <TabsList className="grid grid-cols-4">
+              <TabsList className="grid grid-cols-3">
                 <TabsTrigger value="content">
                   <span className="material-icons text-sm mr-1">description</span>
                   Content
@@ -241,10 +241,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 <TabsTrigger value="characteristics">
                   <span className="material-icons text-sm mr-1">category</span>
                   Characteristics
-                </TabsTrigger>
-                <TabsTrigger value="module">
-                  <span className="material-icons text-sm mr-1">menu_book</span>
-                  Module
                 </TabsTrigger>
                 <TabsTrigger value="metadata">
                   <span className="material-icons text-sm mr-1">info</span>
@@ -284,62 +280,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                         No QAQF characteristics available for this content.
                       </div>
                     )}
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="module" className="mt-4">
-                <div className="border rounded-md p-4 bg-white">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-medium mb-2">Module Details</h3>
-                    <p className="text-sm text-neutral-600 mb-4">
-                      This section displays information about the course module structure and organization.
-                    </p>
-                    
-                    <div className="border rounded-md p-4 bg-neutral-50 mb-6">
-                      <div className="flex items-center mb-2">
-                        <span className="material-icons text-primary mr-2">school</span>
-                        <h4 className="font-medium">Educational Context</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <h5 className="text-sm font-medium text-neutral-700 mb-1">Target Audience</h5>
-                          <p className="text-sm text-neutral-600">
-                            Higher education students, professional development
-                          </p>
-                        </div>
-                        <div>
-                          <h5 className="text-sm font-medium text-neutral-700 mb-1">Prerequisites</h5>
-                          <p className="text-sm text-neutral-600">
-                            Basic understanding of educational frameworks
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border rounded-md p-4 bg-neutral-50 mb-6">
-                      <div className="flex items-center mb-2">
-                        <span className="material-icons text-primary mr-2">menu_book</span>
-                        <h4 className="font-medium">Content Structure</h4>
-                      </div>
-                      <ul className="list-disc list-inside text-sm text-neutral-600 space-y-2 pl-2">
-                        <li>Introduction to QAQF concepts and application</li>
-                        <li>Core principles and characteristics exploration</li>
-                        <li>Practical implementation strategies</li>
-                        <li>Assessment and evaluation methods</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="flex justify-end gap-2 mt-4">
-                      <Button variant="outline" size="sm">
-                        <span className="material-icons text-sm mr-1">school</span>
-                        View Lesson Plan
-                      </Button>
-                      <Button size="sm">
-                        <span className="material-icons text-sm mr-1">edit</span>
-                        Edit Module
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </TabsContent>
