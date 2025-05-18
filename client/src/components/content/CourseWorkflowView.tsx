@@ -366,16 +366,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                   variant="default"
                   size="sm"
                   className="flex items-center"
-                  onClick={() => handleVerify()}
-                >
-                  <span className="material-icons text-sm mr-1">verified</span>
-                  Request Approval
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center"
                   onClick={() => {
                     // Navigate to content generator with the current content details
                     if (selectedContent) {
@@ -402,6 +392,16 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 >
                   <span className="material-icons text-sm mr-1">refresh</span>
                   Regenerate Content
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center"
+                  onClick={() => handleVerify()}
+                >
+                  <span className="material-icons text-sm mr-1">verified</span>
+                  Request Approval
                 </Button>
               </div>
             </div>
