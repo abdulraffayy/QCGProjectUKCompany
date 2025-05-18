@@ -204,76 +204,54 @@ const ContentGenerator: React.FC = () => {
       let mockContent;
       
       if (contentType === "video") {
-        // Create video content
-        mockContent = {
-          id: Math.floor(Math.random() * 1000),
-          type: "video",
-          title: `${subject} (QAQF Level ${qaqfLevel})`,
-          moduleCode: moduleCode || "EDU-101",
-          qaqfLevel: parseInt(qaqfLevel),
-          characteristics: extractCharacteristics && (primarySourceMaterial || secondarySourceMaterial)
-            ? [...selectedCharacteristics, 1, 2, 3] // Simulate extracting additional characteristics
-            : selectedCharacteristics,
-          sourceMaterials: {
-            primary: primarySourceMaterial || null,
-            secondary: secondarySourceMaterial || null,
-            extracted: extractCharacteristics
-          },
-          video: generateMockVideo(),
-          assessment: generateMockAssessment()
-        };
-      } else {
-        // Create text-based academic content with source material integration
-        // Extract QAQF characteristics from source materials if enabled
-        let extractedCharacteristics: number[] = [];
-        let sourceAnalysis = "";
+        // Create video content with source material integration
+        const hasSourceMaterials = primarySourceMaterial || secondarySourceMaterial;
         
-        if (extractCharacteristics) {
-          // Process primary source material
+        let videoDescriptionWithSources = videoDescription || `This video explores ${subject} with a focus on QAQF Level ${qaqfLevel} implementation.`;
+        
+        // If we have source materials, enhance the video description
+        if (hasSourceMaterials) {
+          videoDescriptionWithSources += "\n\nThis video draws from the following source materials:";
+          
           if (primarySourceMaterial) {
-            // Analyze primary source for QAQF characteristics
-            extractedCharacteristics = [...extractedCharacteristics, 1, 3, 5]; // These would come from AI analysis
-            sourceAnalysis += "## Primary Source Analysis\n\n";
-            sourceAnalysis += `Based on analysis of the primary source material, the following QAQF characteristics were identified:\n`;
-            sourceAnalysis += `- Critical thinking (Level ${qaqfLevel})\n`;
-            sourceAnalysis += `- Academic rigor (Level ${qaqfLevel})\n`;
-            sourceAnalysis += `- Evidence-based practice (Level ${qaqfLevel})\n\n`;
-            sourceAnalysis += `Key insights extracted:\n`;
-            
-            // Extract meaningful snippets from the primary source
             const primarySourceSnippet = primarySourceMaterial.length > 100 
               ? primarySourceMaterial.substring(0, 100) + "..." 
               : primarySourceMaterial;
             
-            sourceAnalysis += `"${primarySourceSnippet}"\n\n`;
+            videoDescriptionWithSources += `\n\nPrimary Source: "${primarySourceSnippet}"`;
           }
           
-          // Process secondary source material
           if (secondarySourceMaterial) {
-            // Analyze secondary source for QAQF characteristics
-            extractedCharacteristics = [...extractedCharacteristics, 2, 4, 6]; // These would come from AI analysis
-            sourceAnalysis += "## Secondary Source Analysis\n\n";
-            sourceAnalysis += `The secondary source material provides additional context for the following QAQF characteristics:\n`;
-            sourceAnalysis += `- Ethical practice (Level ${qaqfLevel})\n`;
-            sourceAnalysis += `- Professional standards (Level ${qaqfLevel})\n`;
-            sourceAnalysis += `- Reflective practice (Level ${qaqfLevel})\n\n`;
-            
-            // Extract meaningful snippets from the secondary source
             const secondarySourceSnippet = secondarySourceMaterial.length > 100 
               ? secondarySourceMaterial.substring(0, 100) + "..." 
               : secondarySourceMaterial;
             
-            sourceAnalysis += `"${secondarySourceSnippet}"\n\n`;
+            videoDescriptionWithSources += `\n\nSecondary Source: "${secondarySourceSnippet}"`;
           }
+        }
+        
+        // Extract additional characteristics from source materials if enabled
+        let extractedCharacteristics: number[] = [];
+        if (extractCharacteristics && hasSourceMaterials) {
+          // Simulate extracting characteristics based on source content
+          extractedCharacteristics = primarySourceMaterial 
+            ? [1, 3, 5, 7, 9].filter(id => !selectedCharacteristics.includes(id)).slice(0, 3)
+            : [];
+            
+          extractedCharacteristics = [
+            ...extractedCharacteristics,
+            ...(secondarySourceMaterial 
+              ? [2, 4, 6, 8].filter(id => !selectedCharacteristics.includes(id)).slice(0, 2)
+              : [])
+          ];
         }
         
         // Combine selected and extracted characteristics
         const combinedCharacteristics = Array.from(new Set([...selectedCharacteristics, ...extractedCharacteristics]));
         
-        // Generate content that explicitly references source materials and QAQF characteristics
         mockContent = {
           id: Math.floor(Math.random() * 1000),
-          type: "academic_paper",
+          type: "video",
           title: `${subject} (QAQF Level ${qaqfLevel})`,
           moduleCode: moduleCode || "EDU-101",
           qaqfLevel: parseInt(qaqfLevel),
@@ -281,13 +259,155 @@ const ContentGenerator: React.FC = () => {
           sourceMaterials: {
             primary: primarySourceMaterial || null,
             secondary: secondarySourceMaterial || null,
-            extracted: extractCharacteristics
+            extracted: extractCharacteristics && hasSourceMaterials
           },
-          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\n## QAQF Level ${qaqfLevel} Implementation\n\nThis academic content integrates QAQF framework Level ${qaqfLevel} with ${combinedCharacteristics.length} characteristics.\n\n### QAQF Characteristics Applied\n\n${combinedCharacteristics.map(id => {
+          content: `# ${subject} - Video Content\n\n${videoDescriptionWithSources}\n\n## Source Material Integration\n${hasSourceMaterials 
+            ? 'This video content has been developed with direct integration of provided source materials, ensuring academic rigor and content validity.'
+            : 'No source materials were provided for this video content. Consider adding source materials for enhanced academic quality.'}`,
+          video: {
+            ...generateMockVideo(),
+            description: videoDescriptionWithSources
+          },
+          assessment: generateMockAssessment()
+        };
+      } else {
+        // Create text-based academic content with source material integration
+        const hasSourceMaterials = primarySourceMaterial || secondarySourceMaterial;
+        
+        // Process source materials to extract insights and characteristics
+        let extractedCharacteristics: number[] = [];
+        let sourceAnalysis = "";
+        let contentBody = "";
+        
+        // Generate content body based on source materials
+        if (hasSourceMaterials) {
+          // Primary source processing
+          if (primarySourceMaterial) {
+            const primarySourceSnippet = primarySourceMaterial.length > 150 
+              ? primarySourceMaterial.substring(0, 150) + "..." 
+              : primarySourceMaterial;
+            
+            sourceAnalysis += "## Primary Source Analysis\n\n";
+            sourceAnalysis += `The primary source material provides key insights for ${subject}:\n\n`;
+            sourceAnalysis += `"${primarySourceSnippet}"\n\n`;
+            
+            // Extract QAQF characteristics if enabled
+            if (extractCharacteristics) {
+              // Simulate extracting characteristics based on primary source content
+              const primarySourceExtractedCharacteristics = [1, 3, 5, 7, 9]
+                .filter(id => !selectedCharacteristics.includes(id))
+                .slice(0, 3);
+              
+              extractedCharacteristics = [...extractedCharacteristics, ...primarySourceExtractedCharacteristics];
+              
+              sourceAnalysis += `From analyzing the primary source, the following QAQF characteristics were identified:\n`;
+              primarySourceExtractedCharacteristics.forEach(id => {
+                const characteristic = QAQFCharacteristics.find(c => c.id === id);
+                if (characteristic) {
+                  sourceAnalysis += `- ${characteristic.name} (Level ${qaqfLevel})\n`;
+                }
+              });
+              sourceAnalysis += "\n";
+            }
+            
+            // Generate content that directly uses primary source material
+            contentBody += "### Analysis from Primary Source\n\n";
+            
+            // Extract key sentences or concepts from the primary source
+            const sentences = primarySourceMaterial.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const selectedSentences = sentences.length > 5 
+              ? [sentences[0], sentences[Math.floor(sentences.length/3)], sentences[Math.floor(sentences.length*2/3)]]
+              : sentences;
+            
+            selectedSentences.forEach(sentence => {
+              contentBody += `${sentence.trim()}. This concept is fundamental to understanding ${subject} in the context of QAQF Level ${qaqfLevel}.\n\n`;
+            });
+            
+            contentBody += `The primary source establishes the theoretical foundation for ${subject}, which aligns with QAQF Level ${qaqfLevel} standards requiring rigorous academic underpinnings.\n\n`;
+          }
+          
+          // Secondary source processing
+          if (secondarySourceMaterial) {
+            const secondarySourceSnippet = secondarySourceMaterial.length > 150 
+              ? secondarySourceMaterial.substring(0, 150) + "..." 
+              : secondarySourceMaterial;
+            
+            sourceAnalysis += "## Secondary Source Analysis\n\n";
+            sourceAnalysis += `The secondary source material provides additional context for ${subject}:\n\n`;
+            sourceAnalysis += `"${secondarySourceSnippet}"\n\n`;
+            
+            // Extract QAQF characteristics if enabled
+            if (extractCharacteristics) {
+              // Simulate extracting characteristics based on secondary source content
+              const secondarySourceExtractedCharacteristics = [2, 4, 6, 8]
+                .filter(id => !selectedCharacteristics.includes(id))
+                .slice(0, 2);
+              
+              extractedCharacteristics = [...extractedCharacteristics, ...secondarySourceExtractedCharacteristics];
+              
+              sourceAnalysis += `From analyzing the secondary source, the following QAQF characteristics were identified:\n`;
+              secondarySourceExtractedCharacteristics.forEach(id => {
+                const characteristic = QAQFCharacteristics.find(c => c.id === id);
+                if (characteristic) {
+                  sourceAnalysis += `- ${characteristic.name} (Level ${qaqfLevel})\n`;
+                }
+              });
+              sourceAnalysis += "\n";
+            }
+            
+            // Generate content that directly uses secondary source material
+            contentBody += "### Integration with Secondary Source\n\n";
+            
+            // Extract key sentences or concepts from the secondary source
+            const sentences = secondarySourceMaterial.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const selectedSentences = sentences.length > 5 
+              ? [sentences[0], sentences[Math.floor(sentences.length/2)]]
+              : sentences;
+            
+            selectedSentences.forEach(sentence => {
+              contentBody += `${sentence.trim()}. This supports the broader application of ${subject} and meets QAQF Level ${qaqfLevel} requirements for comprehensive analysis.\n\n`;
+            });
+            
+            contentBody += `The secondary source provides practical applications that complement the theoretical framework established above.\n\n`;
+          }
+        } else {
+          // Generate generic content without source materials
+          contentBody = `### Overview of ${subject}\n\nThis content has been developed to meet QAQF Level ${qaqfLevel} standards but lacks specific source material integration. For enhanced academic quality and alignment with highest QAQF standards, consider adding primary and secondary source materials.\n\n`;
+          
+          contentBody += `### Theoretical Framework\n\nThe ${subject} can be understood through the following key concepts at QAQF Level ${qaqfLevel}:\n\n`;
+          contentBody += `1. Foundational principles of ${subject}\n`;
+          contentBody += `2. Application in educational contexts\n`;
+          contentBody += `3. Assessment and evaluation methodologies\n`;
+          contentBody += `4. Integration with broader curriculum\n\n`;
+          
+          contentBody += `### Best Practices\n\nImplementing ${subject} at QAQF Level ${qaqfLevel} requires attention to:\n\n`;
+          contentBody += `- Alignment with educational standards\n`;
+          contentBody += `- Continuous quality improvement\n`;
+          contentBody += `- Feedback integration mechanisms\n`;
+          contentBody += `- Reflective practice\n\n`;
+        }
+        
+        // Combine selected and extracted characteristics
+        const combinedCharacteristics = Array.from(new Set([...selectedCharacteristics, ...extractedCharacteristics]));
+        
+        // Generate comprehensive content with explicit source material references and QAQF alignment
+        mockContent = {
+          id: Math.floor(Math.random() * 1000),
+          type: contentType,
+          title: `${subject} (QAQF Level ${qaqfLevel})`,
+          moduleCode: moduleCode || "EDU-101",
+          qaqfLevel: parseInt(qaqfLevel),
+          characteristics: combinedCharacteristics,
+          sourceMaterials: {
+            primary: primarySourceMaterial || null,
+            secondary: secondarySourceMaterial || null,
+            extracted: extractCharacteristics && hasSourceMaterials
+          },
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\n## QAQF Level ${qaqfLevel} Implementation\n\nThis ${contentType.replace('_', ' ')} integrates QAQF framework Level ${qaqfLevel} with ${combinedCharacteristics.length} characteristics.\n\n### QAQF Characteristics Applied\n\n${combinedCharacteristics.map(id => {
             // Find the characteristic by ID
             const characteristic = QAQFCharacteristics.find(c => c.id === id);
             return `- Characteristic ${id}: ${characteristic ? characteristic.name : `Unknown (${id})`}`;
-          }).join('\n')}\n\n${additionalInstructions ? `### Additional Requirements\n${additionalInstructions}\n\n` : ''}### Main Content\n\nThis academic content is structured according to QAQF Level ${qaqfLevel} standards, incorporating rigorous analysis and critical evaluation of the provided source materials.\n\n${sourceAnalysis}\n\n### Synthesis\n\nBased on the QAQF framework and the analyzed source materials, this academic paper presents a comprehensive approach to ${subject} that meets British educational standards and academic requirements.\n\n`,
+          }).join('\n')}\n\n${additionalInstructions ? `### Additional Requirements\n${additionalInstructions}\n\n` : ''}### Main Content\n\n${contentBody}\n\n${sourceAnalysis ? `### Source Material Analysis\n\n${sourceAnalysis}\n\n` : ''}### Synthesis\n\nThis ${contentType.replace('_', ' ')} on ${subject} has been developed to align with QAQF Level ${qaqfLevel} standards${hasSourceMaterials ? ', with direct integration of source materials to ensure academic rigor and content validity' : ' but would benefit from source material integration for enhanced academic quality'}. The content structure and delivery methods are designed to facilitate effective learning outcomes while meeting British educational standards.\n\n`,
           assessment: generateMockAssessment()
         };
       }
