@@ -30,13 +30,13 @@ const ContentGeneratorPage: React.FC = () => {
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
           </TabsTrigger>
-          <TabsTrigger value="module" className="flex items-center">
-            <span className="material-icons text-sm mr-2">menu_book</span>
-            Module
-          </TabsTrigger>
           <TabsTrigger value="recent" className="flex items-center">
             <span className="material-icons text-sm mr-2">auto_stories</span>
             Course Content
+          </TabsTrigger>
+          <TabsTrigger value="module" className="flex items-center">
+            <span className="material-icons text-sm mr-2">menu_book</span>
+            Module
           </TabsTrigger>
         </TabsList>
         
