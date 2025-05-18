@@ -116,22 +116,67 @@ const ContentGenerator: React.FC = () => {
           assessment: generateMockAssessment()
         };
       } else {
-        // Create text-based academic content
+        // Create text-based academic content with source material integration
+        // Extract QAQF characteristics from source materials if enabled
+        let extractedCharacteristics: number[] = [];
+        let sourceAnalysis = "";
+        
+        if (extractCharacteristics) {
+          // Process primary source material
+          if (primarySourceMaterial) {
+            // Analyze primary source for QAQF characteristics
+            extractedCharacteristics = [...extractedCharacteristics, 1, 3, 5]; // These would come from AI analysis
+            sourceAnalysis += "## Primary Source Analysis\n\n";
+            sourceAnalysis += `Based on analysis of the primary source material, the following QAQF characteristics were identified:\n`;
+            sourceAnalysis += `- Critical thinking (Level ${qaqfLevel})\n`;
+            sourceAnalysis += `- Academic rigor (Level ${qaqfLevel})\n`;
+            sourceAnalysis += `- Evidence-based practice (Level ${qaqfLevel})\n\n`;
+            sourceAnalysis += `Key insights extracted:\n`;
+            
+            // Extract meaningful snippets from the primary source
+            const primarySourceSnippet = primarySourceMaterial.length > 100 
+              ? primarySourceMaterial.substring(0, 100) + "..." 
+              : primarySourceMaterial;
+            
+            sourceAnalysis += `"${primarySourceSnippet}"\n\n`;
+          }
+          
+          // Process secondary source material
+          if (secondarySourceMaterial) {
+            // Analyze secondary source for QAQF characteristics
+            extractedCharacteristics = [...extractedCharacteristics, 2, 4, 6]; // These would come from AI analysis
+            sourceAnalysis += "## Secondary Source Analysis\n\n";
+            sourceAnalysis += `The secondary source material provides additional context for the following QAQF characteristics:\n`;
+            sourceAnalysis += `- Ethical practice (Level ${qaqfLevel})\n`;
+            sourceAnalysis += `- Professional standards (Level ${qaqfLevel})\n`;
+            sourceAnalysis += `- Reflective practice (Level ${qaqfLevel})\n\n`;
+            
+            // Extract meaningful snippets from the secondary source
+            const secondarySourceSnippet = secondarySourceMaterial.length > 100 
+              ? secondarySourceMaterial.substring(0, 100) + "..." 
+              : secondarySourceMaterial;
+            
+            sourceAnalysis += `"${secondarySourceSnippet}"\n\n`;
+          }
+        }
+        
+        // Combine selected and extracted characteristics
+        const combinedCharacteristics = [...new Set([...selectedCharacteristics, ...extractedCharacteristics])];
+        
+        // Generate content that explicitly references source materials and QAQF characteristics
         mockContent = {
           id: Math.floor(Math.random() * 1000),
           type: "academic_paper",
           title: `${subject} (QAQF Level ${qaqfLevel})`,
           moduleCode: moduleCode || "EDU-101",
           qaqfLevel: parseInt(qaqfLevel),
-          characteristics: extractCharacteristics && (primarySourceMaterial || secondarySourceMaterial)
-            ? [...selectedCharacteristics, 1, 2, 3] // Simulate extracting additional characteristics
-            : selectedCharacteristics,
+          characteristics: combinedCharacteristics,
           sourceMaterials: {
             primary: primarySourceMaterial || null,
             secondary: secondarySourceMaterial || null,
             extracted: extractCharacteristics
           },
-          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content generated based on the QAQF framework requirements and source materials.\n\n${primarySourceMaterial ? `### Source Material Analysis\nContent incorporates insights from primary source material.\n\n` : ''}${secondarySourceMaterial ? `### Supplementary Analysis\nContent enhanced with context from secondary source material.\n\n` : ''}`,
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\n## QAQF Level ${qaqfLevel} Implementation\n\nThis academic content integrates QAQF framework Level ${qaqfLevel} with ${combinedCharacteristics.length} characteristics.\n\n### QAQF Characteristics Applied\n\n${combinedCharacteristics.map(id => `- Characteristic ${id}: ${getCharacteristicName(id)}`).join('\n')}\n\n${additionalInstructions ? `### Additional Requirements\n${additionalInstructions}\n\n` : ''}### Main Content\n\nThis academic content is structured according to QAQF Level ${qaqfLevel} standards, incorporating rigorous analysis and critical evaluation of the provided source materials.\n\n${sourceAnalysis}\n\n### Synthesis\n\nBased on the QAQF framework and the analyzed source materials, this academic paper presents a comprehensive approach to ${subject} that meets British educational standards and academic requirements.\n\n`,
           assessment: generateMockAssessment()
         };
       }
