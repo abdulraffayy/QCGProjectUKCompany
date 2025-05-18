@@ -9,6 +9,7 @@ import VideoGeneratorSummary from "@/components/dashboard/VideoGeneratorSummary"
 import RecentActivity from "@/components/activity/RecentActivity";
 import ContentGeneratorSummary from "@/components/dashboard/ContentGeneratorSummary";
 import VerificationPanel from "@/components/verification/VerificationPanel";
+import CourseWorkflowView from "@/components/content/CourseWorkflowView";
 import { Link } from "wouter";
 
 // Define the stats interface for type safety
@@ -133,6 +134,15 @@ const Dashboard: React.FC = () => {
         <VerificationStatus 
           statuses={verificationStatuses}
           completionPercentage={69}
+        />
+      </div>
+      
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-neutral-800 mb-4">Recent Generated Courses</h2>
+        <CourseWorkflowView 
+          showLatest={true}
+          limit={2}
+          showWorkflowButtons={true}
         />
       </div>
       
