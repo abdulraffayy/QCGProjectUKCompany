@@ -5,9 +5,9 @@ import QAQFFramework from "@/components/dashboard/QAQFFramework";
 import VerificationStatus from "@/components/dashboard/VerificationStatus";
 import RecentContent from "@/components/dashboard/RecentContent";
 import QAQFLevels from "@/components/dashboard/QAQFLevels";
-import VideoGenerator from "@/components/video/VideoGenerator";
+import VideoGeneratorSummary from "@/components/dashboard/VideoGeneratorSummary";
 import RecentActivity from "@/components/activity/RecentActivity";
-import ContentGenerator from "@/components/content/ContentGenerator";
+import ContentGeneratorSummary from "@/components/dashboard/ContentGeneratorSummary";
 import VerificationPanel from "@/components/verification/VerificationPanel";
 import { Link } from "wouter";
 
@@ -111,14 +111,14 @@ const Dashboard: React.FC = () => {
       <QAQFLevels />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <ContentGenerator />
+        <ContentGeneratorSummary />
         <VerificationPanel 
           pendingContents={contents?.filter(c => c.verificationStatus === "pending") || []}
           isLoading={isLoadingContents}
         />
       </div>
       
-      <VideoGenerator />
+      <VideoGeneratorSummary />
       
       <RecentActivity 
         activities={activities || []}
