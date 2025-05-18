@@ -124,18 +124,25 @@ const QAQFFramework: React.FC = () => {
               <p className="text-sm text-neutral-600 mb-4">
                 The QAQF framework is implemented on a progressive level basis. Higher levels incorporate all characteristics from lower levels with increased sophistication.
               </p>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="p-2 bg-blue-100 rounded-md">
-                  <div className="font-medium">Basic (1-3)</div>
-                  <div className="text-neutral-600 mt-1">Foundation implementation</div>
+              
+              {/* Pyramid-shaped display of levels matching the visualization above */}
+              <div className="relative">
+                {/* Level 7-9: Advanced - TOP */}
+                <div className="w-2/3 mx-auto p-2 bg-violet-100 rounded-md mb-2 text-center">
+                  <div className="font-medium text-violet-800">Advanced (7-9)</div>
+                  <div className="text-neutral-600 text-xs mt-1">Expert implementation and innovation</div>
                 </div>
-                <div className="p-2 bg-purple-100 rounded-md">
-                  <div className="font-medium">Intermediate (4-6)</div>
-                  <div className="text-neutral-600 mt-1">Enhanced implementation</div>
+                
+                {/* Level 4-6: Intermediate - MIDDLE */}
+                <div className="w-3/4 mx-auto p-2 bg-purple-100 rounded-md mb-2 text-center">
+                  <div className="font-medium text-purple-800">Intermediate (4-6)</div>
+                  <div className="text-neutral-600 text-xs mt-1">Enhanced application and understanding</div>
                 </div>
-                <div className="p-2 bg-violet-100 rounded-md">
-                  <div className="font-medium">Advanced (7-9)</div>
-                  <div className="text-neutral-600 mt-1">Expert implementation</div>
+                
+                {/* Level 1-3: Basic - BOTTOM */}
+                <div className="w-full p-2 bg-blue-100 rounded-md text-center">
+                  <div className="font-medium text-blue-800">Basic (1-3)</div>
+                  <div className="text-neutral-600 text-xs mt-1">Foundation knowledge and skills</div>
                 </div>
               </div>
             </div>
