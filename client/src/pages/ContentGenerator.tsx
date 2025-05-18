@@ -64,7 +64,7 @@ const ContentGeneratorPage: React.FC = () => {
         <TabsContent value="recent">
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">Course Content Library</h3>
+              <h3 className="text-lg font-semibold mb-4">Module/Course Library</h3>
               
               <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1">
@@ -192,14 +192,14 @@ const ContentGeneratorPage: React.FC = () => {
                           
                           <div className="space-y-4 hidden">
                             <div className="flex justify-between items-center">
-                              <h5 className="font-medium">Verification Summary</h5>
+                              <h5 className="font-medium">Approval Summary</h5>
                               <Badge className="bg-green-100 text-green-800">PASS</Badge>
                             </div>
                             
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
                                 <span className="material-icons text-green-600 text-sm">check_circle</span>
-                                <p className="text-sm">Content aligns with QAQF Level 2 expectations</p>
+                                <p className="text-sm">Module aligns with QAQF Level 2 expectations</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="material-icons text-green-600 text-sm">check_circle</span>
