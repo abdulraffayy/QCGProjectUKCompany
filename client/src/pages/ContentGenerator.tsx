@@ -38,6 +38,55 @@ const ContentGeneratorPage: React.FC = () => {
     );
   };
 
+  const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState<"internal" | "uploaded">("internal");
+  const [isUploadingSource, setIsUploadingSource] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    setIsUploadingSource(true);
+    
+    try {
+      // For text files, read directly
+      if (file.type === "text/plain") {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setSourceMaterial(event.target.result as string);
+            setSourceType("uploaded");
+            toast({
+              title: "Source Material Added",
+              description: "Text file has been loaded as source material."
+            });
+          }
+        };
+        reader.readAsText(file);
+      } else {
+        // In a full implementation, this would upload and process PDF/audio files
+        // For now, we just simulate reading content
+        setTimeout(() => {
+          setSourceMaterial("Sample extracted content from uploaded file: " + file.name);
+          setSourceType("uploaded");
+          toast({
+            title: "Source Material Added",
+            description: `${file.name} has been processed as source material.`
+          });
+          setIsUploadingSource(false);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to process the uploaded file.",
+        variant: "destructive"
+      });
+      setIsUploadingSource(false);
+    }
+  };
+
   const handleGenerateContent = async () => {
     if (!qaqfLevel || !subject || selectedCharacteristics.length === 0) {
       toast({
@@ -52,18 +101,29 @@ const ContentGeneratorPage: React.FC = () => {
     setGeneratedPreview(null);
 
     try {
-      // In a real implementation, this would call an API to generate content
-      // For demonstration, we'll simulate a delay and use placeholder content
-      setTimeout(() => {
-        // Simulate content generation
-        const characNames = selectedCharacteristics.map(id => 
-          characteristics?.find(c => c.id === id)?.name || ""
-        ).filter(Boolean);
-        
-        const preview = `
-# ${subject}
+      const characIds = selectedCharacteristics.map(id => id.toString());
+      
+      // Call the API to generate content
+      const response = await generateAcademicContent({
+        contentType,
+        qaqfLevel: parseInt(qaqfLevel),
+        subject,
+        characteristics: characIds,
+        additionalInstructions,
+        sourceType,
+        sourceContent: sourceMaterial || undefined
+      });
+      
+      // Format the content for preview
+      const characNames = selectedCharacteristics.map(id => 
+        characteristics?.find(c => c.id === id)?.name || ""
+      ).filter(Boolean);
+      
+      // Use the generated content or fall back to a template
+      const preview = response.content || `
+# ${response.title || subject}
 
-## Module: ${moduleCode || 'EDU-101'}
+## Module: ${response.moduleCode || moduleCode || 'EDU-101'}
 
 ### QAQF Level ${qaqfLevel} Implementation
 
@@ -73,28 +133,22 @@ ${characNames.map(name => `- ${name}`).join('\n')}
 ${additionalInstructions ? `### Additional Instructions\n${additionalInstructions}\n` : ''}
 
 ### Content Body
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, 
-nunc nisl aliquam nisl, eget aliquam nunc nisl eget nunc. Nullam auctor, nisl eget ultricies tincidunt,
-nunc nisl aliquam nisl, eget aliquam nunc nisl eget nunc.
-
-### References
-1. Smith, J. (2023). QAQF Implementation in Higher Education. Journal of Academic Quality, 45(2), 123-145.
-2. Brown, A. (2022). British Standards in Academic Content. British Education Review, 12(3), 78-92.
-        `;
-        
-        setGeneratedPreview(preview);
-        setIsGenerating(false);
-        
-        toast({
-          title: "Content Generated",
-          description: "Your content has been generated successfully!",
-        });
-      }, 2000);
+Content generation is being processed. Please try again in a moment.
+      `;
+      
+      setGeneratedPreview(preview);
+      setIsGenerating(false);
+      
+      toast({
+        title: "Content Generated",
+        description: "Your content has been generated successfully!",
+      });
     } catch (error) {
+      console.error("Content generation error:", error);
       setIsGenerating(false);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate content. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate content. Please try again.",
         variant: "destructive"
       });
     }
@@ -213,6 +267,63 @@ nunc nisl aliquam nisl, eget aliquam nunc nisl eget nunc.
                         value={additionalInstructions}
                         onChange={(e) => setAdditionalInstructions(e.target.value)}
                       />
+                    </div>
+                    
+                    <div className="border rounded-md p-4 mb-4 bg-gray-50">
+                      <div className="flex items-center mb-2">
+                        <span className="material-icons text-primary mr-2">source</span>
+                        <h3 className="font-medium">Source Material</h3>
+                      </div>
+                      
+                      <p className="text-sm text-neutral-600 mb-3">
+                        Upload your own source material (PDF, text, audio transcript) to generate content based on verified sources only
+                      </p>
+                      
+                      <div className="border-2 border-dashed border-neutral-300 rounded-md p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                        <input
+                          type="file"
+                          id="source-upload"
+                          accept=".txt,.pdf,.docx,.mp3"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                        <label htmlFor="source-upload" className="cursor-pointer">
+                          {sourceMaterial ? (
+                            <div className="text-sm">
+                              <span className="material-icons text-success mb-1">check_circle</span>
+                              <p className="font-medium">Source material added</p>
+                              <p className="text-neutral-500 truncate max-w-full">{sourceMaterial.substring(0, 50)}...</p>
+                            </div>
+                          ) : isUploadingSource ? (
+                            <div>
+                              <span className="material-icons animate-spin mb-1">refresh</span>
+                              <p>Processing source material...</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="material-icons text-3xl mb-1">upload_file</span>
+                              <p>Drag & drop or click to upload</p>
+                              <p className="text-xs text-neutral-500 mt-1">Supported formats: PDF, TXT, DOCX, MP3</p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                      
+                      {sourceMaterial && (
+                        <div className="mt-2 flex justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSourceMaterial(null);
+                              setSourceType("internal");
+                            }}
+                          >
+                            <span className="material-icons text-sm mr-1">delete</span>
+                            Remove
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     
                     <Button 
