@@ -377,20 +377,8 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-1">
             <TabsTrigger value="content">Content Details</TabsTrigger>
-            <TabsTrigger value="assessment">
-              Assessment Options
-              <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Integrated</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="marking-criteria">
-              Marking Criteria
-              <Badge variant="outline" className="ml-2 bg-accent/10 text-accent text-xs">Required</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="quality-assurance">
-              Quality Assurance
-              <Badge variant="outline" className="ml-2 bg-green-600/10 text-green-600 text-xs">New</Badge>
-            </TabsTrigger>
           </TabsList>
           
           {/* Content Generation Options */}
