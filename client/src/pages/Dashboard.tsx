@@ -84,15 +84,6 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold text-neutral-800">Academic Content Dashboard</h2>
             <p className="text-neutral-600 mt-1">Generate, verify, and assess academic content using the QAQF framework</p>
           </div>
-          
-          <div className="mt-4 md:mt-0">
-            <Link href="/content-generator">
-              <Button className="flex items-center">
-                <span className="material-icons mr-2">add</span>
-                New Course
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
       
