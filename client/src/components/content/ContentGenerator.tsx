@@ -187,7 +187,7 @@ const ContentGenerator: React.FC = () => {
     };
   };
 
-  const handleSaveContent = () => {
+  const handleSaveContent = async () => {
     if (!generatedContent) {
       toast({
         title: "No Content to Save",
@@ -199,16 +199,57 @@ const ContentGenerator: React.FC = () => {
     
     setIsSaving(true);
     
-    // Simulate saving content to database
-    setTimeout(() => {
+    try {
+      // Prepare content data
+      const contentData = {
+        title: generatedContent.title,
+        description: `${contentType} for ${subject} at QAQF Level ${qaqfLevel}`,
+        type: contentType,
+        qaqfLevel: parseInt(qaqfLevel),
+        moduleCode: moduleCode || null,
+        createdByUserId: 1, // Default user ID
+        content: generatedContent.content,
+        characteristics: selectedCharacteristics,
+        verificationStatus: "pending"
+      };
+      
+      // Save to database using API
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contentData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save content');
+      }
+      
+      const savedContent = await response.json();
+      
       toast({
         title: "Content Saved Successfully",
-        description: "Your content has been saved and is now available in My Content.",
+        description: "Your course has been saved and is now available in Course Content.",
       });
       
       setShowPreview(false);
       setIsSaving(false);
-    }, 1500);
+      
+      // Switch to the Course Content tab
+      setTimeout(() => {
+        // This will trigger parent component to switch tabs
+        window.dispatchEvent(new CustomEvent('switchToContentTab'));
+      }, 1000);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      toast({
+        title: "Error Saving Content",
+        description: "There was an error saving your content. Please try again.",
+        variant: "destructive"
+      });
+      setIsSaving(false);
+    }
   };
   
   return (

@@ -14,6 +14,19 @@ const ContentGeneratorPage: React.FC = () => {
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
+  
+  // Event listener to switch tabs when content is created
+  React.useEffect(() => {
+    const handleSwitchTab = () => {
+      setActiveTab("recent");
+    };
+    
+    window.addEventListener("switchToContentTab", handleSwitchTab);
+    
+    return () => {
+      window.removeEventListener("switchToContentTab", handleSwitchTab);
+    };
+  }, []);
 
   return (
     <div>
