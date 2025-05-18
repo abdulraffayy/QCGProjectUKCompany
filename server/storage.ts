@@ -414,7 +414,7 @@ export class DatabaseStorage implements IStorage {
       .insert(contents)
       .values({
         ...content,
-        verificationStatus: content.verificationStatus || VerificationStatus.PENDING,
+        verificationStatus: content.verificationStatus || SchemaVerificationStatus.PENDING,
         moduleCode: content.moduleCode || null,
         verifiedByUserId: content.verifiedByUserId || null,
         createdAt: new Date(),
@@ -464,7 +464,7 @@ export class DatabaseStorage implements IStorage {
       .insert(videos)
       .values({
         ...video,
-        verificationStatus: video.verificationStatus || VerificationStatus.PENDING,
+        verificationStatus: video.verificationStatus || SchemaVerificationStatus.PENDING,
         moduleCode: video.moduleCode || null,
         url: video.url || null,
         verifiedByUserId: video.verifiedByUserId || null,
@@ -544,8 +544,8 @@ export class DatabaseStorage implements IStorage {
 async function initializeDatabase() {
   const existingLevels = await db.select().from(qaqfLevels);
   if (existingLevels.length === 0) {
-    // Initialize QAQF levels
-    await db.insert(qaqfLevels).values([
+    // Initialize QAQF levels one by one
+    for (const level of [
       { level: 1, name: "Basic", description: "Basic implementation of nine characteristics within learning and education environment." },
       { level: 2, name: "Rudimentary", description: "Rudimentary implementation of nine characteristics within learning and education environment." },
       { level: 3, name: "Crucial", description: "Crucial implementation of nine characteristics within learning and education environment." },
@@ -555,13 +555,15 @@ async function initializeDatabase() {
       { level: 7, name: "Leading", description: "Leading implementation of nine characteristics within learning and education environment." },
       { level: 8, name: "Specialist", description: "Specialist implementation of nine characteristics within learning and education environment." },
       { level: 9, name: "21st Century Innovative", description: "21st century innovative implementation of nine characteristics within learning and education environment." }
-    ]);
+    ]) {
+      await db.insert(qaqfLevels).values(level);
+    }
   }
   
   const existingCharacteristics = await db.select().from(qaqfCharacteristics);
   if (existingCharacteristics.length === 0) {
-    // Initialize QAQF characteristics
-    await db.insert(qaqfCharacteristics).values([
+    // Initialize QAQF characteristics one by one
+    for (const characteristic of [
       { name: "Knowledge and understanding", description: "Descriptive, simple, facts, ideas, concepts, subject, discipline, defining understanding", category: "foundation", icon: "school" },
       { name: "Applied knowledge", description: "Application of: theories, facts, ideas, concepts", category: "foundation", icon: "psychology" },
       { name: "Cognitive skills", description: "Critical, analytical, research", category: "foundation", icon: "tips_and_updates" },
@@ -571,7 +573,9 @@ async function initializeDatabase() {
       { name: "Sustainability & ecological", description: "Show sustainability, resilient and ecological thinking", category: "advanced", icon: "eco" },
       { name: "Reflective & creative", description: "Level of reflection, creativity and innovative input", category: "advanced", icon: "auto_awesome" },
       { name: "Futuristic/Genius Skills", description: "Think outside the box, show different thinking on outcomes", category: "advanced", icon: "lightbulb" }
-    ]);
+    ]) {
+      await db.insert(qaqfCharacteristics).values(characteristic);
+    }
   }
 }
 
@@ -588,7 +592,7 @@ import {
   contents, 
   videos, 
   activities,
-  VerificationStatus
+  VerificationStatus as SchemaVerificationStatus
 } from "@shared/schema";
 
 // Initialize the database with default data
