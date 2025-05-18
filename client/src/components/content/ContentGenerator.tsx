@@ -38,6 +38,11 @@ const ContentGenerator: React.FC = () => {
   // Quiz options
   const [quizTimeLimit, setQuizTimeLimit] = useState(0);
   const [useAdaptiveScoring, setUseAdaptiveScoring] = useState(false);
+  
+  // Video specific options
+  const [animationStyle, setAnimationStyle] = useState("2D Animation");
+  const [videoDuration, setVideoDuration] = useState("3-5 minutes");
+  const [videoDescription, setVideoDescription] = useState("");
 
   const handleCharacteristicToggle = (characteristicId: number) => {
     setSelectedCharacteristics(prev => 
@@ -62,33 +67,83 @@ const ContentGenerator: React.FC = () => {
       return;
     }
 
+    // For video content, check additional required fields
+    if (contentType === "video" && !animationStyle) {
+      toast({
+        title: "Missing Video Information",
+        description: "Please select an animation style for your video.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     
     // Simulating content generation
     setTimeout(() => {
-      // Create generated content mock
-      const mockContent = {
-        id: Math.floor(Math.random() * 1000),
-        title: `${subject} (QAQF Level ${qaqfLevel})`,
-        moduleCode: moduleCode || "EDU-101",
-        qaqfLevel: parseInt(qaqfLevel),
-        characteristics: selectedCharacteristics,
-        content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content would be generated here based on the QAQF framework requirements.`,
-        assessment: includeAssessment ? generateMockAssessment() : null
-      };
+      let mockContent;
+      
+      if (contentType === "video") {
+        // Create video content
+        mockContent = {
+          id: Math.floor(Math.random() * 1000),
+          type: "video",
+          title: `${subject} (QAQF Level ${qaqfLevel})`,
+          moduleCode: moduleCode || "EDU-101",
+          qaqfLevel: parseInt(qaqfLevel),
+          characteristics: selectedCharacteristics,
+          video: generateMockVideo(),
+          assessment: includeAssessment ? generateMockAssessment() : null
+        };
+      } else {
+        // Create text-based academic content
+        mockContent = {
+          id: Math.floor(Math.random() * 1000),
+          type: "academic_paper",
+          title: `${subject} (QAQF Level ${qaqfLevel})`,
+          moduleCode: moduleCode || "EDU-101",
+          qaqfLevel: parseInt(qaqfLevel),
+          characteristics: selectedCharacteristics,
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content would be generated here based on the QAQF framework requirements.`,
+          assessment: includeAssessment ? generateMockAssessment() : null
+        };
+      }
       
       setGeneratedContent(mockContent);
       setShowPreview(true);
       setIsGenerating(false);
       
+      const successMessage = contentType === "video" 
+        ? "Your video content has been generated successfully."
+        : "Your academic content has been generated successfully.";
+        
       toast({
         title: "Content Generated Successfully",
-        description: "Your content has been generated with assessment materials.",
+        description: includeAssessment 
+          ? `${successMessage} Assessment materials are included.` 
+          : successMessage,
       });
     }, 2000);
   };
   
   // Generate mock assessment based on selected type
+  // Generate video content mock
+  const generateMockVideo = () => {
+    return {
+      id: Math.floor(Math.random() * 1000),
+      title: subject || `Educational Video on QAQF Level ${qaqfLevel}`,
+      description: videoDescription || `This video explains concepts related to ${subject} at QAQF Level ${qaqfLevel}`,
+      animationStyle: animationStyle,
+      duration: videoDuration,
+      moduleCode: moduleCode || "EDU-101",
+      characteristics: selectedCharacteristics,
+      qaqfLevel: parseInt(qaqfLevel),
+      thumbnailUrl: "https://images.unsplash.com/photo-1553877522-43269d4ea984?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
+      url: "#",
+      createdAt: new Date().toISOString()
+    };
+  };
+
   const generateMockAssessment = () => {
     switch (assessmentType) {
       case "puzzle":
@@ -223,8 +278,14 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-2">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="content">Content Details</TabsTrigger>
+            {contentType === "video" && (
+              <TabsTrigger value="video-options">
+                Video Options
+                <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Video</Badge>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="assessment">
               Assessment Options
               <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Integrated</Badge>
@@ -309,6 +370,77 @@ const ContentGenerator: React.FC = () => {
                   onChange={(e) => setSourceMaterial(e.target.value)}
                   className="min-h-[100px]"
                 />
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Video Options */}
+          <TabsContent value="video-options" className="space-y-4 pt-2">
+            <div className="space-y-4">
+              <div>
+                <Label className="block text-sm font-medium text-neutral-700 mb-1">Animation Style</Label>
+                <Select value={animationStyle} onValueChange={setAnimationStyle}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select animation style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2D Animation">2D Animation</SelectItem>
+                    <SelectItem value="3D Animation">3D Animation</SelectItem>
+                    <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
+                    <SelectItem value="Whiteboard Animation">Whiteboard Animation</SelectItem>
+                    <SelectItem value="Stop Motion">Stop Motion</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="block text-sm font-medium text-neutral-700 mb-1">Video Duration</Label>
+                <Select value={videoDuration} onValueChange={setVideoDuration}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select video duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-2 minutes">1-2 minutes (Short)</SelectItem>
+                    <SelectItem value="3-5 minutes">3-5 minutes (Standard)</SelectItem>
+                    <SelectItem value="5-10 minutes">5-10 minutes (Extended)</SelectItem>
+                    <SelectItem value="10-15 minutes">10-15 minutes (In-depth)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="block text-sm font-medium text-neutral-700 mb-1">Video Description</Label>
+                <Textarea 
+                  placeholder="Describe what should be included in the video" 
+                  value={videoDescription}
+                  onChange={(e) => setVideoDescription(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+              
+              <div className="p-4 bg-secondary/5 rounded-md space-y-3">
+                <h4 className="font-medium flex items-center text-sm">
+                  <span className="material-icons text-sm mr-1">lightbulb</span>
+                  Animation Style Guidelines
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="p-2 bg-white rounded border">
+                    <p className="font-medium">2D Animation</p>
+                    <p className="text-neutral-600">Best for simplified concepts, character-based explanations</p>
+                  </div>
+                  <div className="p-2 bg-white rounded border">
+                    <p className="font-medium">3D Animation</p>
+                    <p className="text-neutral-600">Ideal for spatial concepts, complex processes visualization</p>
+                  </div>
+                  <div className="p-2 bg-white rounded border">
+                    <p className="font-medium">Motion Graphics</p>
+                    <p className="text-neutral-600">Perfect for data visualization, statistics, and abstract concepts</p>
+                  </div>
+                  <div className="p-2 bg-white rounded border">
+                    <p className="font-medium">Whiteboard Animation</p>
+                    <p className="text-neutral-600">Great for step-by-step processes and storytelling</p>
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -502,6 +634,12 @@ const ContentGenerator: React.FC = () => {
               <Tabs defaultValue="content">
                 <TabsList>
                   <TabsTrigger value="content">Content</TabsTrigger>
+                  {generatedContent.type === "video" && (
+                    <TabsTrigger value="video">
+                      Video
+                      <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Video</Badge>
+                    </TabsTrigger>
+                  )}
                   {generatedContent.assessment && (
                     <TabsTrigger value="assessment">
                       Assessment
@@ -511,12 +649,83 @@ const ContentGenerator: React.FC = () => {
                 </TabsList>
                 
                 <TabsContent value="content" className="pt-4">
-                  <div className="prose max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm font-sans p-4 bg-neutral-50 rounded-md">
-                      {generatedContent.content}
-                    </pre>
-                  </div>
+                  {generatedContent.type === "academic_paper" ? (
+                    <div className="prose max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm font-sans p-4 bg-neutral-50 rounded-md">
+                        {generatedContent.content}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                        <span className="material-icons text-primary text-2xl">videocam</span>
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">Video Content Generated</h3>
+                      <p className="text-neutral-600 mb-4">
+                        This content has been generated as a video. Please check the Video tab to preview it.
+                      </p>
+                    </div>
+                  )}
                 </TabsContent>
+                
+                {/* Video Content Preview */}
+                {generatedContent.type === "video" && (
+                  <TabsContent value="video" className="pt-4">
+                    <div className="space-y-4">
+                      <div className="bg-neutral-900 aspect-video rounded-lg relative overflow-hidden">
+                        <img 
+                          src={generatedContent.video.thumbnailUrl} 
+                          alt="Video thumbnail" 
+                          className="w-full h-full object-cover opacity-70"
+                        />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="material-icons text-white text-6xl mb-4">play_circle</span>
+                          <p className="text-white text-lg font-medium">Video Preview</p>
+                          <div className="flex items-center mt-2 text-white/80 text-sm">
+                            <span className="material-icons text-sm mr-1">movie</span>
+                            <span>{generatedContent.video.animationStyle}</span>
+                            <span className="mx-2">•</span>
+                            <span className="material-icons text-sm mr-1">schedule</span>
+                            <span>{generatedContent.video.duration}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 border rounded-md bg-neutral-50">
+                          <h4 className="text-sm font-medium mb-2 flex items-center">
+                            <span className="material-icons text-sm mr-1">movie</span>
+                            Animation Style
+                          </h4>
+                          <p className="text-sm text-neutral-600">{generatedContent.video.animationStyle}</p>
+                        </div>
+                        <div className="p-4 border rounded-md bg-neutral-50">
+                          <h4 className="text-sm font-medium mb-2 flex items-center">
+                            <span className="material-icons text-sm mr-1">schedule</span>
+                            Duration
+                          </h4>
+                          <p className="text-sm text-neutral-600">{generatedContent.video.duration}</p>
+                        </div>
+                        <div className="p-4 border rounded-md bg-neutral-50">
+                          <h4 className="text-sm font-medium mb-2 flex items-center">
+                            <span className="material-icons text-sm mr-1">school</span>
+                            QAQF Level
+                          </h4>
+                          <p className="text-sm text-neutral-600">Level {generatedContent.video.qaqfLevel}</p>
+                        </div>
+                      </div>
+                      
+                      {generatedContent.video.description && (
+                        <div className="border rounded-md p-4">
+                          <h4 className="text-sm font-medium mb-2">Video Description</h4>
+                          <p className="text-sm text-neutral-600 whitespace-pre-line">
+                            {generatedContent.video.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                )}
                 
                 {generatedContent.assessment && (
                   <TabsContent value="assessment" className="pt-4">
