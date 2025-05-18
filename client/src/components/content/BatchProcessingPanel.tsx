@@ -222,8 +222,8 @@ const BatchProcessingPanel: React.FC<BatchProcessingPanelProps> = ({ contents, o
                     <td className="p-2">
                       <Badge 
                         variant={
-                          content.verificationStatus === 'verified' ? 'success' :
-                          content.verificationStatus === 'rejected' ? 'destructive' : 'warning'
+                          content.verificationStatus === 'verified' ? 'default' :
+                          content.verificationStatus === 'rejected' ? 'destructive' : 'outline'
                         }
                       >
                         {content.verificationStatus}
