@@ -19,14 +19,10 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-4">
+        <TabsList className="grid grid-cols-3">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
-          </TabsTrigger>
-          <TabsTrigger value="batch" className="flex items-center">
-            <span className="material-icons text-sm mr-2">assignment</span>
-            Batch Processing
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center">
             <span className="material-icons text-sm mr-2">template_frame</span>
@@ -40,14 +36,6 @@ const ContentGeneratorPage: React.FC = () => {
         
         <TabsContent value="create">
           <ContentGenerator />
-        </TabsContent>
-        
-        <TabsContent value="batch">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Batch Course Processing</h3>
-            <p className="text-neutral-600 mb-6">Upload multiple course specifications to generate courses in batch</p>
-            <BatchProcessingPanel />
-          </div>
         </TabsContent>
         
         <TabsContent value="templates">
