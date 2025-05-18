@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import MarkingCriteriaModule from "@/components/assessment/MarkingCriteriaModule";
 
@@ -917,7 +918,7 @@ const ContentGenerator: React.FC = () => {
                           <Label className="block text-sm font-medium mb-1">
                             Number of Questions: {numberOfQuestions}
                           </Label>
-                          <Slider
+                          <Slider defaultValue={[10]}
                             min={5}
                             max={20}
                             step={1}
@@ -929,7 +930,7 @@ const ContentGenerator: React.FC = () => {
                           <Label className="block text-sm font-medium mb-1">
                             Time Limit (minutes): {quizTimeLimit > 0 ? quizTimeLimit : "None"}
                           </Label>
-                          <Slider
+                          <Slider defaultValue={[10]}
                             min={0}
                             max={60}
                             step={5}
@@ -960,7 +961,7 @@ const ContentGenerator: React.FC = () => {
                       <Label className="block text-sm font-medium mb-1">
                         Number of Questions: {numberOfQuestions}
                       </Label>
-                      <Slider
+                      <Slider defaultValue={[10]}
                         min={5}
                         max={20}
                         step={1}
