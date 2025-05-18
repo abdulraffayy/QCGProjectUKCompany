@@ -503,9 +503,169 @@ const ContentGeneratorPage: React.FC = () => {
         <TabsContent value="module">
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-3">Module Details</h3>
-              <div className="border rounded-lg p-6 bg-white mb-8">
-                <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-3">Module Management</h3>
+              <p className="text-neutral-600 mb-6">
+                Access and manage different aspects of your course modules. Each section manages a specific part of the module creation and development process.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Module Details Card */}
+                <div className="border rounded-lg p-6 hover:shadow-md hover:border-primary transition-all">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <span className="material-icons text-primary mr-2">info</span>
+                      <h4 className="font-medium">Module Details</h4>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Generated</Badge>
+                  </div>
+                  
+                  <p className="text-sm text-neutral-600 mb-4">
+                    View and manage details about module structure, educational context, and organization.
+                  </p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Educational contexts and prerequisites
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Module content structure
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Generated from Course Content Approval
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full" onClick={() => window.location.href = '/my-content'}>
+                    <span className="material-icons text-sm mr-2">visibility</span>
+                    View Module Details
+                  </Button>
+                </div>
+                
+                {/* Module Generator Card */}
+                <div className="border rounded-lg p-6 hover:shadow-md hover:border-primary transition-all">
+                  <div className="flex items-center mb-4">
+                    <span className="material-icons text-primary mr-2">build</span>
+                    <h4 className="font-medium">Module Generator</h4>
+                  </div>
+                  
+                  <p className="text-sm text-neutral-600 mb-4">
+                    Generate lesson plans and study materials based on your courses and approved content.
+                  </p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Lesson plan generation
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Study materials creation
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Auto-integration with other pages
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" className="w-full" onClick={() => window.location.href = '/lesson-plan'}>
+                      <span className="material-icons text-sm mr-2">school</span>
+                      Lesson Plans
+                    </Button>
+                    <Button size="sm" className="w-full" onClick={() => window.location.href = '/study-material'}>
+                      <span className="material-icons text-sm mr-2">menu_book</span>
+                      Study Materials
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Module Templates Card */}
+                <div className="border rounded-lg p-6 hover:shadow-md hover:border-primary transition-all">
+                  <div className="flex items-center mb-4">
+                    <span className="material-icons text-primary mr-2">dashboard</span>
+                    <h4 className="font-medium">Module Templates</h4>
+                  </div>
+                  
+                  <p className="text-sm text-neutral-600 mb-4">
+                    Apply specialized templates to create additional modules for your courses.
+                  </p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Nursing and healthcare templates
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Business and management templates
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Educational and technological templates
+                    </div>
+                  </div>
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="w-full">
+                        <span className="material-icons text-sm mr-2">view_module</span>
+                        Browse Templates
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Module Templates</DialogTitle>
+                      </DialogHeader>
+                      <div className="mt-4">
+                        <p className="text-neutral-600 mb-4">
+                          Apply specialized templates to create additional modules for your courses.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                            <h5 className="font-medium mb-2 flex items-center">
+                              Nursing Template
+                              <Badge className="bg-purple-100 text-purple-800 ml-2">QAQF 5</Badge>
+                            </h5>
+                            <p className="text-sm text-neutral-600 mb-3">
+                              Healthcare curriculum template with clinical focus
+                            </p>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Healthcare</span>
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Clinical</span>
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Nursing</span>
+                            </div>
+                            <Button size="sm" className="w-full">Use Template</Button>
+                          </div>
+                          
+                          <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                            <h5 className="font-medium mb-2 flex items-center">
+                              Business Ethics
+                              <Badge className="bg-purple-100 text-purple-800 ml-2">QAQF 6</Badge>
+                            </h5>
+                            <p className="text-sm text-neutral-600 mb-3">
+                              Designed for business management and ethics courses
+                            </p>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Business</span>
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Ethics</span>
+                              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full">Management</span>
+                            </div>
+                            <Button size="sm" className="w-full">Use Template</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-3">Module Details Preview</h3>
+                <div className="border rounded-lg p-6 bg-white mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium">Module Details</h4>
                     <div className="flex items-center">
@@ -515,9 +675,6 @@ const ContentGeneratorPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-neutral-600 mb-4">
-                    This section displays information about the course module structure and organization.
-                  </p>
                   
                   <div className="border rounded-md p-4 bg-neutral-50 mb-6">
                     <div className="flex items-center mb-2">
@@ -552,99 +709,11 @@ const ContentGeneratorPage: React.FC = () => {
                       <li>Assessment and evaluation methods</li>
                     </ul>
                   </div>
-                  
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" size="sm">
-                      <span className="material-icons text-sm mr-1">school</span>
-                      View Lesson Plan
-                    </Button>
-                    <Button size="sm">
-                      <span className="material-icons text-sm mr-1">edit</span>
-                      Edit Module
-                    </Button>
-                  </div>
                 </div>
               </div>
-              
-              <h3 className="text-lg font-semibold mb-3">Module Generator</h3>
-              <p className="text-neutral-600 mb-4">
-                Generate lesson plans and content modules based on your courses. Select a template to blend with your course content.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all relative">
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-blue-100 text-blue-800">Auto-Generated</Badge>
-                  </div>
-                  <div className="flex items-center mb-2">
-                    <span className="material-icons text-primary mr-2">school</span>
-                    <h4 className="font-medium">Lesson Plan Generator</h4>
-                  </div>
-                  <p className="text-sm text-neutral-600 mb-3">
-                    Create a structured lesson plan with objectives, activities, and assessments aligned with your course content.
-                  </p>
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Learning objectives based on QAQF level
-                    </div>
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Structured timeline with activities
-                    </div>
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Assessment strategies and resources
-                    </div>
-                  </div>
-                  <div className="text-xs text-neutral-500 italic mb-2">
-                    Lesson plans are automatically created and sent to the Lesson Plan page
-                  </div>
-                  <Button size="sm" className="w-full" onClick={() => window.location.href = '/lesson-plan'}>
-                    <span className="material-icons text-sm mr-2">launch</span>
-                    View in Lesson Plan
-                  </Button>
-                </div>
-                
-                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all relative">
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-blue-100 text-blue-800">Auto-Generated</Badge>
-                  </div>
-                  <div className="flex items-center mb-2">
-                    <span className="material-icons text-primary mr-2">menu_book</span>
-                    <h4 className="font-medium">Study Materials Generator</h4>
-                  </div>
-                  <p className="text-sm text-neutral-600 mb-3">
-                    Generate supplementary study materials based on course content including handouts, reading guides, and activities.
-                  </p>
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Guided reading materials with annotations
-                    </div>
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Practice activities with solutions
-                    </div>
-                    <div className="flex items-center text-sm text-neutral-700">
-                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
-                      Visual aids and concept maps
-                    </div>
-                  </div>
-                  <div className="text-xs text-neutral-500 italic mb-2">
-                    Study materials are automatically created and sent to the Study Material page
-                  </div>
-                  <Button size="sm" className="w-full" onClick={() => window.location.href = '/study-material'}>
-                    <span className="material-icons text-sm mr-2">launch</span>
-                    View in Study Material
-                  </Button>
-                </div>
-              </div>
-              
-              <h3 className="text-lg font-semibold mb-3 mt-8">Template Modules</h3>
-              <p className="text-neutral-600 mb-4">
-                Apply specialized templates to create additional modules for your courses.
-              </p>
+            </div>
+          </div>
+        </TabsContent>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
