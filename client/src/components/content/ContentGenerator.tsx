@@ -142,6 +142,14 @@ const ContentGenerator: React.FC = () => {
       setActiveTab("assessment");
       return;
     }
+    
+    // Set initial quality assurance states
+    setVerificationStatus("pending");
+    setModerationStatus("pending");
+    setBritishStandardsCompliance(false);
+    setComplianceIssues([]);
+    setVerifiedBy("");
+    setVerificationDate("");
 
     setIsGenerating(true);
     
@@ -187,9 +195,14 @@ const ContentGenerator: React.FC = () => {
       toast({
         title: "Content Generated Successfully",
         description: includeAssessment 
-          ? `${successMessage} Assessment materials are included.` 
-          : successMessage,
+          ? `${successMessage} Assessment materials are included. Please proceed to the Quality Assurance module to verify and moderate your content.` 
+          : successMessage + " Please proceed to the Quality Assurance module to verify and moderate your content.",
       });
+      
+      // Switch to Quality Assurance tab after successful generation
+      setTimeout(() => {
+        setActiveTab("quality-assurance");
+      }, 1000);
     }, 2000);
   };
   
