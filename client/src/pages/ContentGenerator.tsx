@@ -33,8 +33,8 @@ const ContentGeneratorPage: React.FC = () => {
             Course Templates
           </TabsTrigger>
           <TabsTrigger value="recent" className="flex items-center">
-            <span className="material-icons text-sm mr-2">history</span>
-            Recent Courses
+            <span className="material-icons text-sm mr-2">menu_book</span>
+            Course Content
           </TabsTrigger>
         </TabsList>
         
@@ -73,9 +73,9 @@ const ContentGeneratorPage: React.FC = () => {
         <TabsContent value="recent">
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Recently Generated Courses</h3>
+              <h3 className="text-lg font-semibold mb-3">Course Content Library</h3>
               <p className="text-neutral-600 mb-4">
-                View and manage your recently generated courses. Select a course to view its details, verify, or export.
+                View and manage your course content. Select a course to view its details, verify, export, or edit.
               </p>
               <CourseWorkflowView 
                 showLatest={true}
