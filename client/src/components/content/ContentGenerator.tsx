@@ -161,7 +161,7 @@ const ContentGenerator: React.FC = () => {
         }
         
         // Combine selected and extracted characteristics
-        const combinedCharacteristics = [...new Set([...selectedCharacteristics, ...extractedCharacteristics])];
+        const combinedCharacteristics = Array.from(new Set([...selectedCharacteristics, ...extractedCharacteristics]));
         
         // Generate content that explicitly references source materials and QAQF characteristics
         mockContent = {
@@ -176,7 +176,11 @@ const ContentGenerator: React.FC = () => {
             secondary: secondarySourceMaterial || null,
             extracted: extractCharacteristics
           },
-          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\n## QAQF Level ${qaqfLevel} Implementation\n\nThis academic content integrates QAQF framework Level ${qaqfLevel} with ${combinedCharacteristics.length} characteristics.\n\n### QAQF Characteristics Applied\n\n${combinedCharacteristics.map(id => `- Characteristic ${id}: ${getCharacteristicName(id)}`).join('\n')}\n\n${additionalInstructions ? `### Additional Requirements\n${additionalInstructions}\n\n` : ''}### Main Content\n\nThis academic content is structured according to QAQF Level ${qaqfLevel} standards, incorporating rigorous analysis and critical evaluation of the provided source materials.\n\n${sourceAnalysis}\n\n### Synthesis\n\nBased on the QAQF framework and the analyzed source materials, this academic paper presents a comprehensive approach to ${subject} that meets British educational standards and academic requirements.\n\n`,
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\n## QAQF Level ${qaqfLevel} Implementation\n\nThis academic content integrates QAQF framework Level ${qaqfLevel} with ${combinedCharacteristics.length} characteristics.\n\n### QAQF Characteristics Applied\n\n${combinedCharacteristics.map(id => {
+            // Find the characteristic by ID
+            const characteristic = QAQFCharacteristics.find(c => c.id === id);
+            return `- Characteristic ${id}: ${characteristic ? characteristic.name : `Unknown (${id})`}`;
+          }).join('\n')}\n\n${additionalInstructions ? `### Additional Requirements\n${additionalInstructions}\n\n` : ''}### Main Content\n\nThis academic content is structured according to QAQF Level ${qaqfLevel} standards, incorporating rigorous analysis and critical evaluation of the provided source materials.\n\n${sourceAnalysis}\n\n### Synthesis\n\nBased on the QAQF framework and the analyzed source materials, this academic paper presents a comprehensive approach to ${subject} that meets British educational standards and academic requirements.\n\n`,
           assessment: generateMockAssessment()
         };
       }
