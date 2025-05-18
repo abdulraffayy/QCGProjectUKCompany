@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getColorByLevel } from "@/lib/qaqf";
+import { saveContentAsPDF } from "@/lib/pdfGenerator";
 import { Content } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,6 +92,23 @@ const ContentList: React.FC<ContentListProps> = ({
       title: "Content Deleted",
       description: "The content has been deleted successfully.",
     });
+  };
+  
+  const handleExportToPDF = (content: Content) => {
+    try {
+      saveContentAsPDF(content);
+      toast({
+        title: "PDF Export Successful",
+        description: `${content.title} has been exported as a PDF file.`,
+      });
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      toast({
+        title: "PDF Export Failed",
+        description: "There was a problem exporting your content to PDF. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
