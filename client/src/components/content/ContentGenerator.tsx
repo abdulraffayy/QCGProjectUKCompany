@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import MarkingCriteriaModule from "@/components/assessment/MarkingCriteriaModule";
 
 const ContentGenerator: React.FC = () => {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ const ContentGenerator: React.FC = () => {
   const [sourceMaterial, setSourceMaterial] = useState("");
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showMarkingCriteria, setShowMarkingCriteria] = useState(false);
   
   // Assessment specific options
   const [includeAssessment, setIncludeAssessment] = useState(false);
@@ -43,6 +45,10 @@ const ContentGenerator: React.FC = () => {
   const [animationStyle, setAnimationStyle] = useState("2D Animation");
   const [videoDuration, setVideoDuration] = useState("3-5 minutes");
   const [videoDescription, setVideoDescription] = useState("");
+  
+  // Marking criteria options
+  const [markingAssessmentResult, setMarkingAssessmentResult] = useState<any>(null);
+  const [markingRubricType, setMarkingRubricType] = useState("default");
 
   const handleCharacteristicToggle = (characteristicId: number) => {
     setSelectedCharacteristics(prev => 
@@ -278,7 +284,7 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-4">
             <TabsTrigger value="content">Content Details</TabsTrigger>
             {contentType === "video" && (
               <TabsTrigger value="video-options">
@@ -289,6 +295,10 @@ const ContentGenerator: React.FC = () => {
             <TabsTrigger value="assessment">
               Assessment Options
               <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Integrated</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="marking-criteria">
+              Marking Criteria
+              <Badge variant="outline" className="ml-2 bg-accent/10 text-accent text-xs">New</Badge>
             </TabsTrigger>
           </TabsList>
           
