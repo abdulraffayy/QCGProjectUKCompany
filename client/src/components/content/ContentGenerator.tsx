@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,71 @@ const ContentGenerator: React.FC = () => {
   const [extractCharacteristics, setExtractCharacteristics] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  
+  // Check if we're regenerating content (redirected from CourseWorkflowView)
+  useEffect(() => {
+    const regenerateContentData = localStorage.getItem('regenerateContent');
+    
+    if (regenerateContentData) {
+      try {
+        const contentToRegenerate = JSON.parse(regenerateContentData);
+        
+        // Populate the form with the existing content data
+        if (contentToRegenerate.title) {
+          // Extract subject from the title (removing the QAQF Level part if present)
+          const titleParts = contentToRegenerate.title.split('(QAQF Level');
+          setSubject(titleParts[0].trim());
+        }
+        
+        if (contentToRegenerate.type) {
+          setContentType(contentToRegenerate.type);
+        }
+        
+        if (contentToRegenerate.moduleCode) {
+          setModuleCode(contentToRegenerate.moduleCode);
+        }
+        
+        if (contentToRegenerate.qaqfLevel) {
+          setQaqfLevel(contentToRegenerate.qaqfLevel.toString());
+        }
+        
+        if (contentToRegenerate.characteristics && Array.isArray(contentToRegenerate.characteristics)) {
+          setSelectedCharacteristics(contentToRegenerate.characteristics);
+        } else if (contentToRegenerate.characteristics && typeof contentToRegenerate.characteristics === 'object') {
+          // If characteristics is an object, extract the keys as numbers
+          try {
+            const characteristicIds = Object.keys(contentToRegenerate.characteristics)
+              .map(key => parseInt(key))
+              .filter(id => !isNaN(id));
+            setSelectedCharacteristics(characteristicIds);
+          } catch (error) {
+            console.error('Error parsing characteristics:', error);
+          }
+        }
+        
+        // Set flag to show we're regenerating
+        setIsRegenerating(true);
+        
+        // Show a toast notification to inform the user
+        toast({
+          title: "Content loaded for regeneration",
+          description: "The existing content settings have been loaded. Generating new content...",
+        });
+        
+        // Clear the localStorage item so we don't reload it on page refresh
+        localStorage.removeItem('regenerateContent');
+        
+        // Automatically generate new content after a short delay to ensure state is updated
+        setTimeout(() => {
+          handleGenerate();
+        }, 500);
+      } catch (error) {
+        console.error('Error parsing regeneration data:', error);
+        localStorage.removeItem('regenerateContent');
+      }
+    }
+  }, [toast]);
   
   // Video specific options
   const [animationStyle, setAnimationStyle] = useState("2D Animation");
