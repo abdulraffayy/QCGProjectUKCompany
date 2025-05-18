@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ContentGenerator from '@/components/content/ContentGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import BatchProcessingPanel from '@/components/content/BatchProcessingPanel';
 import CourseWorkflowView from '@/components/content/CourseWorkflowView';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -97,15 +96,6 @@ const ContentGeneratorPage: React.FC = () => {
               <div className="overflow-auto">
                 <CourseWorkflowView showWorkflowButtons={true} limit={10} />
               </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-3">Batch Processing</h3>
-              <p className="text-neutral-600 mb-4">
-                Generate multiple courses simultaneously using templates and batch processing.
-              </p>
-              
-              <BatchProcessingPanel />
             </div>
           </div>
         </TabsContent>
