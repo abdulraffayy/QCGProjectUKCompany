@@ -59,7 +59,7 @@ const StudyMaterialPage: React.FC = () => {
                       <SelectValue placeholder="Material Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="article">Article</SelectItem>
                       <SelectItem value="worksheet">Worksheet</SelectItem>
                       <SelectItem value="handout">Handout</SelectItem>
@@ -73,7 +73,7 @@ const StudyMaterialPage: React.FC = () => {
                       <SelectValue placeholder="QAQF Level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Levels</SelectItem>
+                      <SelectItem value="all_levels">All Levels</SelectItem>
                       <SelectItem value="1-3">Basic (1-3)</SelectItem>
                       <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
                       <SelectItem value="7-9">Advanced (7-9)</SelectItem>
