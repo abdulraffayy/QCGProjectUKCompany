@@ -29,13 +29,26 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
 
   // Fetch specific content by ID if provided
   const { data: specificContent, isLoading: isLoadingSpecific } = useQuery({
-    queryKey: contentId ? [`/api/content/${contentId}`] : undefined,
+    queryKey: contentId ? [`/api/content/${contentId}`] : [],
+    queryFn: async () => {
+      if (contentId) {
+        const response = await fetch(`/api/content/${contentId}`);
+        if (!response.ok) throw new Error('Failed to fetch content');
+        return response.json();
+      }
+      return null;
+    },
     enabled: !!contentId
   });
 
   // Fetch all content for latest display
   const { data: allContents = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ['/api/content'],
+    queryFn: async () => {
+      const response = await fetch('/api/content');
+      if (!response.ok) throw new Error('Failed to fetch content');
+      return response.json();
+    },
     enabled: showLatest && !contentId
   });
 
