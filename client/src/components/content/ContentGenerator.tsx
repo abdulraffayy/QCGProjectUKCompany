@@ -221,32 +221,11 @@ const ContentGenerator: React.FC = () => {
           <Label className="block text-sm font-medium text-neutral-700 mb-1">Content Type</Label>
           <div className="w-full">
             <Button 
-              variant={contentType === "academic_paper" ? "default" : "outline"} 
+              variant="default"
               className="mr-2"
               onClick={() => setContentType("academic_paper")}
             >
               Academic Paper
-            </Button>
-            <Button 
-              variant={contentType === "lesson_plan" ? "default" : "outline"} 
-              className="mr-2"
-              onClick={() => setContentType("lesson_plan")}
-            >
-              Lesson Plan
-            </Button>
-            <Button 
-              variant={contentType === "study_notes" ? "default" : "outline"} 
-              className="mr-2"
-              onClick={() => setContentType("study_notes")}
-            >
-              Study Notes
-            </Button>
-            <Button 
-              variant={contentType === "video" ? "default" : "outline"} 
-              className="mr-2"
-              onClick={() => setContentType("video")}
-            >
-              Video
             </Button>
           </div>
         </div>
@@ -398,54 +377,7 @@ const ContentGenerator: React.FC = () => {
                 </div>
               </div>
               
-              {/* Video specific options */}
-              {contentType === "video" && (
-                <div className="space-y-4 border-t pt-4">
-                  <h3 className="font-medium text-neutral-800">Video Options</h3>
-                  
-                  <div>
-                    <Label className="block text-sm font-medium text-neutral-700 mb-1">Animation Style</Label>
-                    <Select value={animationStyle} onValueChange={setAnimationStyle}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Animation Style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2D Animation">2D Animation</SelectItem>
-                        <SelectItem value="3D Animation">3D Animation</SelectItem>
-                        <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-                        <SelectItem value="Whiteboard">Whiteboard</SelectItem>
-                        <SelectItem value="Stop Motion">Stop Motion</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label className="block text-sm font-medium text-neutral-700 mb-1">Duration</Label>
-                    <Select value={videoDuration} onValueChange={setVideoDuration}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Video Duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1-2 minutes">1-2 minutes</SelectItem>
-                        <SelectItem value="3-5 minutes">3-5 minutes</SelectItem>
-                        <SelectItem value="5-10 minutes">5-10 minutes</SelectItem>
-                        <SelectItem value="10-15 minutes">10-15 minutes</SelectItem>
-                        <SelectItem value="15+ minutes">15+ minutes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label className="block text-sm font-medium text-neutral-700 mb-1">Video Description (Optional)</Label>
-                    <Textarea
-                      placeholder="Describe the video content and focus"
-                      value={videoDescription}
-                      onChange={(e) => setVideoDescription(e.target.value)}
-                      className="min-h-24"
-                    />
-                  </div>
-                </div>
-              )}
+
             </div>
             
             <div className="flex justify-end pt-4">
