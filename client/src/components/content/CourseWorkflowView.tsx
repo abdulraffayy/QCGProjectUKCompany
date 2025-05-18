@@ -192,7 +192,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
       {contents.length > 1 && (
         <CardHeader className="pb-0">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <CardTitle>Course Title</CardTitle>
+            <CardTitle>Course</CardTitle>
             <div className="flex flex-wrap gap-2">
               {contents.map((content) => (
                 <Button
@@ -262,6 +262,10 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
               
               <TabsContent value="characteristics" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-medium">QAQF Characteristics</h3>
+                    <p className="text-sm text-neutral-600">The following QAQF characteristics have been identified for this course content.</p>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {selectedContent.characteristics ? (
                       Object.entries(selectedContent.characteristics as Record<string, any>).map(([key, value], index) => (
@@ -288,71 +292,54 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
               <TabsContent value="module" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
                   <div className="mb-4">
-                    <h3 className="text-lg font-medium mb-2">Module Layout</h3>
+                    <h3 className="text-lg font-medium mb-2">Module Details</h3>
                     <p className="text-sm text-neutral-600 mb-4">
-                      Generate lesson plans and content modules based on this course. Select a template to blend with this course content.
+                      This section displays information about the course module structure and organization.
                     </p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
-                        <div className="flex items-center mb-2">
-                          <span className="material-icons text-primary mr-2">school</span>
-                          <h4 className="font-medium">Lesson Plan</h4>
-                        </div>
-                        <p className="text-sm text-neutral-600 mb-3">
-                          Create a structured lesson plan with objectives, activities, and assessments aligned with the course content.
-                        </p>
-                        <Button size="sm" className="w-full">Generate Lesson Plan</Button>
+                    <div className="border rounded-md p-4 bg-neutral-50 mb-6">
+                      <div className="flex items-center mb-2">
+                        <span className="material-icons text-primary mr-2">school</span>
+                        <h4 className="font-medium">Educational Context</h4>
                       </div>
-                      
-                      <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
-                        <div className="flex items-center mb-2">
-                          <span className="material-icons text-primary mr-2">menu_book</span>
-                          <h4 className="font-medium">Study Materials</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <h5 className="text-sm font-medium text-neutral-700 mb-1">Target Audience</h5>
+                          <p className="text-sm text-neutral-600">
+                            Higher education students, professional development
+                          </p>
                         </div>
-                        <p className="text-sm text-neutral-600 mb-3">
-                          Generate supplementary study materials based on this course content including handouts and reading guides.
-                        </p>
-                        <Button size="sm" className="w-full">Create Study Materials</Button>
+                        <div>
+                          <h5 className="text-sm font-medium text-neutral-700 mb-1">Prerequisites</h5>
+                          <p className="text-sm text-neutral-600">
+                            Basic understanding of educational frameworks
+                          </p>
+                        </div>
                       </div>
                     </div>
                     
-                    <h3 className="text-lg font-medium mb-2">Apply Templates</h3>
-                    <p className="text-sm text-neutral-600 mb-4">
-                      Enhance this course content by applying one of these templates to create additional modules.
-                    </p>
+                    <div className="border rounded-md p-4 bg-neutral-50 mb-6">
+                      <div className="flex items-center mb-2">
+                        <span className="material-icons text-primary mr-2">menu_book</span>
+                        <h4 className="font-medium">Content Structure</h4>
+                      </div>
+                      <ul className="list-disc list-inside text-sm text-neutral-600 space-y-2 pl-2">
+                        <li>Introduction to QAQF concepts and application</li>
+                        <li>Core principles and characteristics exploration</li>
+                        <li>Practical implementation strategies</li>
+                        <li>Assessment and evaluation methods</li>
+                      </ul>
+                    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {[
-                        {
-                          name: "Assessment Module",
-                          icon: "quiz",
-                          description: "Add comprehensive assessments aligned with this course"
-                        },
-                        {
-                          name: "Interactive Activities",
-                          icon: "extension",
-                          description: "Generate hands-on activities for practical learning"
-                        },
-                        {
-                          name: "Discussion Topics",
-                          icon: "forum",
-                          description: "Create thought-provoking discussion prompts and guides"
-                        }
-                      ].map((template, index) => (
-                        <div key={index} className="border rounded-md p-3 hover:border-primary hover:bg-primary/5 cursor-pointer transition-all">
-                          <div className="flex items-center mb-2">
-                            <span className="material-icons text-primary mr-2">{template.icon}</span>
-                            <h4 className="font-medium text-sm">{template.name}</h4>
-                          </div>
-                          <p className="text-xs text-neutral-600 mb-3">
-                            {template.description}
-                          </p>
-                          <Button variant="outline" size="sm" className="w-full text-xs">
-                            Apply Template
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button variant="outline" size="sm">
+                        <span className="material-icons text-sm mr-1">school</span>
+                        View Lesson Plan
+                      </Button>
+                      <Button size="sm">
+                        <span className="material-icons text-sm mr-1">edit</span>
+                        Edit Module
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -360,27 +347,56 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
               
               <TabsContent value="metadata" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
-                  <dl className="divide-y divide-gray-200">
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">QAQF Level</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{selectedContent.qaqfLevel}</dd>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-medium mb-2">Course Metadata</h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      Essential information and attributes about this course.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="border rounded-md p-4 bg-neutral-50">
+                      <h4 className="font-medium mb-3">QAQF Information</h4>
+                      <dl className="divide-y divide-gray-200">
+                        <div className="py-2 grid grid-cols-2 gap-3">
+                          <dt className="text-sm font-medium text-neutral-500">QAQF Level</dt>
+                          <dd className="text-sm text-neutral-900">{selectedContent.qaqfLevel}</dd>
+                        </div>
+                        <div className="py-2 grid grid-cols-2 gap-3">
+                          <dt className="text-sm font-medium text-neutral-500">Quality Status</dt>
+                          <dd className="text-sm text-neutral-900">{selectedContent.verificationStatus.replace('_', ' ')}</dd>
+                        </div>
+                      </dl>
                     </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Module Code</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{selectedContent.moduleCode || 'N/A'}</dd>
+                    
+                    <div className="border rounded-md p-4 bg-neutral-50">
+                      <h4 className="font-medium mb-3">Content Information</h4>
+                      <dl className="divide-y divide-gray-200">
+                        <div className="py-2 grid grid-cols-2 gap-3">
+                          <dt className="text-sm font-medium text-neutral-500">Module Code</dt>
+                          <dd className="text-sm text-neutral-900">{selectedContent.moduleCode || 'N/A'}</dd>
+                        </div>
+                        <div className="py-2 grid grid-cols-2 gap-3">
+                          <dt className="text-sm font-medium text-neutral-500">Content Type</dt>
+                          <dd className="text-sm text-neutral-900">{selectedContent.type.replace('_', ' ')}</dd>
+                        </div>
+                      </dl>
                     </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Content Type</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{selectedContent.type.replace('_', ' ')}</dd>
+                  </div>
+                  
+                  <div className="border rounded-md p-4 bg-neutral-50 mb-4">
+                    <h4 className="font-medium mb-3">Creation Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <dt className="text-sm font-medium text-neutral-500 mb-1">Created By</dt>
+                        <dd className="text-sm text-neutral-900">User ID: {selectedContent.createdByUserId}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-neutral-500 mb-1">Creation Date</dt>
+                        <dd className="text-sm text-neutral-900">{new Date(selectedContent.createdAt).toLocaleDateString()}</dd>
+                      </div>
                     </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Verification Status</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{selectedContent.verificationStatus.replace('_', ' ')}</dd>
-                    </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Created By</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">User ID: {selectedContent.createdByUserId}</dd>
-                    </div>
+                  </div>
                     <div className="py-2 grid grid-cols-3 gap-4">
                       <dt className="text-sm font-medium text-neutral-500">Created At</dt>
                       <dd className="text-sm text-neutral-900 col-span-2">{formatDate(selectedContent.createdAt)}</dd>
