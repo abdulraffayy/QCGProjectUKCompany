@@ -21,8 +21,51 @@ const characteristicIcons: Record<string, string> = {
   "Adaptability": "bubble_chart"
 };
 
+// Define the QAQF level structure for the dynamic view
+interface QAQFLevelDefinition {
+  id: string;
+  name: string;
+  levels: string;
+  description: string;
+  bgColor: string;
+  textColor: string;
+  characteristics: string[];
+}
+
+const defaultLevelDefinitions: QAQFLevelDefinition[] = [
+  {
+    id: "basic",
+    name: "Basic",
+    levels: "1-3",
+    description: "Knowledge, Understanding & Cognitive Skills",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-800",
+    characteristics: ["Clarity", "Completeness", "Accuracy"]
+  },
+  {
+    id: "intermediate",
+    name: "Intermediate",
+    levels: "4-6",
+    description: "Communication, Accountability & Digitalisation",
+    bgColor: "bg-purple-100",
+    textColor: "text-purple-800",
+    characteristics: ["Coherence", "Relevance", "Engagement"]
+  },
+  {
+    id: "advanced",
+    name: "Advanced",
+    levels: "7-9",
+    description: "Sustainability, Creativity & Innovation",
+    bgColor: "bg-violet-100",
+    textColor: "text-violet-800",
+    characteristics: ["Critical Thinking", "Accessibility", "Assessment Integration", "Adaptability"]
+  }
+];
+
 const QAQFFramework: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [levelDefinitions, setLevelDefinitions] = useState<QAQFLevelDefinition[]>(defaultLevelDefinitions);
+  const [editMode, setEditMode] = useState(false);
   
   const getCategoryColor = (level: number) => {
     if (level <= 3) return "bg-blue-500 text-white";
@@ -52,12 +95,23 @@ const QAQFFramework: React.FC = () => {
           <CardTitle className="text-lg font-bold">QAQF Framework Implementation</CardTitle>
           <CardDescription>Quality Assurance and Quality Framework for academic content</CardDescription>
         </div>
-        <Link href="/qaqf-framework">
-          <Button variant="outline" className="text-primary text-sm flex items-center">
-            <span className="material-icons text-sm mr-1">school</span>
-            Framework Details
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className={`${editMode ? 'bg-blue-100' : ''} text-sm flex items-center`}
+            onClick={() => setEditMode(!editMode)}
+          >
+            <span className="material-icons text-sm mr-1">{editMode ? 'done' : 'edit'}</span>
+            {editMode ? 'Done' : 'Edit Framework'}
           </Button>
-        </Link>
+          <Link href="/qaqf-framework">
+            <Button variant="outline" size="sm" className="text-primary text-sm flex items-center">
+              <span className="material-icons text-sm mr-1">school</span>
+              Details
+            </Button>
+          </Link>
+        </div>
       </CardHeader>
       <CardContent className="pt-6">
         <Tabs defaultValue="pyramid" className="w-full">
@@ -68,48 +122,140 @@ const QAQFFramework: React.FC = () => {
           </TabsList>
           
           <TabsContent value="pyramid">
-            {/* QAQF Pyramid Visualization - Pyramid with correct order: Basic at bottom, Advanced at top */}
+            {editMode && (
+              <div className="bg-blue-50 p-4 rounded-md mb-4">
+                <h3 className="text-sm font-semibold mb-2">Edit QAQF Framework Structure</h3>
+                <p className="text-xs text-neutral-600 mb-3">
+                  Modify the framework levels by updating the fields below. Changes will be reflected in the pyramid visualization.
+                </p>
+                <div className="space-y-4">
+                  {levelDefinitions.map((level, index) => (
+                    <div key={level.id} className="border rounded-md p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className={`text-sm font-medium ${level.textColor}`}>{level.name} (Levels {level.levels})</h4>
+                        <div className="flex space-x-2">
+                          {index > 0 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                const newOrder = [...levelDefinitions];
+                                [newOrder[index], newOrder[index-1]] = [newOrder[index-1], newOrder[index]];
+                                setLevelDefinitions(newOrder);
+                              }}
+                            >
+                              <span className="material-icons text-sm">arrow_upward</span>
+                            </Button>
+                          )}
+                          {index < levelDefinitions.length - 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                const newOrder = [...levelDefinitions];
+                                [newOrder[index], newOrder[index+1]] = [newOrder[index+1], newOrder[index]];
+                                setLevelDefinitions(newOrder);
+                              }}
+                            >
+                              <span className="material-icons text-sm">arrow_downward</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-neutral-500 mb-1 block">Level Range</label>
+                          <input 
+                            type="text" 
+                            className="w-full text-xs p-1.5 border rounded" 
+                            value={level.levels} 
+                            onChange={(e) => {
+                              const updated = [...levelDefinitions];
+                              updated[index] = { ...level, levels: e.target.value };
+                              setLevelDefinitions(updated);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 mb-1 block">Description</label>
+                          <input 
+                            type="text" 
+                            className="w-full text-xs p-1.5 border rounded" 
+                            value={level.description} 
+                            onChange={(e) => {
+                              const updated = [...levelDefinitions];
+                              updated[index] = { ...level, description: e.target.value };
+                              setLevelDefinitions(updated);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* QAQF Pyramid Visualization - Dynamic pyramid with correct order */}
             <div className="relative h-80 py-4 overflow-hidden">
-              {/* Bottom level: Basic (1-3) */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-blue-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-blue-600 cursor-pointer">
-                <div className="text-center">
-                  <span className="text-sm font-medium">Levels 1-3: Basic</span>
-                  <div className="text-xs mt-1 opacity-80">Knowledge, Understanding & Cognitive Skills</div>
-                  <div className="flex justify-center mt-1 space-x-1">
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L1</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L2</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L3</span>
+              {/* Render the pyramid levels dynamically based on levelDefinitions */}
+              {levelDefinitions.map((level, index) => {
+                // Calculate position and styling based on index - bottom level has index 0
+                const positions = [
+                  { 
+                    bottom: 0, left: 0, right: 0, 
+                    bgColor: "bg-blue-500", 
+                    hoverColor: "hover:bg-blue-600"
+                  },
+                  { 
+                    bottom: 18, left: 6, right: 6,
+                    bgColor: "bg-purple-500", 
+                    hoverColor: "hover:bg-purple-600"
+                  },
+                  { 
+                    bottom: 36, left: 12, right: 12,
+                    bgColor: "bg-violet-600", 
+                    hoverColor: "hover:bg-violet-700"
+                  }
+                ];
+                
+                // If more than 3 levels are defined, adjust positions
+                const pos = index < 3 ? positions[index] : positions[2];
+                
+                // Parse level numbers for indicator display
+                const levelNumbers = level.levels.split('-').map(l => parseInt(l))
+                  .filter(n => !isNaN(n));
+                
+                return (
+                  <div 
+                    key={level.id}
+                    className={`absolute ${pos.bgColor} bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all ${pos.hoverColor} cursor-pointer`}
+                    style={{
+                      bottom: `${pos.bottom}rem`,
+                      left: `${pos.left}rem`,
+                      right: `${pos.right}rem`,
+                      height: '4rem'
+                    }}
+                  >
+                    <div className="text-center">
+                      <span className="text-sm font-medium">Levels {level.levels}: {level.name}</span>
+                      <div className="text-xs mt-1 opacity-80">{level.description}</div>
+                      <div className="flex justify-center mt-1 space-x-1">
+                        {Array.from({ length: levelNumbers.length > 1 ? levelNumbers[1] - levelNumbers[0] + 1 : 1 }).map((_, i) => {
+                          const levelNum = levelNumbers.length > 1 ? levelNumbers[0] + i : levelNumbers[0];
+                          return (
+                            <span key={i} className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">
+                              L{levelNum}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              {/* Middle level: Intermediate (4-6) */}
-              <div className="absolute bottom-18 left-6 right-6 h-16 bg-purple-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-purple-600 cursor-pointer">
-                <div className="text-center">
-                  <span className="text-sm font-medium">Levels 4-6: Intermediate</span>
-                  <div className="text-xs mt-1 opacity-80">Communication, Accountability & Digitalisation</div>
-                  <div className="flex justify-center mt-1 space-x-1">
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L4</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L5</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L6</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Top level: Advanced (7-9) */}
-              <div className="absolute bottom-36 left-12 right-12 h-16 bg-violet-600 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-violet-700 cursor-pointer">
-                <div className="text-center">
-                  <span className="text-sm font-medium">Levels 7-9: Advanced</span>
-                  <div className="text-xs mt-1 opacity-80">Sustainability, Creativity & Innovative Skills</div>
-                  <div className="flex justify-center mt-1 space-x-1">
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L7</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L8</span>
-                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L9</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* No connecting lines */}
+                );
+              })}
             </div>
             
             <div className="mt-4">
