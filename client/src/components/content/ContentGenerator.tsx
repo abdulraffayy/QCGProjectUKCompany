@@ -1448,9 +1448,80 @@ const ContentGenerator: React.FC = () => {
             >
               Close Preview
             </Button>
-            <Button onClick={handleSaveContent}>
-              <span className="material-icons text-sm mr-1">save</span>
-              Save Content
+            <Button 
+              onClick={async () => {
+                if (!generatedContent) {
+                  toast({
+                    title: "No Content Available",
+                    description: "Please generate content before saving.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                try {
+                  setIsSaving(true);
+                  
+                  // Prepare content data for saving
+                  const contentData = {
+                    type: contentType,
+                    title: generatedContent.title || `${subject} - QAQF Level ${qaqfLevel}`,
+                    content: generatedContent.content || JSON.stringify(generatedContent),
+                    description: `${contentType} for ${subject} at QAQF Level ${qaqfLevel}`,
+                    qaqfLevel: parseInt(qaqfLevel),
+                    moduleCode: generatedContent.moduleCode || moduleCode || null,
+                    createdByUserId: 1, // Default user ID
+                    verificationStatus: "pending",
+                    verifiedByUserId: null,
+                    characteristics: selectedCharacteristics
+                  };
+                  
+                  // Send request to save content
+                  const response = await fetch('/api/content', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(contentData),
+                  });
+                  
+                  if (!response.ok) {
+                    throw new Error(`Failed to save content: ${response.status}`);
+                  }
+                  
+                  // Show success notification
+                  toast({
+                    title: "Content Saved Successfully",
+                    description: "Your content has been saved and can now be accessed from My Content."
+                  });
+                  
+                  // Close the preview dialog
+                  setShowPreview(false);
+                  
+                } catch (error) {
+                  console.error("Error saving content:", error);
+                  toast({
+                    title: "Save Failed",
+                    description: "There was a problem saving your content. Please try again.",
+                    variant: "destructive"
+                  });
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <span className="material-icons animate-spin text-sm mr-1">sync</span>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <span className="material-icons text-sm mr-1">save</span>
+                  Save Content
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
