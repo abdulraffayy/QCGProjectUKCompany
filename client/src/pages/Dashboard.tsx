@@ -11,26 +11,67 @@ import ContentGeneratorSummary from "@/components/dashboard/ContentGeneratorSumm
 import VerificationPanel from "@/components/verification/VerificationPanel";
 import { Link } from "wouter";
 
+// Define the stats interface for type safety
+interface DashboardStats {
+  contentCount: number;
+  verifiedContentCount: number;
+  pendingVerificationCount: number;
+  videoCount: number;
+}
+
+// Define content interface
+interface Content {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  qaqfLevel: number;
+  moduleCode: string | null;
+  createdByUserId: number;
+  verificationStatus: string;
+  verifiedByUserId: number | null;
+  content: string;
+  characteristics: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Define activity interface
+interface Activity {
+  id: number;
+  createdAt: Date;
+  details: unknown;
+  userId: number;
+  action: string;
+  entityType: string;
+  entityId: number;
+}
+
 const Dashboard: React.FC = () => {
   // Dashboard stats query
-  const { data: stats = { contentCount: 0, verifiedContentCount: 0, pendingVerificationCount: 0, videoCount: 0 }, 
-          isLoading: isLoadingStats } = useQuery({
-    queryKey: ['/api/dashboard/stats'],
+  const { data: stats = { 
+    contentCount: 0, 
+    verifiedContentCount: 0, 
+    pendingVerificationCount: 0, 
+    videoCount: 0 
+  } as DashboardStats, 
+    isLoading: isLoadingStats } = useQuery<DashboardStats>({
+      queryKey: ['/api/dashboard/stats'],
   });
 
   // Recent content query
-  const { data: contents = [], isLoading: isLoadingContents } = useQuery({
+  const { data: contents = [] as Content[], isLoading: isLoadingContents } = useQuery<Content[]>({
     queryKey: ['/api/content'],
   });
 
   // Activities query
-  const { data: activities = [], isLoading: isLoadingActivities } = useQuery({
+  const { data: activities = [] as Activity[], isLoading: isLoadingActivities } = useQuery<Activity[]>({
     queryKey: ['/api/activities'],
   });
 
   const verificationStatuses = [
-    { status: "Verified", color: "success", count: stats.verifiedContentCount || 0 },
-    { status: "Pending", color: "warning", count: stats.pendingVerificationCount || 0 },
+    { status: "Verified", color: "success", count: stats.verifiedContentCount },
+    { status: "Pending", color: "warning", count: stats.pendingVerificationCount },
     { status: "Rejected", color: "error", count: 26 },
     { status: "In Review", color: "info", count: 15 }
   ];
