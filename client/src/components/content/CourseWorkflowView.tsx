@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Content } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 
 interface CourseWorkflowViewProps {
   contentId?: number;
@@ -24,53 +24,41 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
   showWorkflowButtons = true
 }) => {
   const { toast } = useToast();
-  const [contents, setContents] = useState<Content[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>("content");
   const [selectedContentId, setSelectedContentId] = useState<number | undefined>(contentId);
 
-  // Fetch content based on props
-  useEffect(() => {
-    const fetchContent = async () => {
-      setIsLoading(true);
-      try {
-        let url = '/api/content';
-        
-        // If contentId is provided, fetch that specific content
-        if (contentId) {
-          url = `/api/content/${contentId}`;
-          const response = await apiRequest(url);
-          setContents([response]);
-          setSelectedContentId(contentId);
-        } 
-        // Otherwise fetch the latest content
-        else if (showLatest) {
-          const response = await apiRequest(url);
-          // Sort by most recent and limit
-          const sortedContents = [...response].sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          ).slice(0, limit);
-          setContents(sortedContents);
-          
-          // Set the first content as selected by default
-          if (sortedContents.length > 0 && !selectedContentId) {
-            setSelectedContentId(sortedContents[0].id);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching content:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load content. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Fetch specific content by ID if provided
+  const { data: specificContent, isLoading: isLoadingSpecific } = useQuery({
+    queryKey: contentId ? [`/api/content/${contentId}`] : undefined,
+    enabled: !!contentId
+  });
 
-    fetchContent();
-  }, [contentId, showLatest, limit, toast]);
+  // Fetch all content for latest display
+  const { data: allContents = [], isLoading: isLoadingAll } = useQuery({
+    queryKey: ['/api/content'],
+    enabled: showLatest && !contentId
+  });
+
+  // Determine what content to display
+  let contents: Content[] = [];
+  let isLoading = isLoadingSpecific || isLoadingAll;
+  
+  if (contentId && specificContent) {
+    // If we have a specific content ID and data, use that
+    contents = [specificContent];
+  } else if (showLatest && Array.isArray(allContents)) {
+    // Otherwise use latest content sorted by date
+    contents = [...allContents]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  }
+
+  // Set the selected content ID when content changes
+  useEffect(() => {
+    if (contents.length > 0 && !selectedContentId) {
+      setSelectedContentId(contents[0].id);
+    }
+  }, [contents, selectedContentId]);
 
   // Get the selected content
   const selectedContent = contents.find(content => content.id === selectedContentId);
