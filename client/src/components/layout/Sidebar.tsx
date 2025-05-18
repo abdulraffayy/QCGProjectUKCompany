@@ -82,6 +82,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           </a>
         </Link>
         
+        <Link href="/lesson-plan">
+          <a className={navItemClass("/lesson-plan")}>
+            <span className="material-icons mr-3 text-inherit">event_note</span>
+            Lesson Plan
+          </a>
+        </Link>
+        
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Quality Assurance
         </div>
