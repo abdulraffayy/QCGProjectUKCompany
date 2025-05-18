@@ -9,7 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QAQFLevels, QAQFCharacteristics, AnimationStyles, DurationOptions } from "@/lib/qaqf";
+import { QAQFLevels, QAQFCharacteristics } from "@/lib/qaqf";
+
+// Simple arrays for animation styles and duration options
+const AnimationStyles = [
+  "2D Animation",
+  "3D Animation", 
+  "Motion Graphics",
+  "Whiteboard Animation",
+  "Character Animation"
+];
+
+const DurationOptions = [
+  "2-3 minutes",
+  "5-7 minutes", 
+  "10-15 minutes",
+  "20+ minutes"
+];
+
 import { useToast } from "@/hooks/use-toast";
 
 const VideoGeneratorPage: React.FC = () => {
@@ -201,7 +218,7 @@ const VideoGeneratorPage: React.FC = () => {
                 onClick={handleGenerateVideo}
                 disabled={isGenerating}
                 className="w-full"
-                variant="accent"
+                variant="default"
               >
                 {isGenerating ? (
                   <>
@@ -237,7 +254,7 @@ const VideoGeneratorPage: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
                   <h4 className="text-white font-medium">{title || "AI in Educational Technologies"}</h4>
                   <p className="text-white text-opacity-80 text-sm">
-                    QAQF Level {qaqfLevel || "8"} - {qaqfLevel ? QAQFLevels.find(l => l.level.toString() === qaqfLevel)?.name : "Specialist"} Implementation
+                    {qaqfLevel ? QAQFLevels.find(l => l.id.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
                   </p>
                 </div>
               </div>
