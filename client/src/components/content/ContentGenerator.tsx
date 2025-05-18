@@ -27,7 +27,9 @@ const ContentGenerator: React.FC = () => {
   const [selectedCharacteristics, setSelectedCharacteristics] = useState<number[]>([]);
   const [moduleCode, setModuleCode] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
-  const [sourceMaterial, setSourceMaterial] = useState("");
+  const [primarySourceMaterial, setPrimarySourceMaterial] = useState("");
+  const [secondarySourceMaterial, setSecondarySourceMaterial] = useState("");
+  const [extractCharacteristics, setExtractCharacteristics] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showMarkingCriteria, setShowMarkingCriteria] = useState(false);
@@ -452,14 +454,45 @@ const ContentGenerator: React.FC = () => {
                 />
               </div>
               
-              <div>
-                <Label className="block text-sm font-medium text-neutral-700 mb-1">Source Material (Optional)</Label>
-                <Textarea 
-                  placeholder="Paste any source material to use as a reference for content generation" 
-                  value={sourceMaterial}
-                  onChange={(e) => setSourceMaterial(e.target.value)}
-                  className="min-h-[100px]"
-                />
+              <div className="space-y-4 border rounded-md p-4 bg-neutral-50">
+                <h3 className="text-sm font-semibold">Source Materials</h3>
+                <p className="text-xs text-neutral-500">Add up to two source materials to help define QAQF characteristics and generate more comprehensive content</p>
+                
+                <div>
+                  <Label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Primary Source Material
+                    <span className="text-xs text-neutral-500 ml-2">(Main reference for content generation)</span>
+                  </Label>
+                  <Textarea 
+                    placeholder="Paste your primary source material here" 
+                    value={primarySourceMaterial}
+                    onChange={(e) => setPrimarySourceMaterial(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Secondary Source Material
+                    <span className="text-xs text-neutral-500 ml-2">(Additional context and characteristics)</span>
+                  </Label>
+                  <Textarea 
+                    placeholder="Paste your secondary source material here" 
+                    value={secondarySourceMaterial}
+                    onChange={(e) => setSecondarySourceMaterial(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox id="extract-characteristics" />
+                  <label
+                    htmlFor="extract-characteristics"
+                    className="text-sm text-neutral-600 leading-none"
+                  >
+                    Automatically extract QAQF characteristics from source materials
+                  </label>
+                </div>
               </div>
             </div>
           </TabsContent>
