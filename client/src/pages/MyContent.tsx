@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import ContentList from "@/components/content/ContentList";
 import { Link } from "wouter";
 import { getColorByLevel } from "@/lib/qaqf";
+import { saveContentAsPDF } from "@/lib/pdfGenerator";
 import { Content } from "@shared/schema";
 
 const MyContentPage: React.FC = () => {
@@ -19,14 +21,15 @@ const MyContentPage: React.FC = () => {
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const { toast } = useToast();
 
   // Get content query
-  const { data: contents = [], isLoading: isLoadingContents } = useQuery({
+  const { data: contents = [], isLoading: isLoadingContents } = useQuery<Content[]>({
     queryKey: ['/api/content'],
   });
 
   // Get videos query
-  const { data: videos = [], isLoading: isLoadingVideos } = useQuery({
+  const { data: videos = [], isLoading: isLoadingVideos } = useQuery<any[]>({
     queryKey: ['/api/videos'],
   });
 
@@ -119,6 +122,23 @@ const MyContentPage: React.FC = () => {
   const handleViewContent = (content: Content) => {
     setSelectedContent(content);
     setIsViewDialogOpen(true);
+  };
+  
+  const handleExportToPDF = (content: Content) => {
+    try {
+      saveContentAsPDF(content);
+      toast({
+        title: "PDF Export Successful",
+        description: `${content.title} has been exported as a PDF file.`,
+      });
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      toast({
+        title: "PDF Export Failed",
+        description: "There was a problem exporting your content to PDF. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const contentCount = getFilteredContent().length;
