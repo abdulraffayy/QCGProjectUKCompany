@@ -288,7 +288,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 </div>
               </TabsContent>
               
-
               <TabsContent value="module" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
                   <div className="mb-4">
@@ -393,19 +392,17 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-neutral-500 mb-1">Creation Date</dt>
-                        <dd className="text-sm text-neutral-900">{new Date(selectedContent.createdAt).toLocaleDateString()}</dd>
+                        <dd className="text-sm text-neutral-900">{formatDate(selectedContent.createdAt)}</dd>
                       </div>
                     </div>
                   </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Created At</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{formatDate(selectedContent.createdAt)}</dd>
-                    </div>
-                    <div className="py-2 grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-neutral-500">Updated At</dt>
-                      <dd className="text-sm text-neutral-900 col-span-2">{formatDate(selectedContent.updatedAt)}</dd>
-                    </div>
-                  </dl>
+                  
+                  <div className="border rounded-md p-4 bg-neutral-50">
+                    <h4 className="font-medium mb-3">Last Update</h4>
+                    <p className="text-sm text-neutral-600">
+                      Last modified: {formatDate(selectedContent.updatedAt)}
+                    </p>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -421,9 +418,17 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
       {showWorkflowButtons && selectedContent && (
         <CardFooter className="bg-neutral-50 border-t flex flex-wrap gap-2">
           <div className="flex-grow"></div>
-          <Button className="flex items-center">
-            <span className="material-icons text-sm mr-1">edit</span>
-            Edit Course
+          <Button className="flex items-center" variant="outline" onClick={handleExport}>
+            <span className="material-icons text-sm mr-1">download</span>
+            Export
+          </Button>
+          <Button className="flex items-center" variant="outline" onClick={handleShare}>
+            <span className="material-icons text-sm mr-1">share</span>
+            Share
+          </Button>
+          <Button className="flex items-center" onClick={handleVerify}>
+            <span className="material-icons text-sm mr-1">verified</span>
+            Verify Content
           </Button>
         </CardFooter>
       )}
