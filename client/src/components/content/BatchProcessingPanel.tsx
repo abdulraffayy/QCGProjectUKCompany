@@ -1,279 +1,290 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { saveContentAsPDF } from "@/lib/pdfGenerator";
-import { Content } from '@shared/schema';
+import { Progress } from "@/components/ui/progress";
 
-interface BatchProcessingPanelProps {
-  contents: Content[];
-  onContentUpdate: () => void;
-}
-
-const BatchProcessingPanel: React.FC<BatchProcessingPanelProps> = ({ contents, onContentUpdate }) => {
+const BatchProcessingPanel: React.FC = () => {
   const { toast } = useToast();
-  const [selectedContents, setSelectedContents] = useState<number[]>([]);
-  const [bulkAction, setBulkAction] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvContent, setCsvContent] = useState<string>("");
+  const [batchItems, setBatchItems] = useState<any[]>([]);
+  const [jsonFormat, setJsonFormat] = useState(false);
   
-  const handleSelectAll = () => {
-    if (selectedContents.length === contents.length) {
-      setSelectedContents([]);
-    } else {
-      setSelectedContents(contents.map(content => content.id));
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setCsvFile(file);
+      
+      // Read file content
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setCsvContent(content);
+        
+        // Parse CSV or JSON content
+        try {
+          if (file.name.endsWith('.json')) {
+            const jsonData = JSON.parse(content);
+            setBatchItems(Array.isArray(jsonData) ? jsonData : [jsonData]);
+            setJsonFormat(true);
+          } else {
+            // Simple CSV parsing (could be improved with a CSV library)
+            const lines = content.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const items = lines.slice(1).filter(line => line.trim()).map(line => {
+              const values = line.split(',').map(v => v.trim());
+              const item: any = {};
+              
+              headers.forEach((header, index) => {
+                item[header] = values[index];
+              });
+              
+              return item;
+            });
+            
+            setBatchItems(items);
+            setJsonFormat(false);
+          }
+          
+          toast({
+            title: "File parsed successfully",
+            description: `Found ${batchItems.length} course items to process`,
+          });
+        } catch (error) {
+          toast({
+            title: "Error parsing file",
+            description: "Please check the file format and try again",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      reader.readAsText(file);
     }
   };
-  
-  const handleContentSelect = (contentId: number) => {
-    setSelectedContents(prev => 
-      prev.includes(contentId) 
-        ? prev.filter(id => id !== contentId) 
-        : [...prev, contentId]
-    );
-  };
-  
-  const executeAction = async () => {
-    if (selectedContents.length === 0) {
+
+  const startBatchProcessing = () => {
+    if (!batchItems.length) {
       toast({
-        title: "No Content Selected",
-        description: "Please select at least one content item to process.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!bulkAction) {
-      toast({
-        title: "No Action Selected",
-        description: "Please select an action to perform.",
-        variant: "destructive"
+        title: "No items to process",
+        description: "Please upload a valid CSV or JSON file first",
+        variant: "destructive",
       });
       return;
     }
     
     setIsProcessing(true);
+    setProgress(0);
     
-    try {
-      switch (bulkAction) {
-        case "export-pdf": {
-          // Export selected content as PDFs
-          const selectedItems = contents.filter(content => selectedContents.includes(content.id));
-          
-          toast({
-            title: "Exporting PDFs",
-            description: `Exporting ${selectedItems.length} content items as PDFs...`
-          });
-          
-          for (const content of selectedItems) {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing time
-            try {
-              saveContentAsPDF(content);
-            } catch (error) {
-              console.error("Error exporting PDF for content:", content.id, error);
-            }
-          }
-          
-          toast({
-            title: "Export Complete",
-            description: `Successfully exported ${selectedItems.length} content items as PDFs.`
-          });
-          break;
-        }
-        
-        case "verify-all": {
-          // Simulate verifying all selected content
-          const selectedItems = contents.filter(content => selectedContents.includes(content.id));
-          
-          toast({
-            title: "Verifying Content",
-            description: `Verifying ${selectedItems.length} content items...`
-          });
-          
-          // Here you would make API calls to verify each content item
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API calls
-          
-          toast({
-            title: "Verification Complete",
-            description: `Successfully verified ${selectedItems.length} content items.`
-          });
-          
-          onContentUpdate(); // Refresh content list
-          break;
-        }
-        
-        case "delete-all": {
-          // Simulate deleting all selected content
-          const selectedItems = contents.filter(content => selectedContents.includes(content.id));
-          
-          toast({
-            title: "Deleting Content",
-            description: `Deleting ${selectedItems.length} content items...`
-          });
-          
-          // Here you would make API calls to delete each content item
-          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API calls
-          
-          toast({
-            title: "Deletion Complete",
-            description: `Successfully deleted ${selectedItems.length} content items.`
-          });
-          
-          setSelectedContents([]);
-          onContentUpdate(); // Refresh content list
-          break;
-        }
-        
-        case "export-csv": {
-          // Export content metadata to CSV
-          const selectedItems = contents.filter(content => selectedContents.includes(content.id));
-          
-          const headers = "ID,Title,Type,QAQF Level,Verification Status,Created At\n";
-          const rows = selectedItems.map(content => 
-            `${content.id},"${content.title}",${content.type},${content.qaqfLevel},${content.verificationStatus},"${new Date(content.createdAt).toISOString()}"`
-          ).join('\n');
-          
-          const csvContent = `${headers}${rows}`;
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.setAttribute('href', url);
-          link.setAttribute('download', 'qaqf_content_export.csv');
-          link.click();
-          
-          toast({
-            title: "CSV Export Complete",
-            description: `Successfully exported ${selectedItems.length} content items to CSV.`
-          });
-          break;
-        }
-      }
-    } catch (error) {
-      console.error("Error processing batch action:", error);
-      toast({
-        title: "Processing Error",
-        description: "An error occurred while processing the batch action.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-      setBulkAction("");
-    }
-  };
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center">
-          <span className="material-icons mr-2 text-base">batch_prediction</span>
-          Batch Processing
-        </CardTitle>
-      </CardHeader>
+    // Simulate processing with a timer
+    let currentItem = 0;
+    const total = batchItems.length;
+    
+    const processInterval = setInterval(() => {
+      currentItem++;
+      const newProgress = Math.round((currentItem / total) * 100);
+      setProgress(newProgress);
       
-      <CardContent className="py-0">
-        <div className="overflow-auto max-h-[300px]">
-          <table className="w-full">
-            <thead className="bg-neutral-50 sticky top-0">
-              <tr>
-                <th className="text-left p-2">
-                  <div className="flex items-center">
-                    <Checkbox 
-                      checked={selectedContents.length === contents.length && contents.length > 0} 
-                      onCheckedChange={handleSelectAll}
-                      id="select-all"
-                    />
-                    <label htmlFor="select-all" className="ml-2 text-sm">Select All</label>
-                  </div>
-                </th>
-                <th className="text-left p-2">Content Title</th>
-                <th className="text-left p-2">Type</th>
-                <th className="text-left p-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contents.length === 0 ? (
+      if (currentItem >= total) {
+        clearInterval(processInterval);
+        setIsProcessing(false);
+        
+        toast({
+          title: "Batch processing complete",
+          description: `Successfully processed ${total} course items`,
+        });
+      }
+    }, 500);
+  };
+
+  const clearBatch = () => {
+    setCsvFile(null);
+    setCsvContent("");
+    setBatchItems([]);
+    setProgress(0);
+    setIsProcessing(false);
+  };
+
+  return (
+    <div className="batch-processing">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Batch Course Processing</h3>
+            <p className="text-sm text-neutral-600">Upload a CSV or JSON file with course specifications</p>
+          </div>
+          
+          <div className="flex space-x-2">
+            <a href="/templates/course_batch_template.csv" className="text-sm text-primary hover:underline flex items-center">
+              <span className="material-icons text-sm mr-1">file_download</span>
+              Download CSV Template
+            </a>
+            <a href="/templates/course_batch_template.json" className="text-sm text-primary hover:underline flex items-center">
+              <span className="material-icons text-sm mr-1">file_download</span>
+              Download JSON Template
+            </a>
+          </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 border rounded-lg p-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Upload Batch File</label>
+            <Input 
+              type="file" 
+              accept=".csv,.json"
+              onChange={handleFileUpload}
+              className="mb-4"
+              disabled={isProcessing}
+            />
+            
+            {csvFile && (
+              <div className="flex items-center justify-between bg-neutral-50 p-2 rounded-md">
+                <div className="flex items-center">
+                  <span className="material-icons text-neutral-500 mr-2">description</span>
+                  <span className="text-sm">{csvFile.name}</span>
+                </div>
+                <Badge>{jsonFormat ? 'JSON' : 'CSV'}</Badge>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1 border rounded-lg p-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Manual Entry (JSON Format)</label>
+            <Textarea 
+              placeholder='[{"title": "Introduction to QAQF", "subject": "Education", "qaqfLevel": 3, ...}]'
+              className="mb-4 h-24"
+              value={csvContent}
+              onChange={(e) => setCsvContent(e.target.value)}
+              disabled={isProcessing}
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                try {
+                  const items = JSON.parse(csvContent);
+                  setBatchItems(Array.isArray(items) ? items : [items]);
+                  setJsonFormat(true);
+                  toast({
+                    title: "JSON parsed successfully",
+                    description: `Found ${Array.isArray(items) ? items.length : 1} course items`,
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Invalid JSON format",
+                    description: "Please check your JSON syntax and try again",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={isProcessing || !csvContent}
+            >
+              Parse JSON
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {batchItems.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium">Batch Items ({batchItems.length})</h4>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-sm"
+              onClick={clearBatch}
+              disabled={isProcessing}
+            >
+              Clear All
+            </Button>
+          </div>
+          
+          <div className="border rounded-lg overflow-auto max-h-60">
+            <table className="min-w-full divide-y divide-neutral-200">
+              <thead className="bg-neutral-50">
                 <tr>
-                  <td colSpan={4} className="text-center p-4 text-neutral-500">
-                    No content available for batch processing
-                  </td>
-                </tr>
-              ) : (
-                contents.map(content => (
-                  <tr key={content.id} className="border-t">
-                    <td className="p-2">
-                      <Checkbox 
-                        checked={selectedContents.includes(content.id)} 
-                        onCheckedChange={() => handleContentSelect(content.id)}
-                        id={`content-${content.id}`}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <label htmlFor={`content-${content.id}`} className="cursor-pointer">
-                        {content.title}
-                      </label>
-                    </td>
-                    <td className="p-2">
-                      <Badge variant="outline">
-                        {content.type.replace('_', ' ')}
-                      </Badge>
-                    </td>
-                    <td className="p-2">
-                      <Badge 
-                        variant={
-                          content.verificationStatus === 'verified' ? 'default' :
-                          content.verificationStatus === 'rejected' ? 'destructive' : 'outline'
-                        }
+                  {batchItems.length > 0 && 
+                    Object.keys(batchItems[0]).slice(0, 5).map((key) => (
+                      <th 
+                        key={key}
+                        className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider"
                       >
-                        {content.verificationStatus}
+                        {key}
+                      </th>
+                    ))
+                  }
+                  <th className="px-4 py-2 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-neutral-200">
+                {batchItems.slice(0, 5).map((item, index) => (
+                  <tr key={index}>
+                    {Object.entries(item).slice(0, 5).map(([key, value]) => (
+                      <td key={key} className="px-4 py-2 text-sm text-neutral-600 truncate max-w-xs">
+                        {String(value)}
+                      </td>
+                    ))}
+                    <td className="px-4 py-2 text-right">
+                      <Badge variant={progress > (index / batchItems.length) * 100 ? "default" : "outline"}>
+                        {progress > (index / batchItems.length) * 100 ? "Processed" : "Pending"}
                       </Badge>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+                {batchItems.length > 5 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-2 text-center text-sm text-neutral-500">
+                      + {batchItems.length - 5} more items
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </CardContent>
+      )}
       
-      <CardFooter className="flex-col sm:flex-row gap-2 pt-4">
-        <div className="flex-1 w-full sm:max-w-[200px]">
-          <Select value={bulkAction} onValueChange={setBulkAction}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select action..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="export-pdf">Export as PDFs</SelectItem>
-              <SelectItem value="export-csv">Export as CSV</SelectItem>
-              <SelectItem value="verify-all">Verify Selected</SelectItem>
-              <SelectItem value="delete-all">Delete Selected</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="batch-controls">
+        {isProcessing && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Processing...</span>
+              <span className="text-sm text-neutral-600">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
         
-        <Button 
-          onClick={executeAction} 
-          disabled={isProcessing || selectedContents.length === 0 || !bulkAction}
-        >
-          {isProcessing ? (
-            <>
-              <span className="material-icons animate-spin mr-2 text-sm">refresh</span>
-              Processing...
-            </>
-          ) : (
-            <>
-              <span className="material-icons mr-2 text-sm">play_arrow</span>
-              Execute Action
-            </>
-          )}
-        </Button>
-        
-        <div className="text-sm text-neutral-500 pt-2 sm:pt-0">
-          {selectedContents.length} of {contents.length} items selected
+        <div className="flex space-x-3">
+          <Button 
+            onClick={startBatchProcessing}
+            className="flex items-center"
+            disabled={isProcessing || batchItems.length === 0}
+          >
+            <span className="material-icons mr-2 text-sm">play_arrow</span>
+            Start Batch Processing
+          </Button>
+          
+          <Button 
+            variant="outline"
+            onClick={clearBatch}
+            disabled={isProcessing}
+          >
+            Cancel
+          </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 
