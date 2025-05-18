@@ -365,35 +365,20 @@ const ContentGenerator: React.FC = () => {
         
         <div className="mb-4">
           <Label className="block text-sm font-medium text-neutral-700 mb-1">Content Type</Label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="w-full">
             <Button 
-              variant={contentType === "academic_paper" ? "default" : "outline"}
-              className="flex items-center justify-center px-4 py-2 rounded-lg text-sm"
-              onClick={() => setContentType("academic_paper")}
+              variant="default"
+              className="flex items-center justify-center px-4 py-2 rounded-lg text-sm w-full"
             >
               <span className="material-icons text-sm mr-2">description</span>
               Academic Course
-            </Button>
-            <Button 
-              variant={contentType === "video" ? "default" : "outline"}
-              className="flex items-center justify-center px-4 py-2 rounded-lg text-sm"
-              onClick={() => setContentType("video")}
-            >
-              <span className="material-icons text-sm mr-2">movie</span>
-              Video Content
             </Button>
           </div>
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-5">
+          <TabsList className="grid grid-cols-4">
             <TabsTrigger value="content">Content Details</TabsTrigger>
-            {contentType === "video" && (
-              <TabsTrigger value="video-options">
-                Video Options
-                <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Video</Badge>
-              </TabsTrigger>
-            )}
             <TabsTrigger value="assessment">
               Assessment Options
               <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Integrated</Badge>
