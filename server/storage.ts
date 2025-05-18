@@ -333,4 +333,263 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+  
+  async getQaqfLevel(id: number): Promise<QaqfLevel | undefined> {
+    const [level] = await db.select().from(qaqfLevels).where(eq(qaqfLevels.id, id));
+    return level || undefined;
+  }
+  
+  async getQaqfLevels(): Promise<QaqfLevel[]> {
+    return await db.select().from(qaqfLevels).orderBy(qaqfLevels.level);
+  }
+  
+  async createQaqfLevel(level: InsertQaqfLevel): Promise<QaqfLevel> {
+    const [newLevel] = await db
+      .insert(qaqfLevels)
+      .values(level)
+      .returning();
+    return newLevel;
+  }
+  
+  async getQaqfCharacteristic(id: number): Promise<QaqfCharacteristic | undefined> {
+    const [characteristic] = await db.select().from(qaqfCharacteristics).where(eq(qaqfCharacteristics.id, id));
+    return characteristic || undefined;
+  }
+  
+  async getQaqfCharacteristics(): Promise<QaqfCharacteristic[]> {
+    return await db.select().from(qaqfCharacteristics);
+  }
+  
+  async createQaqfCharacteristic(characteristic: InsertQaqfCharacteristic): Promise<QaqfCharacteristic> {
+    const [newCharacteristic] = await db
+      .insert(qaqfCharacteristics)
+      .values(characteristic)
+      .returning();
+    return newCharacteristic;
+  }
+  
+  async getContent(id: number): Promise<Content | undefined> {
+    const [content] = await db.select().from(contents).where(eq(contents.id, id));
+    return content || undefined;
+  }
+  
+  async getContents(): Promise<Content[]> {
+    return await db.select().from(contents).orderBy(desc(contents.createdAt));
+  }
+  
+  async getContentsByUser(userId: number): Promise<Content[]> {
+    return await db.select()
+      .from(contents)
+      .where(eq(contents.createdByUserId, userId))
+      .orderBy(desc(contents.createdAt));
+  }
+  
+  async getContentsByVerificationStatus(status: string): Promise<Content[]> {
+    return await db.select()
+      .from(contents)
+      .where(eq(contents.verificationStatus, status))
+      .orderBy(desc(contents.createdAt));
+  }
+  
+  async createContent(content: InsertContent): Promise<Content> {
+    const [newContent] = await db
+      .insert(contents)
+      .values({
+        ...content,
+        verificationStatus: content.verificationStatus || VerificationStatus.PENDING,
+        moduleCode: content.moduleCode || null,
+        verifiedByUserId: content.verifiedByUserId || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newContent;
+  }
+  
+  async updateContent(id: number, contentUpdate: Partial<Content>): Promise<Content | undefined> {
+    const [updatedContent] = await db
+      .update(contents)
+      .set({
+        ...contentUpdate,
+        updatedAt: new Date()
+      })
+      .where(eq(contents.id, id))
+      .returning();
+    return updatedContent || undefined;
+  }
+  
+  async getVideo(id: number): Promise<Video | undefined> {
+    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    return video || undefined;
+  }
+  
+  async getVideos(): Promise<Video[]> {
+    return await db.select().from(videos).orderBy(desc(videos.createdAt));
+  }
+  
+  async getVideosByUser(userId: number): Promise<Video[]> {
+    return await db.select()
+      .from(videos)
+      .where(eq(videos.createdByUserId, userId))
+      .orderBy(desc(videos.createdAt));
+  }
+  
+  async getVideosByVerificationStatus(status: string): Promise<Video[]> {
+    return await db.select()
+      .from(videos)
+      .where(eq(videos.verificationStatus, status))
+      .orderBy(desc(videos.createdAt));
+  }
+  
+  async createVideo(video: InsertVideo): Promise<Video> {
+    const [newVideo] = await db
+      .insert(videos)
+      .values({
+        ...video,
+        verificationStatus: video.verificationStatus || VerificationStatus.PENDING,
+        moduleCode: video.moduleCode || null,
+        url: video.url || null,
+        verifiedByUserId: video.verifiedByUserId || null,
+        thumbnailUrl: video.thumbnailUrl || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newVideo;
+  }
+  
+  async updateVideo(id: number, videoUpdate: Partial<Video>): Promise<Video | undefined> {
+    const [updatedVideo] = await db
+      .update(videos)
+      .set({
+        ...videoUpdate,
+        updatedAt: new Date()
+      })
+      .where(eq(videos.id, id))
+      .returning();
+    return updatedVideo || undefined;
+  }
+  
+  async getActivity(id: number): Promise<Activity | undefined> {
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity || undefined;
+  }
+  
+  async getActivities(): Promise<Activity[]> {
+    return await db.select().from(activities).orderBy(desc(activities.createdAt)).limit(50);
+  }
+  
+  async getActivitiesByUser(userId: number): Promise<Activity[]> {
+    return await db.select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.createdAt));
+  }
+  
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
+      .values({
+        ...activity,
+        details: activity.details || {},
+        createdAt: new Date()
+      })
+      .returning();
+    return newActivity;
+  }
+  
+  async getDashboardStats(): Promise<{
+    contentCount: number;
+    verifiedContentCount: number;
+    pendingVerificationCount: number;
+    videoCount: number;
+  }> {
+    const contentCount = await db.select({ count: count() }).from(contents);
+    const verifiedContentCount = await db.select({ count: count() })
+      .from(contents)
+      .where(eq(contents.verificationStatus, VerificationStatus.VERIFIED));
+    const pendingVerificationCount = await db.select({ count: count() })
+      .from(contents)
+      .where(eq(contents.verificationStatus, VerificationStatus.PENDING));
+    const videoCount = await db.select({ count: count() }).from(videos);
+    
+    return {
+      contentCount: contentCount[0]?.count || 0,
+      verifiedContentCount: verifiedContentCount[0]?.count || 0,
+      pendingVerificationCount: pendingVerificationCount[0]?.count || 0,
+      videoCount: videoCount[0]?.count || 0
+    };
+  }
+}
+
+// Initialize tables with QAQF data if needed
+async function initializeDatabase() {
+  const existingLevels = await db.select().from(qaqfLevels);
+  if (existingLevels.length === 0) {
+    // Initialize QAQF levels
+    await db.insert(qaqfLevels).values([
+      { level: 1, name: "Basic", description: "Basic implementation of nine characteristics within learning and education environment." },
+      { level: 2, name: "Rudimentary", description: "Rudimentary implementation of nine characteristics within learning and education environment." },
+      { level: 3, name: "Crucial", description: "Crucial implementation of nine characteristics within learning and education environment." },
+      { level: 4, name: "Key", description: "Key implementation of nine characteristics within learning and education environment." },
+      { level: 5, name: "Substantial", description: "Substantial implementation of nine characteristics within learning and education environment." },
+      { level: 6, name: "Critical", description: "Critical implementation of nine characteristics within learning and education environment." },
+      { level: 7, name: "Leading", description: "Leading implementation of nine characteristics within learning and education environment." },
+      { level: 8, name: "Specialist", description: "Specialist implementation of nine characteristics within learning and education environment." },
+      { level: 9, name: "21st Century Innovative", description: "21st century innovative implementation of nine characteristics within learning and education environment." }
+    ]);
+  }
+  
+  const existingCharacteristics = await db.select().from(qaqfCharacteristics);
+  if (existingCharacteristics.length === 0) {
+    // Initialize QAQF characteristics
+    await db.insert(qaqfCharacteristics).values([
+      { name: "Knowledge and understanding", description: "Descriptive, simple, facts, ideas, concepts, subject, discipline, defining understanding", category: "foundation", icon: "school" },
+      { name: "Applied knowledge", description: "Application of: theories, facts, ideas, concepts", category: "foundation", icon: "psychology" },
+      { name: "Cognitive skills", description: "Critical, analytical, research", category: "foundation", icon: "tips_and_updates" },
+      { name: "Communication", description: "English level, use of command of communication", category: "intermediate", icon: "chat" },
+      { name: "Autonomy, accountability & working with others", description: "Team work, group work, autonomy, independent thinking, accountability of thoughts", category: "intermediate", icon: "groups" },
+      { name: "Digitalisation & AI", description: "Application of digital knowledge, use of artificial intelligence, application of advanced IT, implementation of Robotic thinking", category: "intermediate", icon: "computer" },
+      { name: "Sustainability & ecological", description: "Show sustainability, resilient and ecological thinking", category: "advanced", icon: "eco" },
+      { name: "Reflective & creative", description: "Level of reflection, creativity and innovative input", category: "advanced", icon: "auto_awesome" },
+      { name: "Futuristic/Genius Skills", description: "Think outside the box, show different thinking on outcomes", category: "advanced", icon: "lightbulb" }
+    ]);
+  }
+}
+
+// Initialize storage with database
+export const storage = new DatabaseStorage();
+
+// Import database module and helpers
+import { db } from "./db";
+import { eq, desc, count } from "drizzle-orm";
+import { 
+  users, 
+  qaqfLevels, 
+  qaqfCharacteristics, 
+  contents, 
+  videos, 
+  activities,
+  VerificationStatus
+} from "@shared/schema";
+
+// Initialize the database with default data
+initializeDatabase().catch(console.error);

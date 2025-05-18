@@ -166,3 +166,7 @@ export type InsertVideo = z.infer<typeof insertVideoSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+// Note: We're not setting up relations explicitly for this version
+// to simplify the implementation and will rely on field references
+// The relations can be added later when needed
