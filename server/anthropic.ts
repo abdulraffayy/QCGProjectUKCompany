@@ -74,13 +74,28 @@ The content should strictly be based on verified academic sources and follow Bri
     });
 
     // Parse and return the generated content
-    const responseContent = response.content[0];
-    if (typeof responseContent !== 'object' || !('type' in responseContent) || responseContent.type !== 'text') {
-      console.error("Unexpected response format from Anthropic API");
+    // Handle API response safely
+    if (!response.content || !Array.isArray(response.content) || !response.content.length) {
+      console.error("Missing content in Anthropic response");
       return generateSampleContent(request);
     }
     
-    const responseText = responseContent.text;
+    const responseContent = response.content[0];
+    
+    // Check if response has the expected structure
+    if (!responseContent || typeof responseContent !== 'object' || !('type' in responseContent)) {
+      console.error("Invalid response format from Anthropic");
+      return generateSampleContent(request);
+    }
+    
+    // Extract text, handling different potential response formats
+    let responseText = "";
+    if (responseContent.type === "text" && typeof responseContent.text === "string") {
+      responseText = responseContent.text;
+    } else {
+      console.error("Could not find text content in Anthropic response");
+      return generateSampleContent(request);
+    }
     // Find JSON structure in the response
     const jsonStartIndex = responseText.indexOf('{');
     const jsonEndIndex = responseText.lastIndexOf('}');
@@ -152,13 +167,28 @@ Please structure the response as a JSON object with the following format:
     });
 
     // Parse and return the verification results
-    const responseContent = response.content[0];
-    if (typeof responseContent !== 'object' || !('type' in responseContent) || responseContent.type !== 'text') {
-      console.error("Unexpected response format from Anthropic verification API");
+    // Handle API response safely
+    if (!response.content || !Array.isArray(response.content) || !response.content.length) {
+      console.error("Missing content in Anthropic verification response");
       return generateSampleVerification(content, qaqfLevel);
     }
     
-    const responseText = responseContent.text;
+    const responseContent = response.content[0];
+    
+    // Check if response has the expected structure
+    if (!responseContent || typeof responseContent !== 'object' || !('type' in responseContent)) {
+      console.error("Invalid response format from Anthropic verification");
+      return generateSampleVerification(content, qaqfLevel);
+    }
+    
+    // Extract text, handling different potential response formats
+    let responseText = "";
+    if (responseContent.type === "text" && typeof responseContent.text === "string") {
+      responseText = responseContent.text;
+    } else {
+      console.error("Could not find text content in Anthropic verification response");
+      return generateSampleVerification(content, qaqfLevel);
+    }
     
     // Find JSON structure in the response
     const jsonStartIndex = responseText.indexOf('{');
