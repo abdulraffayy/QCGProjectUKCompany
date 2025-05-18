@@ -25,7 +25,7 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-4">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
@@ -33,6 +33,10 @@ const ContentGeneratorPage: React.FC = () => {
           <TabsTrigger value="recent" className="flex items-center">
             <span className="material-icons text-sm mr-2">auto_stories</span>
             Course Content
+          </TabsTrigger>
+          <TabsTrigger value="approval" className="flex items-center">
+            <span className="material-icons text-sm mr-2">check_circle</span>
+            Approval
           </TabsTrigger>
           <TabsTrigger value="module" className="flex items-center">
             <span className="material-icons text-sm mr-2">menu_book</span>
@@ -44,6 +48,174 @@ const ContentGeneratorPage: React.FC = () => {
           <ContentGenerator />
         </TabsContent>
 
+        <TabsContent value="approval">
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-3">Content Approval</h3>
+              <p className="text-neutral-600 mb-4">
+                Review and approve course content before it can be used for module generation. Approved content meets quality standards.
+              </p>
+              
+              <div className="border rounded-md p-4 bg-neutral-50 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-icons text-amber-500">info</span>
+                  <p className="text-sm font-medium">Content must be approved before it can be used in modules</p>
+                </div>
+                <p className="text-sm text-neutral-600">
+                  The approval process ensures that all content meets QAQF standards and is suitable for use in educational modules. 
+                  Select content from the list below to review and approve.
+                </p>
+              </div>
+              
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium">Content Pending Approval</h4>
+                <Badge className="bg-amber-100 text-amber-800">2 items pending</Badge>
+              </div>
+              
+              <div className="space-y-4 mb-8">
+                {[
+                  {
+                    id: 1,
+                    title: "Nursing in workplace (QAQF Level 5)",
+                    qaqfLevel: 5,
+                    type: "lecture",
+                    dateCreated: "May 15, 2025",
+                    status: "pending"
+                  },
+                  {
+                    id: 2,
+                    title: "Advanced Clinical Practice",
+                    qaqfLevel: 7,
+                    type: "tutorial",
+                    dateCreated: "May 16, 2025",
+                    status: "pending"
+                  }
+                ].map((content) => (
+                  <div key={content.id} className="border rounded-md p-4 bg-white hover:shadow-sm transition-all">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                      <div>
+                        <h5 className="font-medium">{content.title}</h5>
+                        <div className="flex items-center gap-2 text-sm text-neutral-500">
+                          <span>Type: {content.type}</span>
+                          <span>•</span>
+                          <span>Created: {content.dateCreated}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={content.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800" : 
+                                         content.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800" : 
+                                         "bg-violet-100 text-violet-800"}>
+                          QAQF {content.qaqfLevel}
+                        </Badge>
+                        <Badge className="bg-amber-100 text-amber-800">
+                          Pending
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm">
+                        <span className="material-icons text-sm mr-1">visibility</span>
+                        View
+                      </Button>
+                      <Button variant="outline" size="sm" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
+                        <span className="material-icons text-sm mr-1">check_circle</span>
+                        Approve
+                      </Button>
+                      <Button variant="outline" size="sm" className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800">
+                        <span className="material-icons text-sm mr-1">cancel</span>
+                        Reject
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <span className="material-icons text-sm mr-1">edit_note</span>
+                        Add Comments
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium">Approved Content</h4>
+                <Badge className="bg-green-100 text-green-800">3 items approved</Badge>
+              </div>
+              
+              <div className="space-y-4">
+                {[
+                  {
+                    id: 3,
+                    title: "Healthcare Ethics Introduction",
+                    qaqfLevel: 3,
+                    type: "lecture",
+                    dateCreated: "May 10, 2025",
+                    dateApproved: "May 12, 2025",
+                    status: "approved",
+                    approvedBy: "Dr. Sarah Johnson"
+                  },
+                  {
+                    id: 4,
+                    title: "Patient Assessment Techniques",
+                    qaqfLevel: 4,
+                    type: "practical",
+                    dateCreated: "May 8, 2025",
+                    dateApproved: "May 11, 2025",
+                    status: "approved",
+                    approvedBy: "Dr. Michael Chen"
+                  },
+                  {
+                    id: 5,
+                    title: "Research Methods in Nursing",
+                    qaqfLevel: 6,
+                    type: "seminar",
+                    dateCreated: "May 5, 2025",
+                    dateApproved: "May 7, 2025",
+                    status: "approved",
+                    approvedBy: "Prof. Emma Williams"
+                  }
+                ].map((content) => (
+                  <div key={content.id} className="border rounded-md p-4 bg-white hover:shadow-sm transition-all">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                      <div>
+                        <h5 className="font-medium">{content.title}</h5>
+                        <div className="flex items-center gap-2 text-sm text-neutral-500">
+                          <span>Type: {content.type}</span>
+                          <span>•</span>
+                          <span>Approved: {content.dateApproved}</span>
+                          <span>•</span>
+                          <span>By: {content.approvedBy}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={content.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800" : 
+                                          content.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800" : 
+                                          "bg-violet-100 text-violet-800"}>
+                          QAQF {content.qaqfLevel}
+                        </Badge>
+                        <Badge className="bg-green-100 text-green-800">
+                          Approved
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm">
+                        <span className="material-icons text-sm mr-1">visibility</span>
+                        View
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <span className="material-icons text-sm mr-1">menu_book</span>
+                        Create Module
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-amber-700 bg-amber-50 hover:bg-amber-100">
+                        <span className="material-icons text-sm mr-1">history</span>
+                        Revoke Approval
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
         <TabsContent value="module">
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
