@@ -15,6 +15,7 @@ import Assessment from "@/pages/Assessment";
 import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import LessonPlan from "@/pages/LessonPlan";
+import StudyMaterial from "@/pages/StudyMaterial";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/video-generator" component={VideoGenerator} />
         <Route path="/my-content" component={MyContent} />
         <Route path="/lesson-plan" component={LessonPlan} />
+        <Route path="/study-material" component={StudyMaterial} />
         <Route path="/verification" component={Verification} />
         <Route path="/moderation" component={Moderation} />
         <Route path="/assessment" component={Assessment} />

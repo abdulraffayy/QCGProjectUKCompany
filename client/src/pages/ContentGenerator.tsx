@@ -228,7 +228,10 @@ const ContentGeneratorPage: React.FC = () => {
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all relative">
+                  <div className="absolute top-2 right-2">
+                    <Badge className="bg-blue-100 text-blue-800">Auto-Generated</Badge>
+                  </div>
                   <div className="flex items-center mb-2">
                     <span className="material-icons text-primary mr-2">school</span>
                     <h4 className="font-medium">Lesson Plan Generator</h4>
@@ -250,10 +253,19 @@ const ContentGeneratorPage: React.FC = () => {
                       Assessment strategies and resources
                     </div>
                   </div>
-                  <Button size="sm" className="w-full">Generate Lesson Plan</Button>
+                  <div className="text-xs text-neutral-500 italic mb-2">
+                    Lesson plans are automatically created and sent to the Lesson Plan page
+                  </div>
+                  <Button size="sm" className="w-full" onClick={() => window.location.href = '/lesson-plan'}>
+                    <span className="material-icons text-sm mr-2">launch</span>
+                    View in Lesson Plan
+                  </Button>
                 </div>
                 
-                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all relative">
+                  <div className="absolute top-2 right-2">
+                    <Badge className="bg-blue-100 text-blue-800">Auto-Generated</Badge>
+                  </div>
                   <div className="flex items-center mb-2">
                     <span className="material-icons text-primary mr-2">menu_book</span>
                     <h4 className="font-medium">Study Materials Generator</h4>
@@ -275,7 +287,13 @@ const ContentGeneratorPage: React.FC = () => {
                       Visual aids and concept maps
                     </div>
                   </div>
-                  <Button size="sm" className="w-full">Create Study Materials</Button>
+                  <div className="text-xs text-neutral-500 italic mb-2">
+                    Study materials are automatically created and sent to the Study Material page
+                  </div>
+                  <Button size="sm" className="w-full" onClick={() => window.location.href = '/study-material'}>
+                    <span className="material-icons text-sm mr-2">launch</span>
+                    View in Study Material
+                  </Button>
                 </div>
               </div>
               
