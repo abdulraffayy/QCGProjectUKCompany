@@ -30,7 +30,7 @@ const ContentGenerator: React.FC = () => {
   const [showMarkingCriteria, setShowMarkingCriteria] = useState(false);
   
   // Assessment specific options
-  const [includeAssessment, setIncludeAssessment] = useState(false);
+  const [includeAssessment, setIncludeAssessment] = useState(true);
   const [assessmentType, setAssessmentType] = useState("multiple-choice");
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
   
@@ -47,8 +47,37 @@ const ContentGenerator: React.FC = () => {
   const [videoDescription, setVideoDescription] = useState("");
   
   // Marking criteria options
-  const [markingAssessmentResult, setMarkingAssessmentResult] = useState<any>(null);
-  const [markingRubricType, setMarkingRubricType] = useState("default");
+  const [markingAssessmentResult, setMarkingAssessmentResult] = useState<any>({
+    rubricType: "Academic Standards",
+    innovativeMethod: "Adaptive Assessment",
+    overallResults: {
+      percentage: 85,
+      grade: "Excellent"
+    },
+    criteria: [
+      {
+        title: "Knowledge Understanding",
+        rating: 4,
+        description: "Demonstrates strong understanding of QAQF principles"
+      },
+      {
+        title: "Critical Analysis",
+        rating: 5,
+        description: "Excellent critical evaluation of content and sources"
+      },
+      {
+        title: "Structure & Organization",
+        rating: 4,
+        description: "Well-structured with clear organization of ideas"
+      },
+      {
+        title: "Originality",
+        rating: 3,
+        description: "Shows satisfactory level of original thinking"
+      }
+    ]
+  });
+  const [markingRubricType, setMarkingRubricType] = useState("Academic Standards");
 
   const handleCharacteristicToggle = (characteristicId: number) => {
     setSelectedCharacteristics(prev => 
@@ -132,8 +161,9 @@ const ContentGenerator: React.FC = () => {
           moduleCode: moduleCode || "EDU-101",
           qaqfLevel: parseInt(qaqfLevel),
           characteristics: selectedCharacteristics,
-          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content would be generated here based on the QAQF framework requirements.`,
-          assessment: includeAssessment ? generateMockAssessment() : null
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content would be generated here based on the QAQF framework requirements.\n\n${markingAssessmentResult ? `### Marking Criteria\nThis content includes integrated marking criteria and assessment rubrics aligned with QAQF Level ${qaqfLevel}.\n\n**Overall Assessment Score**: ${markingAssessmentResult.overallResults?.percentage || 0}%\n**Method**: ${markingAssessmentResult.innovativeMethod || "Standard Assessment"}` : ''}`,
+          assessment: includeAssessment ? generateMockAssessment() : null,
+          markingCriteria: markingAssessmentResult
         };
       }
       
