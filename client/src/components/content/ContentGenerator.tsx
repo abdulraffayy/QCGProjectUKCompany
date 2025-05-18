@@ -455,6 +455,88 @@ const ContentGenerator: React.FC = () => {
             </div>
           </TabsContent>
           
+          {/* Marking Criteria Options */}
+          <TabsContent value="marking-criteria" className="space-y-4 pt-2">
+            <div className="space-y-4">
+              <div className="bg-secondary/5 p-4 rounded-md">
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <span className="material-icons text-base mr-2">assessment</span>
+                  Marking Criteria & Rubrics
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  Enhance your content with standardized marking criteria and innovative marketing assessment methodologies
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="p-4 border rounded-md bg-white">
+                    <h4 className="font-medium text-sm mb-2 flex items-center">
+                      <span className="material-icons text-sm mr-1">grading</span>
+                      Rubric-Based Assessment
+                    </h4>
+                    <p className="text-xs text-neutral-600 mb-3">
+                      Create detailed rubrics aligned with QAQF framework to assess content quality and standards compliance
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-primary font-medium">QAQF-Aligned</span>
+                      <Badge variant="outline" className="bg-primary/10 text-primary text-xs">Standard</Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md bg-white">
+                    <h4 className="font-medium text-sm mb-2 flex items-center">
+                      <span className="material-icons text-sm mr-1">campaign</span>
+                      Marketing Methodologies
+                    </h4>
+                    <p className="text-xs text-neutral-600 mb-3">
+                      Incorporate innovative marketing assessment tools to evaluate the effectiveness of content
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-accent font-medium">Market-Focused</span>
+                      <Badge variant="outline" className="bg-accent/10 text-accent text-xs">Innovative</Badge>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  className="w-full"
+                  onClick={() => setShowMarkingCriteria(true)}
+                >
+                  <span className="material-icons text-sm mr-1">add_circle</span>
+                  Add Marking Criteria to Content
+                </Button>
+              </div>
+              
+              {markingAssessmentResult && (
+                <div className="border rounded-md p-4">
+                  <h4 className="font-medium text-sm mb-3">Applied Assessment Criteria</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div className="p-2 bg-neutral-100 rounded-md">
+                      <p className="text-xs text-neutral-600">Rubric Type</p>
+                      <p className="text-sm font-medium truncate">{markingAssessmentResult.rubricType}</p>
+                    </div>
+                    <div className="p-2 bg-neutral-100 rounded-md">
+                      <p className="text-xs text-neutral-600">Methodology</p>
+                      <p className="text-sm font-medium">{markingAssessmentResult.innovativeMethod}</p>
+                    </div>
+                    <div className="p-2 bg-neutral-100 rounded-md">
+                      <p className="text-xs text-neutral-600">Overall Score</p>
+                      <p className="text-sm font-medium">{markingAssessmentResult.overallResults?.percentage}%</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowMarkingCriteria(true)}
+                  >
+                    <span className="material-icons text-xs mr-1">edit</span>
+                    Edit Assessment Criteria
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
           {/* Assessment Options */}
           <TabsContent value="assessment" className="space-y-4 pt-2">
             <div className="space-y-4">
@@ -617,6 +699,34 @@ const ContentGenerator: React.FC = () => {
           )}
         </Button>
       </div>
+      
+      {/* Marking Criteria Dialog */}
+      <Dialog open={showMarkingCriteria} onOpenChange={setShowMarkingCriteria}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Marking Criteria & Assessment</DialogTitle>
+            <DialogDescription>
+              Create standardized assessment rubrics and generate marketing strategies
+            </DialogDescription>
+          </DialogHeader>
+          
+          <MarkingCriteriaModule
+            contentType={contentType}
+            subject={subject}
+            qaqfLevel={parseInt(qaqfLevel) || 1}
+            onAssessmentComplete={(result) => {
+              setMarkingAssessmentResult(result);
+              setShowMarkingCriteria(false);
+              
+              toast({
+                title: "Assessment Created",
+                description: "Marking criteria and assessment have been applied to your content",
+              });
+            }}
+            onClose={() => setShowMarkingCriteria(false)}
+          />
+        </DialogContent>
+      </Dialog>
       
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
