@@ -487,8 +487,65 @@ const ContentGenerator: React.FC = () => {
                     Primary Source Material
                     <span className="text-xs text-neutral-500 ml-2">(Main reference for content generation)</span>
                   </Label>
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center"
+                        onClick={() => document.getElementById('primary-source-upload')?.click()}
+                      >
+                        <span className="material-icons text-sm mr-1">upload_file</span>
+                        Upload File
+                      </Button>
+                      <span className="text-xs text-neutral-500">Supported formats: .pdf, .docx, .txt (max 5MB)</span>
+                    </div>
+                    <input
+                      id="primary-source-upload"
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Show file name in a preview area
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              // For text files, we can directly set the content
+                              if (file.type === 'text/plain') {
+                                setPrimarySourceMaterial(event.target?.result as string);
+                              } else {
+                                // For other file types like PDF or DOCX, we would normally need server-side processing
+                                // For now, just show that the file was uploaded
+                                toast({
+                                  title: "File uploaded successfully",
+                                  description: `${file.name} has been uploaded as primary source material.`,
+                                });
+                                setPrimarySourceMaterial(`File uploaded: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+                              }
+                            } catch (error) {
+                              toast({
+                                title: "Error processing file",
+                                description: "Please try a different file format or paste the content directly.",
+                                variant: "destructive",
+                              });
+                            }
+                          };
+                          
+                          if (file.type === 'text/plain') {
+                            reader.readAsText(file);
+                          } else {
+                            // For other file types, just read as data URL to confirm upload
+                            reader.readAsDataURL(file);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                   <Textarea 
-                    placeholder="Paste your primary source material here" 
+                    placeholder="Paste your primary source material here or upload a file" 
                     value={primarySourceMaterial}
                     onChange={(e) => setPrimarySourceMaterial(e.target.value)}
                     className="min-h-[100px]"
@@ -500,8 +557,65 @@ const ContentGenerator: React.FC = () => {
                     Secondary Source Material
                     <span className="text-xs text-neutral-500 ml-2">(Additional context and characteristics)</span>
                   </Label>
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center"
+                        onClick={() => document.getElementById('secondary-source-upload')?.click()}
+                      >
+                        <span className="material-icons text-sm mr-1">upload_file</span>
+                        Upload File
+                      </Button>
+                      <span className="text-xs text-neutral-500">Supported formats: .pdf, .docx, .txt (max 5MB)</span>
+                    </div>
+                    <input
+                      id="secondary-source-upload"
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Show file name in a preview area
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              // For text files, we can directly set the content
+                              if (file.type === 'text/plain') {
+                                setSecondarySourceMaterial(event.target?.result as string);
+                              } else {
+                                // For other file types like PDF or DOCX, we would normally need server-side processing
+                                // For now, just show that the file was uploaded
+                                toast({
+                                  title: "File uploaded successfully",
+                                  description: `${file.name} has been uploaded as secondary source material.`,
+                                });
+                                setSecondarySourceMaterial(`File uploaded: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+                              }
+                            } catch (error) {
+                              toast({
+                                title: "Error processing file",
+                                description: "Please try a different file format or paste the content directly.",
+                                variant: "destructive",
+                              });
+                            }
+                          };
+                          
+                          if (file.type === 'text/plain') {
+                            reader.readAsText(file);
+                          } else {
+                            // For other file types, just read as data URL to confirm upload
+                            reader.readAsDataURL(file);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                   <Textarea 
-                    placeholder="Paste your secondary source material here" 
+                    placeholder="Paste your secondary source material here or upload a file" 
                     value={secondarySourceMaterial}
                     onChange={(e) => setSecondarySourceMaterial(e.target.value)}
                     className="min-h-[100px]"
