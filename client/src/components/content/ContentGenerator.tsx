@@ -78,6 +78,14 @@ const ContentGenerator: React.FC = () => {
     ]
   });
   const [markingRubricType, setMarkingRubricType] = useState("Academic Standards");
+  
+  // Verification and moderation options
+  const [verificationStatus, setVerificationStatus] = useState<string>("pending");
+  const [moderationStatus, setModerationStatus] = useState<string>("pending");
+  const [britishStandardsCompliance, setBritishStandardsCompliance] = useState<boolean>(false);
+  const [complianceIssues, setComplianceIssues] = useState<string[]>([]);
+  const [verifiedBy, setVerifiedBy] = useState<string>("");
+  const [verificationDate, setVerificationDate] = useState<string>("");
 
   const handleCharacteristicToggle = (characteristicId: number) => {
     setSelectedCharacteristics(prev => 
@@ -336,7 +344,7 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="content">Content Details</TabsTrigger>
             {contentType === "video" && (
               <TabsTrigger value="video-options">
@@ -350,7 +358,11 @@ const ContentGenerator: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="marking-criteria">
               Marking Criteria
-              <Badge variant="outline" className="ml-2 bg-accent/10 text-accent text-xs">New</Badge>
+              <Badge variant="outline" className="ml-2 bg-accent/10 text-accent text-xs">Required</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="verification">
+              Verify & Moderate
+              <Badge variant="outline" className="ml-2 bg-green-600/10 text-green-600 text-xs">New</Badge>
             </TabsTrigger>
           </TabsList>
           
@@ -586,6 +598,236 @@ const ContentGenerator: React.FC = () => {
                   </Button>
                 </div>
               )}
+            </div>
+          </TabsContent>
+          
+          {/* Verification and Moderation Tab */}
+          <TabsContent value="verification" className="space-y-4 pt-2">
+            <div className="space-y-4">
+              <div className="bg-white border rounded-md p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <span className="material-icons text-base mr-2">verified</span>
+                    Content Verification
+                  </h3>
+                  <Badge 
+                    variant={verificationStatus === "verified" ? "default" : 
+                           verificationStatus === "rejected" ? "destructive" : "outline"}
+                    className="px-2 py-1"
+                  >
+                    {verificationStatus === "verified" ? "Verified" : 
+                     verificationStatus === "rejected" ? "Rejected" : "Pending Verification"}
+                  </Badge>
+                </div>
+                
+                <p className="text-sm text-neutral-600 mb-4">
+                  Verify that content meets academic standards and adheres to QAQF requirements
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="verified-by" className="text-sm">Verified By</Label>
+                    <Input 
+                      id="verified-by" 
+                      value={verifiedBy}
+                      onChange={(e) => setVerifiedBy(e.target.value)}
+                      placeholder="Enter verifier name"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="verification-date" className="text-sm">Verification Date</Label>
+                    <Input 
+                      id="verification-date" 
+                      type="date"
+                      value={verificationDate}
+                      onChange={(e) => setVerificationDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between bg-neutral-50 p-3 rounded-md">
+                    <div className="flex items-center">
+                      <span className="material-icons text-sm mr-2">flag</span>
+                      <span className="text-sm font-medium">British Standards Compliance</span>
+                    </div>
+                    <Switch 
+                      checked={britishStandardsCompliance}
+                      onCheckedChange={setBritishStandardsCompliance}
+                    />
+                  </div>
+                  
+                  {britishStandardsCompliance && (
+                    <div className="p-3 border border-green-200 bg-green-50 rounded-md">
+                      <p className="text-sm text-green-700 flex items-center">
+                        <span className="material-icons text-green-600 mr-1 text-sm">check_circle</span>
+                        Content complies with British academic standards
+                      </p>
+                    </div>
+                  )}
+                  
+                  {!britishStandardsCompliance && (
+                    <div>
+                      <p className="text-sm text-neutral-700 mb-2">Compliance Issues:</p>
+                      <div className="space-y-2">
+                        {complianceIssues.length > 0 ? (
+                          complianceIssues.map((issue, index) => (
+                            <div key={index} className="flex items-start bg-red-50 p-2 rounded border border-red-100">
+                              <span className="material-icons text-red-500 text-sm mr-2 mt-0.5">error</span>
+                              <p className="text-sm text-red-700">{issue}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center p-3 bg-neutral-100 rounded-md">
+                            <span className="material-icons text-neutral-400 mr-2 text-sm">note_add</span>
+                            <p className="text-sm text-neutral-500">No issues have been added yet</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const newIssue = "Sample issue: Formatting does not conform to British standards";
+                            setComplianceIssues([...complianceIssues, newIssue]);
+                          }}
+                          className="w-full"
+                        >
+                          <span className="material-icons text-xs mr-1">add</span>
+                          Add Issue
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setVerificationStatus("verified");
+                      setBritishStandardsCompliance(true);
+                      setComplianceIssues([]);
+                      if (!verificationDate) {
+                        setVerificationDate(new Date().toISOString().split('T')[0]);
+                      }
+                      
+                      toast({
+                        title: "Content Verified",
+                        description: "Content has been verified and marked as compliant",
+                      });
+                    }}
+                    className="flex-1"
+                  >
+                    <span className="material-icons text-green-600 text-sm mr-1">check_circle</span>
+                    Verify
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setVerificationStatus("rejected");
+                      setBritishStandardsCompliance(false);
+                      if (!verificationDate) {
+                        setVerificationDate(new Date().toISOString().split('T')[0]);
+                      }
+                      
+                      toast({
+                        title: "Content Rejected",
+                        description: "Content has been rejected due to compliance issues",
+                        variant: "destructive"
+                      });
+                    }}
+                    className="flex-1"
+                  >
+                    <span className="material-icons text-red-600 text-sm mr-1">cancel</span>
+                    Reject
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="bg-white border rounded-md p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <span className="material-icons text-base mr-2">tune</span>
+                    Content Moderation
+                  </h3>
+                  <Badge 
+                    variant={moderationStatus === "approved" ? "default" : 
+                           moderationStatus === "rejected" ? "destructive" : "outline"}
+                    className="px-2 py-1"
+                  >
+                    {moderationStatus === "approved" ? "Approved" : 
+                     moderationStatus === "rejected" ? "Rejected" : "Pending Moderation"}
+                  </Badge>
+                </div>
+                
+                <p className="text-sm text-neutral-600 mb-4">
+                  Moderate content for appropriate language, accessibility, and pedagogical clarity
+                </p>
+                
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="p-3 border rounded-md bg-neutral-50">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-sm font-medium">Readability</h4>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">Good</Badge>
+                      </div>
+                      <p className="text-xs text-neutral-600">Content is readable and accessible for the target audience</p>
+                    </div>
+                    
+                    <div className="p-3 border rounded-md bg-neutral-50">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-sm font-medium">Language</h4>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">Appropriate</Badge>
+                      </div>
+                      <p className="text-xs text-neutral-600">Language is appropriate and adheres to academic standards</p>
+                    </div>
+                    
+                    <div className="p-3 border rounded-md bg-neutral-50">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-sm font-medium">Structure</h4>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">Well-Organized</Badge>
+                      </div>
+                      <p className="text-xs text-neutral-600">Content structure follows pedagogical best practices</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setModerationStatus("approved");
+                      toast({
+                        title: "Content Moderation Approved",
+                        description: "Content has passed moderation standards",
+                      });
+                    }}
+                    className="flex-1"
+                  >
+                    <span className="material-icons text-green-600 text-sm mr-1">check_circle</span>
+                    Approve
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setModerationStatus("rejected");
+                      toast({
+                        title: "Content Moderation Rejected",
+                        description: "Content did not meet moderation standards",
+                        variant: "destructive"
+                      });
+                    }}
+                    className="flex-1"
+                  >
+                    <span className="material-icons text-red-600 text-sm mr-1">cancel</span>
+                    Reject
+                  </Button>
+                </div>
+              </div>
             </div>
           </TabsContent>
           
