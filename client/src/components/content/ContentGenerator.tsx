@@ -14,12 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import MarkingCriteriaModule from "@/components/assessment/MarkingCriteriaModule";
+import { apiRequest } from "@/lib/queryClient";
 
 const ContentGenerator: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("content");
   const [contentType, setContentType] = useState("academic_paper");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [qaqfLevel, setQaqfLevel] = useState("");
   const [subject, setSubject] = useState("");
   const [selectedCharacteristics, setSelectedCharacteristics] = useState<number[]>([]);
