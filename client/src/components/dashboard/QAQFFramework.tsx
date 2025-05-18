@@ -68,9 +68,9 @@ const QAQFFramework: React.FC = () => {
           </TabsList>
           
           <TabsContent value="pyramid">
-            {/* QAQF Pyramid Visualization - Enhanced version with levels in ascending order */}
+            {/* QAQF Pyramid Visualization - Pyramid with correct order: Basic at bottom, Advanced at top */}
             <div className="relative h-80 py-4 overflow-hidden">
-              {/* Pyramid levels from bottom to top with hover effects - bottom is now level 1-3 */}
+              {/* Bottom level: Basic (1-3) */}
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-blue-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-blue-600 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 1-3: Basic</span>
@@ -83,6 +83,7 @@ const QAQFFramework: React.FC = () => {
                 </div>
               </div>
               
+              {/* Middle level: Intermediate (4-6) */}
               <div className="absolute bottom-18 left-6 right-6 h-16 bg-purple-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-purple-600 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 4-6: Intermediate</span>
@@ -95,6 +96,7 @@ const QAQFFramework: React.FC = () => {
                 </div>
               </div>
               
+              {/* Top level: Advanced (7-9) */}
               <div className="absolute bottom-36 left-12 right-12 h-16 bg-violet-600 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-violet-700 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 7-9: Advanced</span>
@@ -107,8 +109,14 @@ const QAQFFramework: React.FC = () => {
                 </div>
               </div>
               
-              {/* Center pyramid point */}
-              <div className="absolute bottom-54 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[40px] border-r-[40px] border-b-[40px] border-transparent border-b-violet-800"></div>
+              {/* Pyramid point */}
+              <div className="absolute bottom-54 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-r-[20px] border-b-[20px] border-transparent border-b-violet-800"></div>
+              
+              {/* Connecting lines for pyramid effect */}
+              <div className="absolute bottom-16 left-0 w-6 h-18 border-l-2 border-dashed border-white transform -rotate-12 opacity-50"></div>
+              <div className="absolute bottom-16 right-0 w-6 h-18 border-r-2 border-dashed border-white transform rotate-12 opacity-50"></div>
+              <div className="absolute bottom-34 left-12 w-6 h-18 border-l-2 border-dashed border-white transform -rotate-30 opacity-50"></div>
+              <div className="absolute bottom-34 right-12 w-6 h-18 border-r-2 border-dashed border-white transform rotate-30 opacity-50"></div>
             </div>
             
             <div className="mt-4">
