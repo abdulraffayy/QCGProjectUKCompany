@@ -137,15 +137,6 @@ const Dashboard: React.FC = () => {
         />
       </div>
       
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-neutral-800 mb-4">Recent Generated Courses</h2>
-        <CourseWorkflowView 
-          showLatest={true}
-          limit={2}
-          showWorkflowButtons={true}
-        />
-      </div>
-      
       <RecentContent 
         contents={contents}
         isLoading={isLoadingContents}

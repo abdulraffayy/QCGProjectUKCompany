@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import ContentGenerator from '@/components/content/ContentGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BatchProcessingPanel from '@/components/content/BatchProcessingPanel';
+import CourseWorkflowView from '@/components/content/CourseWorkflowView';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 const ContentGeneratorPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create");
@@ -17,7 +19,7 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-4">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
@@ -29,6 +31,10 @@ const ContentGeneratorPage: React.FC = () => {
           <TabsTrigger value="templates" className="flex items-center">
             <span className="material-icons text-sm mr-2">template_frame</span>
             Course Templates
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="flex items-center">
+            <span className="material-icons text-sm mr-2">history</span>
+            Recent Courses
           </TabsTrigger>
         </TabsList>
         
@@ -60,6 +66,22 @@ const ContentGeneratorPage: React.FC = () => {
                   <Button variant="outline" size="sm" className="w-full">Use Template</Button>
                 </div>
               ))}
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="recent">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Recently Generated Courses</h3>
+              <p className="text-neutral-600 mb-4">
+                View and manage your recently generated courses. Select a course to view its details, verify, or export.
+              </p>
+              <CourseWorkflowView 
+                showLatest={true}
+                limit={3}
+                showWorkflowButtons={true}
+              />
             </div>
           </div>
         </TabsContent>
