@@ -105,6 +105,73 @@ export function getColorByLevel(qaqfLevel: number): string {
   }
 }
 
+// QAQF Level Categories for visual representation and grouping
+export const QAQFLevelCategories = [
+  {
+    name: "Basic",
+    levels: [1, 2, 3],
+    color: "blue",
+    description: "Foundation level content focusing on clarity and accuracy"
+  },
+  {
+    name: "Intermediate",
+    levels: [4, 5, 6],
+    color: "purple",
+    description: "Enhanced content with coherence and engagement features"
+  },
+  {
+    name: "Advanced",
+    levels: [7, 8, 9],
+    color: "violet",
+    description: "Expert level content with all QAQF characteristics"
+  }
+];
+
+// Get characteristics by category (basic, intermediate, advanced)
+export function getCharacteristicsByCategory(category: string): typeof QAQFCharacteristics {
+  switch (category) {
+    case "basic":
+      return QAQFCharacteristics.filter(char => char.id <= 3);
+    case "intermediate":
+      return QAQFCharacteristics.filter(char => char.id > 3 && char.id <= 6);
+    case "advanced":
+      return QAQFCharacteristics.filter(char => char.id > 6);
+    default:
+      return QAQFCharacteristics;
+  }
+}
+
+// Animation styles for video generation
+export const AnimationStyles = [
+  { id: "simple", name: "Simple", description: "Basic transitions and animations" },
+  { id: "moderate", name: "Moderate", description: "More dynamic animations with some effects" },
+  { id: "advanced", name: "Advanced", description: "Complex animations with multiple effects" },
+  { id: "interactive", name: "Interactive", description: "Animations that respond to user interactions" },
+  { id: "custom", name: "Custom", description: "Custom animation style based on requirements" }
+];
+
+// Video duration options
+export const DurationOptions = [
+  { id: "short", name: "Short (2-3 minutes)", value: 180 },
+  { id: "medium", name: "Medium (5-7 minutes)", value: 360 },
+  { id: "long", name: "Long (10-15 minutes)", value: 900 },
+  { id: "extended", name: "Extended (20+ minutes)", value: 1200 },
+  { id: "custom", name: "Custom Duration", value: 0 }
+];
+
+// Content types for QAQF framework
+export const ContentTypes = [
+  { id: "lecture", name: "Lecture", description: "Traditional lecture content with clear structure" },
+  { id: "tutorial", name: "Tutorial", description: "Step-by-step guidance for practical learning" },
+  { id: "case_study", name: "Case Study", description: "Real-world examples for applied learning" },
+  { id: "assessment", name: "Assessment", description: "Evaluation materials for testing knowledge" },
+  { id: "reading_material", name: "Reading Material", description: "Text-based learning resources" },
+  { id: "interactive", name: "Interactive", description: "Content with user interaction elements" },
+  { id: "simulation", name: "Simulation", description: "Simulated environments for experiential learning" },
+  { id: "group_activity", name: "Group Activity", description: "Collaborative learning activities" },
+  { id: "research_project", name: "Research Project", description: "In-depth exploration of topics" }
+];
+
 // Check if the content meets British standards compliance
 export function checkBritishStandardsCompliance(content: string): { 
   compliant: boolean;
