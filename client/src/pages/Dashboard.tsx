@@ -13,23 +13,24 @@ import { Link } from "wouter";
 
 const Dashboard: React.FC = () => {
   // Dashboard stats query
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
+  const { data: stats = { contentCount: 0, verifiedContentCount: 0, pendingVerificationCount: 0, videoCount: 0 }, 
+          isLoading: isLoadingStats } = useQuery({
     queryKey: ['/api/dashboard/stats'],
   });
 
   // Recent content query
-  const { data: contents, isLoading: isLoadingContents } = useQuery({
+  const { data: contents = [], isLoading: isLoadingContents } = useQuery({
     queryKey: ['/api/content'],
   });
 
   // Activities query
-  const { data: activities, isLoading: isLoadingActivities } = useQuery({
+  const { data: activities = [], isLoading: isLoadingActivities } = useQuery({
     queryKey: ['/api/activities'],
   });
 
   const verificationStatuses = [
-    { status: "Verified", color: "success", count: stats?.verifiedContentCount || 0 },
-    { status: "Pending", color: "warning", count: stats?.pendingVerificationCount || 0 },
+    { status: "Verified", color: "success", count: stats.verifiedContentCount || 0 },
+    { status: "Pending", color: "warning", count: stats.pendingVerificationCount || 0 },
     { status: "Rejected", color: "error", count: 26 },
     { status: "In Review", color: "info", count: 15 }
   ];
@@ -57,7 +58,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Content Generated" 
-          value={stats?.contentCount || 0}
+          value={stats.contentCount}
           icon="description"
           iconBgColor="bg-primary-light bg-opacity-20"
           iconColor="text-primary"
@@ -66,7 +67,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="Verified Content" 
-          value={stats?.verifiedContentCount || 0}
+          value={stats.verifiedContentCount}
           icon="verified"
           iconBgColor="bg-success bg-opacity-20"
           iconColor="text-success"
@@ -75,7 +76,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="Pending Verification" 
-          value={stats?.pendingVerificationCount || 0}
+          value={stats.pendingVerificationCount}
           icon="pending_actions"
           iconBgColor="bg-warning bg-opacity-20"
           iconColor="text-warning"
@@ -84,7 +85,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="Videos Created" 
-          value={stats?.videoCount || 0}
+          value={stats.videoCount}
           icon="movie"
           iconBgColor="bg-accent bg-opacity-20"
           iconColor="text-accent"
@@ -104,7 +105,7 @@ const Dashboard: React.FC = () => {
       </div>
       
       <RecentContent 
-        contents={contents || []}
+        contents={contents}
         isLoading={isLoadingContents}
       />
       
@@ -113,7 +114,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <ContentGeneratorSummary />
         <VerificationPanel 
-          pendingContents={contents?.filter(c => c.verificationStatus === "pending") || []}
+          pendingContents={contents.filter((c: any) => c.verificationStatus === "pending")}
           isLoading={isLoadingContents}
         />
       </div>
@@ -121,7 +122,7 @@ const Dashboard: React.FC = () => {
       <VideoGeneratorSummary />
       
       <RecentActivity 
-        activities={activities || []}
+        activities={activities}
         isLoading={isLoadingActivities}
       />
     </>
