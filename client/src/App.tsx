@@ -12,6 +12,7 @@ import MyContent from "@/pages/MyContent";
 import Verification from "@/pages/Verification";
 import Moderation from "@/pages/Moderation";
 import Assessment from "@/pages/Assessment";
+import AssessmentInProgress from "@/pages/AssessmentInProgress";
 import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import LessonPlan from "@/pages/LessonPlan";
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/verification" component={Verification} />
         <Route path="/moderation" component={Moderation} />
         <Route path="/assessment" component={Assessment} />
+        <Route path="/assessment-in-progress" component={AssessmentInProgress} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />

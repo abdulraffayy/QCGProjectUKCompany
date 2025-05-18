@@ -120,6 +120,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             Assessment
           </a>
         </Link>
+        
+        <Link href="/assessment-in-progress">
+          <a className={navItemClass("/assessment-in-progress")}>
+            <span className="material-icons mr-3 text-inherit">assignment_late</span>
+            Assessment in Progress
+          </a>
+        </Link>
 
         <Link href="/analytics">
           <a className={navItemClass("/analytics")}>
