@@ -9,15 +9,15 @@ const ContentGeneratorSummary: React.FC = () => {
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
-            <CardTitle className="text-lg font-bold">Content Generator</CardTitle>
+            <CardTitle className="text-lg font-bold">Course Generator</CardTitle>
             <p className="text-neutral-600 text-sm mt-1">
-              Create educational content aligned with QAQF framework
+              Create educational course content aligned with QAQF framework
             </p>
           </div>
           <Link href="/content-generator">
             <Button className="mt-4 md:mt-0 flex items-center">
               <span className="material-icons mr-2">add</span>
-              Create Content
+              Create Course
             </Button>
           </Link>
         </div>

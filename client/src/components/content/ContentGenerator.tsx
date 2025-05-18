@@ -360,8 +360,8 @@ const ContentGenerator: React.FC = () => {
   return (
     <Card className="bg-white rounded-lg shadow overflow-hidden">
       <div className="p-6">
-        <CardTitle className="text-lg font-bold mb-4">Content Generator</CardTitle>
-        <p className="text-neutral-600 text-sm mb-6">Create academic content with integrated assessments aligned with QAQF framework</p>
+        <CardTitle className="text-lg font-bold mb-4">Course Generator</CardTitle>
+        <p className="text-neutral-600 text-sm mb-6">Create academic course content with integrated assessments aligned with QAQF framework</p>
         
         <div className="mb-4">
           <Label className="block text-sm font-medium text-neutral-700 mb-1">Content Type</Label>
@@ -372,7 +372,7 @@ const ContentGenerator: React.FC = () => {
               onClick={() => setContentType("academic_paper")}
             >
               <span className="material-icons text-sm mr-2">description</span>
-              Academic Content
+              Academic Course
             </Button>
             <Button 
               variant={contentType === "video" ? "default" : "outline"}

@@ -89,7 +89,7 @@ const Dashboard: React.FC = () => {
             <Link href="/content-generator">
               <Button className="flex items-center">
                 <span className="material-icons mr-2">add</span>
-                New Content
+                New Course
               </Button>
             </Link>
           </div>
