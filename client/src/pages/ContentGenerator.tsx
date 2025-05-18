@@ -561,7 +561,6 @@ const ContentGeneratorPage: React.FC = () => {
                     <TabsList className="mb-3">
                       <TabsTrigger value="content">Content</TabsTrigger>
                       <TabsTrigger value="learning">Learning Objectives</TabsTrigger>
-                      <TabsTrigger value="assessment">Assessment</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="content" className="bg-white p-3 border rounded-md">
@@ -602,83 +601,6 @@ const ContentGeneratorPage: React.FC = () => {
                       </ul>
                     </TabsContent>
                     
-                    <TabsContent value="assessment" className="bg-white p-3 border rounded-md">
-                      <h5 className="text-sm font-semibold mb-2">Assessment Structure</h5>
-                      <div className="text-sm text-neutral-700 space-y-3">
-                        {previewTemplate.qaqfLevel <= 3 ? (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">assignment</span>
-                              <div>
-                                <p className="font-medium">Multiple Choice Quiz (30%)</p>
-                                <p className="text-xs text-neutral-500">Basic comprehension check of core concepts</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">description</span>
-                              <div>
-                                <p className="font-medium">Short Answer Questions (40%)</p>
-                                <p className="text-xs text-neutral-500">Brief explanations of key principles</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">assignment_turned_in</span>
-                              <div>
-                                <p className="font-medium">Simple Application Exercise (30%)</p>
-                                <p className="text-xs text-neutral-500">Apply concepts to straightforward scenarios</p>
-                              </div>
-                            </div>
-                          </>
-                        ) : previewTemplate.qaqfLevel <= 6 ? (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">description</span>
-                              <div>
-                                <p className="font-medium">Case Study Analysis (40%)</p>
-                                <p className="text-xs text-neutral-500">In-depth analysis of real-world applications</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">assignment</span>
-                              <div>
-                                <p className="font-medium">Research Project (30%)</p>
-                                <p className="text-xs text-neutral-500">Independent investigation of selected topics</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">groups</span>
-                              <div>
-                                <p className="font-medium">Group Presentation (30%)</p>
-                                <p className="text-xs text-neutral-500">Collaborative analysis and presentation</p>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">psychology</span>
-                              <div>
-                                <p className="font-medium">Critical Analysis Paper (40%)</p>
-                                <p className="text-xs text-neutral-500">Advanced theoretical evaluation</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">science</span>
-                              <div>
-                                <p className="font-medium">Research Project (40%)</p>
-                                <p className="text-xs text-neutral-500">Original research with methodological rigor</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="material-icons text-primary text-sm">military_tech</span>
-                              <div>
-                                <p className="font-medium">Advanced Problem Solving (20%)</p>
-                                <p className="text-xs text-neutral-500">Complex scenarios requiring innovative solutions</p>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
                     </TabsContent>
                   </Tabs>
                 </div>
