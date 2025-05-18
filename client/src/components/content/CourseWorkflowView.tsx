@@ -399,10 +399,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
       
       {showWorkflowButtons && selectedContent && (
         <CardFooter className="bg-neutral-50 border-t flex flex-wrap gap-2">
-          <Button onClick={handleVerify} variant="outline" className="flex items-center">
-            <span className="material-icons text-sm mr-1">verified</span>
-            Verify
-          </Button>
           <Button onClick={handleExport} variant="outline" className="flex items-center">
             <span className="material-icons text-sm mr-1">download</span>
             Export
