@@ -339,28 +339,63 @@ const ContentGenerator: React.FC = () => {
                   Extract additional QAQF characteristics from source materials
                 </Label>
                 
-                {extractCharacteristics && (
-                  <div className="pl-6 space-y-3 mt-2">
-                    <div>
-                      <Label className="block text-sm font-medium text-neutral-700 mb-1">Primary Source Material (Optional)</Label>
-                      <Textarea
-                        placeholder="Enter primary source material"
-                        value={primarySourceMaterial}
-                        onChange={(e) => setPrimarySourceMaterial(e.target.value)}
-                        className="min-h-24"
-                      />
+                <div className="space-y-3 mt-2">
+                  <div className="border rounded-md p-4 bg-neutral-50">
+                    <h4 className="font-medium mb-3">Source Materials</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="block text-sm font-medium text-neutral-700">Primary Source Material</Label>
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <span className="material-icons text-xs mr-1">upload_file</span>
+                            Upload File
+                          </Button>
+                        </div>
+                        <Textarea
+                          placeholder="Enter or paste primary source material content"
+                          value={primarySourceMaterial}
+                          onChange={(e) => setPrimarySourceMaterial(e.target.value)}
+                          className="min-h-24"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="block text-sm font-medium text-neutral-700">Secondary Source Material</Label>
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <span className="material-icons text-xs mr-1">upload_file</span>
+                            Upload File
+                          </Button>
+                        </div>
+                        <Textarea
+                          placeholder="Enter or paste secondary source material content"
+                          value={secondarySourceMaterial}
+                          onChange={(e) => setSecondarySourceMaterial(e.target.value)}
+                          className="min-h-24"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label className="block text-sm font-medium text-neutral-700 mb-1">Secondary Source Material (Optional)</Label>
-                      <Textarea
-                        placeholder="Enter secondary source material"
-                        value={secondarySourceMaterial}
-                        onChange={(e) => setSecondarySourceMaterial(e.target.value)}
-                        className="min-h-24"
-                      />
+                    
+                    <div className="mb-2">
+                      <Label className="block text-sm font-medium text-neutral-700 mb-1">Upload Additional Resources</Label>
+                      <div className="border border-dashed rounded-md p-4 text-center">
+                        <span className="material-icons text-neutral-400 text-3xl">cloud_upload</span>
+                        <p className="text-sm text-neutral-600 mt-2">Drag and drop files here, or click to browse</p>
+                        <p className="text-xs text-neutral-500 mt-1">Supports PDF, DOC, TXT (up to 10MB)</p>
+                        <Button variant="outline" size="sm" className="mt-3">
+                          Browse Files
+                        </Button>
+                      </div>
                     </div>
+                    
+                    {extractCharacteristics && (
+                      <div className="mt-4 p-3 bg-green-50 rounded-md">
+                        <p className="text-sm text-green-800">
+                          <span className="font-medium">QAQF Extraction enabled:</span> The system will analyze your source materials to identify additional QAQF characteristics.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
               
               {/* Video specific options */}
