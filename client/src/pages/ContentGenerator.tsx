@@ -111,7 +111,9 @@ const ContentGeneratorPage: React.FC = () => {
                           title: `Template Selected: ${template.name}`,
                           description: `Starting with QAQF Level ${template.qaqfLevel} template`,
                         });
-                        setActiveTab("create");
+                        setTimeout(() => {
+                          setActiveTab("create");
+                        }, 500);
                       }}
                     >
                       <span className="material-icons text-sm mr-1">add</span>
