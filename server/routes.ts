@@ -264,12 +264,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the request data
       const requestData = contentGenerationSchema.parse(req.body);
       
-      // Generate content
-      const generatedContent = await generateContent(requestData);
-      
-      res.json(generatedContent);
+      try {
+        // Generate content - attempt to use the API
+        const generatedContent = await generateContent(requestData);
+        res.json(generatedContent);
+      } catch (apiError) {
+        // If API generation fails, use fallback content generation
+        console.log('Using fallback content generator due to API error');
+        const fallbackContent = generateSampleContent(requestData);
+        res.json(fallbackContent);
+      }
     } catch (error) {
-      console.error('Error generating content:', error);
+      console.error('Error with content generation request:', error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
@@ -278,8 +284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Use fallback content generation
-      console.log('Using fallback content generator due to error');
+      // For any other errors, still provide a fallback
+      console.log('Using fallback content generator due to request error');
       const fallbackContent = generateSampleContent(req.body);
       res.json(fallbackContent);
     }
