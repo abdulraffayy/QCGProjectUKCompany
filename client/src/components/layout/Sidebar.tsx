@@ -68,17 +68,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           </a>
         </Link>
         
+        <Link href="/my-content">
+          <a className={navItemClass("/my-content")}>
+            <span className="material-icons mr-3 text-inherit">history_edu</span>
+            Module Library
+          </a>
+        </Link>
+        
         <Link href="/video-generator">
           <a className={navItemClass("/video-generator")}>
             <span className="material-icons mr-3 text-inherit">video_library</span>
             Video Generator
-          </a>
-        </Link>
-        
-        <Link href="/my-content">
-          <a className={navItemClass("/my-content")}>
-            <span className="material-icons mr-3 text-inherit">history_edu</span>
-            My Content
           </a>
         </Link>
         
