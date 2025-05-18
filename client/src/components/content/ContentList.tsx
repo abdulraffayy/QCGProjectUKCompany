@@ -219,6 +219,15 @@ const ContentList: React.FC<ContentListProps> = ({
                         >
                           <span className="material-icons text-sm">visibility</span>
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-primary mr-2"
+                          onClick={() => handleExportToPDF(content)}
+                          title="Export to PDF"
+                        >
+                          <span className="material-icons text-sm">picture_as_pdf</span>
+                        </Button>
                         <Button variant="ghost" size="icon" className="text-neutral-500 mr-2">
                           <span className="material-icons text-sm">edit</span>
                         </Button>
@@ -230,12 +239,21 @@ const ContentList: React.FC<ContentListProps> = ({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewContent(content)}>
+                              <span className="material-icons text-sm mr-2">visibility</span>
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Share</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteContent(content.id)}>
-                              Delete
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExportToPDF(content)}>
+                            <span className="material-icons text-sm mr-2">picture_as_pdf</span>
+                            Export to PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <span className="material-icons text-sm mr-2">share</span>
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteContent(content.id)}>
+                            <span className="material-icons text-sm mr-2">delete</span>
+                            Delete
+                          </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
