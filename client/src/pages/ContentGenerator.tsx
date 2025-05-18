@@ -25,19 +25,165 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-2">
+        <TabsList className="grid grid-cols-3">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
           </TabsTrigger>
-          <TabsTrigger value="recent" className="flex items-center">
+          <TabsTrigger value="module" className="flex items-center">
             <span className="material-icons text-sm mr-2">menu_book</span>
+            Module
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="flex items-center">
+            <span className="material-icons text-sm mr-2">auto_stories</span>
             Course Content
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="create">
           <ContentGenerator />
+        </TabsContent>
+
+        <TabsContent value="module">
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-3">Module Generator</h3>
+              <p className="text-neutral-600 mb-4">
+                Generate lesson plans and content modules based on your courses. Select a template to blend with your course content.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                  <div className="flex items-center mb-2">
+                    <span className="material-icons text-primary mr-2">school</span>
+                    <h4 className="font-medium">Lesson Plan Generator</h4>
+                  </div>
+                  <p className="text-sm text-neutral-600 mb-3">
+                    Create a structured lesson plan with objectives, activities, and assessments aligned with your course content.
+                  </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Learning objectives based on QAQF level
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Structured timeline with activities
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Assessment strategies and resources
+                    </div>
+                  </div>
+                  <Button size="sm" className="w-full">Generate Lesson Plan</Button>
+                </div>
+                
+                <div className="border rounded-md p-4 hover:border-primary hover:shadow-sm cursor-pointer transition-all">
+                  <div className="flex items-center mb-2">
+                    <span className="material-icons text-primary mr-2">menu_book</span>
+                    <h4 className="font-medium">Study Materials Generator</h4>
+                  </div>
+                  <p className="text-sm text-neutral-600 mb-3">
+                    Generate supplementary study materials based on course content including handouts, reading guides, and activities.
+                  </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Guided reading materials with annotations
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Practice activities with solutions
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-700">
+                      <span className="material-icons text-green-600 text-sm mr-2">check_circle</span>
+                      Visual aids and concept maps
+                    </div>
+                  </div>
+                  <Button size="sm" className="w-full">Create Study Materials</Button>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold mb-3 mt-8">Template Modules</h3>
+              <p className="text-neutral-600 mb-4">
+                Apply specialized templates to create additional modules for your courses.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  {
+                    name: "Assessment Module",
+                    icon: "quiz",
+                    description: "Comprehensive assessment pack with various question types",
+                    level: 4
+                  },
+                  {
+                    name: "Interactive Activities",
+                    icon: "extension",
+                    description: "Engaging activities for hands-on application of concepts",
+                    level: 5
+                  },
+                  {
+                    name: "Discussion Guide",
+                    icon: "forum",
+                    description: "Thought-provoking discussion topics with facilitation guides",
+                    level: 6
+                  },
+                  {
+                    name: "Research Project",
+                    icon: "lightbulb",
+                    description: "Structured research project with methodology guide",
+                    level: 7
+                  },
+                  {
+                    name: "Case Studies",
+                    icon: "psychology",
+                    description: "Detailed case studies with analysis frameworks",
+                    level: 5
+                  },
+                  {
+                    name: "Revision Materials",
+                    icon: "history_edu",
+                    description: "Comprehensive revision materials and practice tests",
+                    level: 3
+                  }
+                ].map((template, index) => (
+                  <div key={index} className="border rounded-md p-4 hover:border-primary hover:bg-primary/5 cursor-pointer transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <span className="material-icons text-primary mr-2">{template.icon}</span>
+                        <h4 className="font-medium text-sm">{template.name}</h4>
+                      </div>
+                      <Badge className={template.level <= 3 ? "bg-blue-100 text-blue-800" : 
+                                        template.level <= 6 ? "bg-purple-100 text-purple-800" : 
+                                        "bg-violet-100 text-violet-800"}>
+                        QAQF {template.level}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-neutral-600 mb-3">
+                      {template.description}
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full text-xs">
+                      Generate Module
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-3">Recently Created Modules</h3>
+              <p className="text-neutral-600 mb-4">
+                View and manage your recently created modules.
+              </p>
+              
+              <div className="text-center py-10 border rounded-md bg-neutral-50">
+                <span className="material-icons text-4xl text-neutral-400 mb-2">folder_open</span>
+                <h4 className="text-lg font-medium text-neutral-600 mb-1">No modules created yet</h4>
+                <p className="text-sm text-neutral-500 mb-4">Generate your first module using the templates above</p>
+              </div>
+            </div>
+          </div>
         </TabsContent>
         
         <TabsContent value="recent">
