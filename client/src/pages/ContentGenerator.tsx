@@ -133,7 +133,7 @@ const ContentGeneratorPage: React.FC = () => {
                         <span className="material-icons text-amber-600 text-sm mt-0.5">priority_high</span>
                         <p className="text-sm text-amber-800">
                           <strong>Important:</strong> Modules must be approved before they can be sent to Content Approval. 
-                          Use the "Approve Module" button first, then "Send to Content Approval" to make the module available for final review.
+                          Use the "Approve Module" button first, then "Send to Content Approval" to submit the module for final review.
                         </p>
                       </div>
                     </div>
@@ -185,75 +185,13 @@ const ContentGeneratorPage: React.FC = () => {
                                 <span className="material-icons text-sm mr-1">send</span>
                                 Send to Content Approval
                               </Button>
-                              <Button variant="outline" size="sm" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
-                                <span className="material-icons text-sm mr-1">gavel</span>
-                                British Standards Check
-                              </Button>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium mb-3">QAQF Approval Report</h4>
-                        <div className="border rounded-md p-4 bg-neutral-50">
-                          <p className="text-neutral-500 text-sm italic mb-4">Select a module and click "Approve Module" to generate a QAQF approval report.</p>
-                          
-                          <div className="space-y-4 hidden">
-                            <div className="flex justify-between items-center">
-                              <h5 className="font-medium">Approval Summary</h5>
-                              <Badge className="bg-green-100 text-green-800">PASS</Badge>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-green-600 text-sm">check_circle</span>
-                                <p className="text-sm">Module aligns with QAQF Level 2 expectations</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-green-600 text-sm">check_circle</span>
-                                <p className="text-sm">All required characteristics present</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-amber-600 text-sm">info</span>
-                                <p className="text-sm">Consider adding examples to enhance practical application</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium mb-3">British Standards Check</h4>
-                        <div className="border rounded-md p-4 bg-neutral-50">
-                          <p className="text-neutral-500 text-sm italic mb-4">Select a course and click "British Standards Check" to verify compliance with UK educational standards.</p>
-                          
-                          <div className="space-y-4 hidden">
-                            <div className="flex justify-between items-center">
-                              <h5 className="font-medium">British Standards Compliance</h5>
-                              <Badge className="bg-green-100 text-green-800">COMPLIANT</Badge>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-green-600 text-sm">check_circle</span>
-                                <p className="text-sm">Terminology follows British educational conventions</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-green-600 text-sm">check_circle</span>
-                                <p className="text-sm">Content matches UK curriculum standards</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="material-icons text-amber-600 text-sm">info</span>
-                                <p className="text-sm">Consider updating references to include more UK-based sources</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
                 </TabsContent>
               </Tabs>
