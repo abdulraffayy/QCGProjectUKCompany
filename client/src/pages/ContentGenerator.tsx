@@ -25,14 +25,10 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-2">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center">
-            <span className="material-icons text-sm mr-2">template_frame</span>
-            Course Templates
           </TabsTrigger>
           <TabsTrigger value="recent" className="flex items-center">
             <span className="material-icons text-sm mr-2">menu_book</span>
@@ -41,11 +37,7 @@ const ContentGeneratorPage: React.FC = () => {
         </TabsList>
         
         <TabsContent value="create">
-          <ContentGenerator />
-        </TabsContent>
-        
-        <TabsContent value="templates">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="mb-6 bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Course Templates</h3>
             <p className="text-neutral-600 mb-6">Start with pre-defined templates to create courses more efficiently</p>
             
@@ -122,9 +114,6 @@ const ContentGeneratorPage: React.FC = () => {
                           title: `Template Selected: ${template.name}`,
                           description: `Starting with QAQF Level ${template.qaqfLevel} template`,
                         });
-                        setTimeout(() => {
-                          setActiveTab("create");
-                        }, 500);
                       }}
                     >
                       <span className="material-icons text-sm mr-1">add</span>
@@ -135,6 +124,8 @@ const ContentGeneratorPage: React.FC = () => {
               ))}
             </div>
           </div>
+          
+          <ContentGenerator />
         </TabsContent>
         
         <TabsContent value="recent">
