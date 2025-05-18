@@ -68,13 +68,18 @@ const QAQFFramework: React.FC = () => {
           </TabsList>
           
           <TabsContent value="pyramid">
-            {/* QAQF Pyramid Visualization - Enhanced version */}
+            {/* QAQF Pyramid Visualization - Enhanced version with levels in ascending order */}
             <div className="relative h-80 py-4 overflow-hidden">
-              {/* Pyramid levels from bottom to top with hover effects */}
+              {/* Pyramid levels from bottom to top with hover effects - bottom is now level 1-3 */}
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-blue-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-blue-600 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 1-3: Basic</span>
                   <div className="text-xs mt-1 opacity-80">Knowledge, Understanding & Cognitive Skills</div>
+                  <div className="flex justify-center mt-1 space-x-1">
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L1</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L2</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L3</span>
+                  </div>
                 </div>
               </div>
               
@@ -82,6 +87,11 @@ const QAQFFramework: React.FC = () => {
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 4-6: Intermediate</span>
                   <div className="text-xs mt-1 opacity-80">Communication, Accountability & Digitalisation</div>
+                  <div className="flex justify-center mt-1 space-x-1">
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L4</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L5</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L6</span>
+                  </div>
                 </div>
               </div>
               
@@ -89,6 +99,11 @@ const QAQFFramework: React.FC = () => {
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 7-9: Advanced</span>
                   <div className="text-xs mt-1 opacity-80">Sustainability, Creativity & Innovative Skills</div>
+                  <div className="flex justify-center mt-1 space-x-1">
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L7</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L8</span>
+                    <span className="px-1.5 py-0.5 bg-white bg-opacity-30 rounded text-xs">L9</span>
+                  </div>
                 </div>
               </div>
               
@@ -120,11 +135,36 @@ const QAQFFramework: React.FC = () => {
           
           <TabsContent value="levels">
             <div className="space-y-4">
+              {/* Category headings */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-blue-600">Basic (Levels 1-3)</h3>
+                  <p className="text-xs text-neutral-600">Foundation knowledge and skills</p>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-purple-600">Intermediate (Levels 4-6)</h3>
+                  <p className="text-xs text-neutral-600">Enhanced application and understanding</p>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-violet-600">Advanced (Levels 7-9)</h3>
+                  <p className="text-xs text-neutral-600">Expert implementation and innovation</p>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {QAQFLevels.map((level) => (
-                  <div key={level.id} className="border rounded-md overflow-hidden">
+                {/* Sort levels by ID to ensure ascending order */}
+                {QAQFLevels.sort((a, b) => a.id - b.id).map((level) => (
+                  <div 
+                    key={level.id} 
+                    className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all"
+                  >
                     <div className={`${getCategoryColor(level.id)} p-2 text-center`}>
-                      <h3 className="text-sm font-medium">{level.name}</h3>
+                      <h3 className="text-sm font-medium flex items-center justify-center">
+                        <span className="bg-white text-sm text-slate-800 w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 font-bold">
+                          {level.id}
+                        </span>
+                        {level.name}
+                      </h3>
                       <Badge variant="outline" className="mt-1 bg-white/20 text-white text-xs">
                         {getCategoryName(level.id)}
                       </Badge>
@@ -137,7 +177,11 @@ const QAQFFramework: React.FC = () => {
                             {char.name}
                           </span>
                         ))}
-                        {level.id > 3 && <span className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">+{getCharacteristicsForLevel(level.id).length - 3} more</span>}
+                        {level.id > 3 && (
+                          <span className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">
+                            +{getCharacteristicsForLevel(level.id).length - 3} more
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
