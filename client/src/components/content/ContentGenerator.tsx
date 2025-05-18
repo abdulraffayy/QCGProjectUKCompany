@@ -125,6 +125,16 @@ const ContentGenerator: React.FC = () => {
       return;
     }
     
+    // Check for at least one source material if extract characteristics is enabled
+    if (extractCharacteristics && !primarySourceMaterial && !secondarySourceMaterial) {
+      toast({
+        title: "Source Material Required",
+        description: "Please provide at least one source material to extract QAQF characteristics.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // For academic content, require marking criteria to enforce integration
     if (contentType !== "video" && !markingAssessmentResult) {
       toast({
@@ -169,7 +179,14 @@ const ContentGenerator: React.FC = () => {
           title: `${subject} (QAQF Level ${qaqfLevel})`,
           moduleCode: moduleCode || "EDU-101",
           qaqfLevel: parseInt(qaqfLevel),
-          characteristics: selectedCharacteristics,
+          characteristics: extractCharacteristics && (primarySourceMaterial || secondarySourceMaterial)
+            ? [...selectedCharacteristics, 1, 2, 3] // Simulate extracting additional characteristics
+            : selectedCharacteristics,
+          sourceMaterials: {
+            primary: primarySourceMaterial || null,
+            secondary: secondarySourceMaterial || null,
+            extracted: extractCharacteristics
+          },
           video: generateMockVideo(),
           assessment: includeAssessment ? generateMockAssessment() : null
         };
@@ -181,8 +198,15 @@ const ContentGenerator: React.FC = () => {
           title: `${subject} (QAQF Level ${qaqfLevel})`,
           moduleCode: moduleCode || "EDU-101",
           qaqfLevel: parseInt(qaqfLevel),
-          characteristics: selectedCharacteristics,
-          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content would be generated here based on the QAQF framework requirements.\n\n${markingAssessmentResult ? `### Marking Criteria\nThis content includes integrated marking criteria and assessment rubrics aligned with QAQF Level ${qaqfLevel}.\n\n**Overall Assessment Score**: ${markingAssessmentResult.overallResults?.percentage || 0}%\n**Method**: ${markingAssessmentResult.innovativeMethod || "Standard Assessment"}` : ''}`,
+          characteristics: extractCharacteristics && (primarySourceMaterial || secondarySourceMaterial)
+            ? [...selectedCharacteristics, 1, 2, 3] // Simulate extracting additional characteristics
+            : selectedCharacteristics,
+          sourceMaterials: {
+            primary: primarySourceMaterial || null,
+            secondary: secondarySourceMaterial || null,
+            extracted: extractCharacteristics
+          },
+          content: `# ${subject}\n\n## Module: ${moduleCode || 'EDU-101'}\n\nThis content demonstrates QAQF Level ${qaqfLevel} implementation with selected characteristics.\n\n${additionalInstructions ? `### Notes\n${additionalInstructions}\n\n` : ''}### Main Content\nAcademic content generated based on the QAQF framework requirements and source materials.\n\n${primarySourceMaterial ? `### Source Material Analysis\nContent incorporates insights from primary source material.\n\n` : ''}${secondarySourceMaterial ? `### Supplementary Analysis\nContent enhanced with context from secondary source material.\n\n` : ''}${markingAssessmentResult ? `### Marking Criteria\nThis content includes integrated marking criteria and assessment rubrics aligned with QAQF Level ${qaqfLevel}.\n\n**Overall Assessment Score**: ${markingAssessmentResult.overallResults?.percentage || 0}%\n**Method**: ${markingAssessmentResult.innovativeMethod || "Standard Assessment"}` : ''}`,
           assessment: includeAssessment ? generateMockAssessment() : null,
           markingCriteria: markingAssessmentResult
         };
@@ -485,7 +509,13 @@ const ContentGenerator: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox id="extract-characteristics" />
+                  <Checkbox 
+                    id="extract-characteristics" 
+                    checked={extractCharacteristics}
+                    onCheckedChange={(checked) => {
+                      setExtractCharacteristics(checked === true);
+                    }}
+                  />
                   <label
                     htmlFor="extract-characteristics"
                     className="text-sm text-neutral-600 leading-none"
