@@ -8,6 +8,7 @@ import { Content } from '@shared/schema';
 import { useToast } from "@/hooks/use-toast";
 import EnhancedVerificationPanel from "@/components/verification/EnhancedVerificationPanel";
 import BritishStandardsVerifier from "@/components/verification/BritishStandardsVerifier";
+import CourseWorkflowView from "@/components/content/CourseWorkflowView";
 
 const VerificationPage: React.FC = () => {
   const { toast } = useToast();
@@ -139,11 +140,19 @@ const VerificationPage: React.FC = () => {
         {/* Verification Panels */}
         <div className="lg:col-span-2">
           {selectedContent ? (
-            <Tabs defaultValue="qaqf">
-              <TabsList className="w-full sm:w-auto">
+            <Tabs defaultValue="content">
+              <TabsList className="w-full sm:w-auto grid grid-cols-3">
+                <TabsTrigger value="content">Course Content</TabsTrigger>
                 <TabsTrigger value="qaqf">QAQF Verification</TabsTrigger>
                 <TabsTrigger value="british">British Standards</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="content" className="mt-6">
+                <CourseWorkflowView 
+                  contentId={selectedContent.id}
+                  showWorkflowButtons={false}
+                />
+              </TabsContent>
               
               <TabsContent value="qaqf" className="mt-6">
                 <EnhancedVerificationPanel 
