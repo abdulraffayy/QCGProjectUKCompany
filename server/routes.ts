@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -8,6 +8,7 @@ import {
   VerificationStatus 
 } from "@shared/schema";
 import { z } from "zod";
+import { generateContent, verifyContent, checkBritishStandards, contentGenerationSchema } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
