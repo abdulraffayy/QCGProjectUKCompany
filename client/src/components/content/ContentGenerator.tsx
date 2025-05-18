@@ -1462,18 +1462,18 @@ const ContentGenerator: React.FC = () => {
                 try {
                   setIsSaving(true);
                   
-                  // Prepare content data for saving
+                  // Prepare content data for saving - ensure all fields are correctly formatted
                   const contentData = {
-                    type: contentType,
+                    type: contentType || "academic_paper",
                     title: generatedContent.title || `${subject} - QAQF Level ${qaqfLevel}`,
-                    content: generatedContent.content || JSON.stringify(generatedContent),
+                    content: typeof generatedContent.content === 'string' ? generatedContent.content : JSON.stringify(generatedContent),
                     description: `${contentType} for ${subject} at QAQF Level ${qaqfLevel}`,
-                    qaqfLevel: parseInt(qaqfLevel),
-                    moduleCode: generatedContent.moduleCode || moduleCode || null,
+                    qaqfLevel: Number(qaqfLevel) || 1,
+                    moduleCode: generatedContent.moduleCode || moduleCode || "EDU-101",
                     createdByUserId: 1, // Default user ID
                     verificationStatus: "pending",
                     verifiedByUserId: null,
-                    characteristics: selectedCharacteristics
+                    characteristics: selectedCharacteristics.length > 0 ? selectedCharacteristics : [1,2]
                   };
                   
                   // Send request to save content
@@ -1488,6 +1488,8 @@ const ContentGenerator: React.FC = () => {
                   if (!response.ok) {
                     throw new Error(`Failed to save content: ${response.status}`);
                   }
+                  
+                  const savedContent = await response.json();
                   
                   // Show success notification
                   toast({
