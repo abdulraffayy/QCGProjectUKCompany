@@ -386,7 +386,14 @@ const MyContentPage: React.FC = () => {
 
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
-            <Button className="flex items-center">
+            <Button 
+              className="flex items-center"
+              onClick={() => {
+                if (selectedContent) {
+                  handleExportToPDF(selectedContent);
+                }
+              }}
+            >
               <span className="material-icons text-sm mr-1">download</span>
               Download PDF
             </Button>
