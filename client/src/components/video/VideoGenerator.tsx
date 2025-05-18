@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { QAQFLevels } from "@/lib/qaqf";
 
-// Define animation styles and duration options as simple arrays since the complex objects are causing issues
+// Simple arrays for animation styles and duration options
 const AnimationStyles = [
   "2D Animation",
   "3D Animation", 
@@ -133,8 +133,8 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {AnimationStyles.map((style, index) => (
-                    <SelectItem key={index} value={style.id}>
-                      {style.name}
+                    <SelectItem key={index} value={style}>
+                      {style}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -149,8 +149,8 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {DurationOptions.map((option, index) => (
-                    <SelectItem key={index} value={option.id}>
-                      {option.name}
+                    <SelectItem key={index} value={option}>
+                      {option}
                     </SelectItem>
                   ))}
                 </SelectContent>

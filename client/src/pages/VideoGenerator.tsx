@@ -110,8 +110,8 @@ const VideoGeneratorPage: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {QAQFLevels.map((level) => (
-                          <SelectItem key={level.id} value={level.level.toString()}>
-                            Level {level.level} - {level.name}
+                          <SelectItem key={level.id} value={level.id.toString()}>
+                            {level.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
