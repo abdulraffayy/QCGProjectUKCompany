@@ -75,13 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           </a>
         </Link>
         
-        <Link href="/video-generator">
-          <a className={navItemClass("/video-generator")}>
-            <span className="material-icons mr-3 text-inherit">video_library</span>
-            Video Generator
-          </a>
-        </Link>
-        
         <Link href="/lesson-plan">
           <a className={navItemClass("/lesson-plan")}>
             <span className="material-icons mr-3 text-inherit">event_note</span>
@@ -93,6 +86,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           <a className={navItemClass("/study-material")}>
             <span className="material-icons mr-3 text-inherit">book</span>
             Study Material
+          </a>
+        </Link>
+        
+        <Link href="/video-generator">
+          <a className={navItemClass("/video-generator")}>
+            <span className="material-icons mr-3 text-inherit">video_library</span>
+            Video Generator
           </a>
         </Link>
         
