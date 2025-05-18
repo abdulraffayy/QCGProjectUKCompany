@@ -132,8 +132,8 @@ const ContentGeneratorPage: React.FC = () => {
                       <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
                         <span className="material-icons text-amber-600 text-sm mt-0.5">priority_high</span>
                         <p className="text-sm text-amber-800">
-                          <strong>Important:</strong> Modules must be approved before they can be sent to the Module section. 
-                          Use the "Approve Module" button first, then "Send to Module" to make content available.
+                          <strong>Important:</strong> Modules must be approved before they can be sent to Content Approval. 
+                          Use the "Approve Module" button first, then "Send to Content Approval" to make the module available for final review.
                         </p>
                       </div>
                     </div>
@@ -183,7 +183,7 @@ const ContentGeneratorPage: React.FC = () => {
                               </Button>
                               <Button variant="outline" size="sm" className="bg-purple-50 text-purple-700 hover:bg-purple-100 hover:text-purple-800">
                                 <span className="material-icons text-sm mr-1">send</span>
-                                Send to Module
+                                Send to Content Approval
                               </Button>
                               <Button variant="outline" size="sm" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
                                 <span className="material-icons text-sm mr-1">gavel</span>
