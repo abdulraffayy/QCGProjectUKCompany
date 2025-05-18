@@ -1,63 +1,212 @@
-import { QAQFCharacteristics, QAQFLevelCategories } from "@/lib/qaqf";
+import { QAQFCharacteristics, QAQFLevels, QAQFLevelCategories } from "@/lib/qaqf";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
+import { useState } from "react";
+
+// Define icons for each characteristic
+const characteristicIcons: Record<string, string> = {
+  "Clarity": "lightbulb",
+  "Completeness": "check_circle",
+  "Accuracy": "verified",
+  "Coherence": "sync_alt",
+  "Relevance": "trending_up",
+  "Engagement": "people",
+  "Critical Thinking": "psychology",
+  "Accessibility": "accessibility",
+  "Assessment Integration": "analytics",
+  "Adaptability": "bubble_chart"
+};
 
 const QAQFFramework: React.FC = () => {
+  const [activeCategory, setActiveCategory] = useState("all");
+  
+  const getCategoryColor = (level: number) => {
+    if (level <= 3) return "bg-blue-500 text-white";
+    if (level <= 6) return "bg-purple-500 text-white";
+    return "bg-violet-500 text-white";
+  };
+  
+  const getCategoryName = (level: number) => {
+    if (level <= 3) return "Basic";
+    if (level <= 6) return "Intermediate";
+    return "Advanced";
+  };
+  
+  const getCharacteristicsForLevel = (level: number) => {
+    // For levels 1-3, show first 3 characteristics
+    if (level <= 3) return QAQFCharacteristics.slice(0, 3);
+    // For levels 4-6, show first 6 characteristics
+    if (level <= 6) return QAQFCharacteristics.slice(0, 6);
+    // For levels 7-9, show all characteristics
+    return QAQFCharacteristics;
+  };
+  
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card className="shadow-md border-0">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-r from-blue-50 to-violet-50">
         <div className="space-y-0.5">
           <CardTitle className="text-lg font-bold">QAQF Framework Implementation</CardTitle>
+          <CardDescription>Quality Assurance and Quality Framework for academic content</CardDescription>
         </div>
-        <Button variant="link" className="text-primary text-sm flex items-center">
-          View details
-          <span className="material-icons text-sm ml-1">arrow_forward</span>
-        </Button>
+        <Link href="/qaqf-framework">
+          <Button variant="outline" className="text-primary text-sm flex items-center">
+            <span className="material-icons text-sm mr-1">school</span>
+            Framework Details
+          </Button>
+        </Link>
       </CardHeader>
-      <CardContent>
-        {/* QAQF Pyramid Visualization */}
-        <div className="relative h-64 py-4">
-          {/* Pyramid levels from bottom to top */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-primary-light rounded-lg flex items-center justify-center text-white">
-            <span className="text-sm font-medium">Levels 1-3: Knowledge, Understanding & Cognitive Skills</span>
-          </div>
+      <CardContent className="pt-6">
+        <Tabs defaultValue="pyramid" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="pyramid">Pyramid View</TabsTrigger>
+            <TabsTrigger value="levels">QAQF Levels</TabsTrigger>
+            <TabsTrigger value="characteristics">Characteristics</TabsTrigger>
+          </TabsList>
           
-          <div className="absolute bottom-14 left-4 right-4 h-12 bg-primary rounded-lg flex items-center justify-center text-white">
-            <span className="text-sm font-medium">Levels 4-6: Communication, Accountability & Digitalisation</span>
-          </div>
-          
-          <div className="absolute bottom-28 left-8 right-8 h-12 bg-secondary rounded-lg flex items-center justify-center text-white">
-            <span className="text-sm font-medium">Level 7: Sustainability, Resilience and Ecological</span>
-          </div>
-          
-          <div className="absolute bottom-42 left-12 right-12 h-12 bg-accent rounded-lg flex items-center justify-center text-white">
-            <span className="text-sm font-medium">Level 8: Reflective, Creativity & Innovative Skills</span>
-          </div>
-          
-          <div className="absolute bottom-56 left-16 right-16 h-12 bg-neutral-700 rounded-lg flex items-center justify-center text-white">
-            <span className="text-sm font-medium">Level 9: Futuristic/Genius Skills</span>
-          </div>
-        </div>
-        
-        <div className="mt-6">
-          <h4 className="text-sm font-semibold mb-3">QAQF Characteristics</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {QAQFCharacteristics.map((characteristic) => (
-              <div 
-                key={characteristic.id}
-                className={cn(
-                  "characteristic-badge px-3 py-2 rounded-md flex items-center relative",
-                  characteristic.category === "foundation" ? "text-primary" :
-                  characteristic.category === "intermediate" ? "text-secondary" : "text-accent"
-                )}
-              >
-                <span className="material-icons text-sm mr-2">{characteristic.icon}</span>
-                <span className="text-xs font-medium">{characteristic.name}</span>
+          <TabsContent value="pyramid">
+            {/* QAQF Pyramid Visualization - Enhanced version */}
+            <div className="relative h-80 py-4 overflow-hidden">
+              {/* Pyramid levels from bottom to top with hover effects */}
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-blue-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-blue-600 cursor-pointer">
+                <div className="text-center">
+                  <span className="text-sm font-medium">Levels 1-3: Basic</span>
+                  <div className="text-xs mt-1 opacity-80">Knowledge, Understanding & Cognitive Skills</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+              
+              <div className="absolute bottom-18 left-6 right-6 h-16 bg-purple-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-purple-600 cursor-pointer">
+                <div className="text-center">
+                  <span className="text-sm font-medium">Levels 4-6: Intermediate</span>
+                  <div className="text-xs mt-1 opacity-80">Communication, Accountability & Digitalisation</div>
+                </div>
+              </div>
+              
+              <div className="absolute bottom-36 left-12 right-12 h-16 bg-violet-600 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-violet-700 cursor-pointer">
+                <div className="text-center">
+                  <span className="text-sm font-medium">Levels 7-9: Advanced</span>
+                  <div className="text-xs mt-1 opacity-80">Sustainability, Creativity & Innovative Skills</div>
+                </div>
+              </div>
+              
+              {/* Center pyramid point */}
+              <div className="absolute bottom-54 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[40px] border-r-[40px] border-b-[40px] border-transparent border-b-violet-800"></div>
+            </div>
+            
+            <div className="mt-4">
+              <h4 className="text-sm font-medium mb-2">QAQF Implementation Guidelines</h4>
+              <p className="text-sm text-neutral-600 mb-4">
+                The QAQF framework is implemented on a progressive level basis. Higher levels incorporate all characteristics from lower levels with increased sophistication.
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2 bg-blue-100 rounded-md">
+                  <div className="font-medium">Basic (1-3)</div>
+                  <div className="text-neutral-600 mt-1">Foundation implementation</div>
+                </div>
+                <div className="p-2 bg-purple-100 rounded-md">
+                  <div className="font-medium">Intermediate (4-6)</div>
+                  <div className="text-neutral-600 mt-1">Enhanced implementation</div>
+                </div>
+                <div className="p-2 bg-violet-100 rounded-md">
+                  <div className="font-medium">Advanced (7-9)</div>
+                  <div className="text-neutral-600 mt-1">Expert implementation</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="levels">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {QAQFLevels.map((level) => (
+                  <div key={level.id} className="border rounded-md overflow-hidden">
+                    <div className={`${getCategoryColor(level.id)} p-2 text-center`}>
+                      <h3 className="text-sm font-medium">{level.name}</h3>
+                      <Badge variant="outline" className="mt-1 bg-white/20 text-white text-xs">
+                        {getCategoryName(level.id)}
+                      </Badge>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs text-neutral-600">{level.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {getCharacteristicsForLevel(level.id).slice(0, 3).map((char) => (
+                          <span key={char.id} className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">
+                            {char.name}
+                          </span>
+                        ))}
+                        {level.id > 3 && <span className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">+{getCharacteristicsForLevel(level.id).length - 3} more</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="characteristics">
+            <div className="mb-4">
+              <div className="flex space-x-2 mb-3">
+                <Badge 
+                  variant={activeCategory === "all" ? "default" : "outline"} 
+                  className="cursor-pointer"
+                  onClick={() => setActiveCategory("all")}
+                >
+                  All
+                </Badge>
+                <Badge 
+                  variant={activeCategory === "basic" ? "default" : "outline"} 
+                  className="cursor-pointer bg-blue-500"
+                  onClick={() => setActiveCategory("basic")}
+                >
+                  Basic (1-3)
+                </Badge>
+                <Badge 
+                  variant={activeCategory === "intermediate" ? "default" : "outline"} 
+                  className="cursor-pointer bg-purple-500"
+                  onClick={() => setActiveCategory("intermediate")}
+                >
+                  Intermediate (4-6)
+                </Badge>
+                <Badge 
+                  variant={activeCategory === "advanced" ? "default" : "outline"} 
+                  className="cursor-pointer bg-violet-500"
+                  onClick={() => setActiveCategory("advanced")}
+                >
+                  Advanced (7-9)
+                </Badge>
+              </div>
+            
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {QAQFCharacteristics
+                  .filter(char => {
+                    if (activeCategory === "all") return true;
+                    if (activeCategory === "basic" && char.id <= 3) return true;
+                    if (activeCategory === "intermediate" && char.id > 3 && char.id <= 6) return true;
+                    if (activeCategory === "advanced" && char.id > 6) return true;
+                    return false;
+                  })
+                  .map((characteristic) => (
+                    <div 
+                      key={characteristic.id}
+                      className="border p-3 rounded-md hover:bg-neutral-50 transition-colors"
+                    >
+                      <div className="flex items-center mb-1">
+                        <span className="material-icons text-sm mr-2 text-primary">
+                          {characteristicIcons[characteristic.name] || "check"}
+                        </span>
+                        <span className="text-sm font-medium">{characteristic.name}</span>
+                      </div>
+                      <p className="text-xs text-neutral-600">{characteristic.description}</p>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
