@@ -346,6 +346,65 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 </div>
               </TabsContent>
             </Tabs>
+            
+            {/* Module Approval and Regenerate Section - Added near Module Approval */}
+            <div className="mt-6 border-t pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Module Approval</h3>
+                <Badge variant="outline" className={getVerificationStatusColor(selectedContent.verificationStatus)}>
+                  {selectedContent.verificationStatus.replace('_', ' ')}
+                </Badge>
+              </div>
+              
+              <div className="mb-4 text-sm text-neutral-600">
+                <p>This content needs approval before it can be published to students. 
+                You can regenerate the content if changes are needed, or proceed with the approval process.</p>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  className="flex items-center"
+                  onClick={() => handleVerify()}
+                >
+                  <span className="material-icons text-sm mr-1">verified</span>
+                  Request Approval
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center"
+                  onClick={() => {
+                    // Navigate to content generator with the current content details
+                    if (selectedContent) {
+                      // Store current content details in localStorage to pre-fill the generator
+                      localStorage.setItem('regenerateContent', JSON.stringify({
+                        id: selectedContent.id,
+                        title: selectedContent.title,
+                        type: selectedContent.type,
+                        moduleCode: selectedContent.moduleCode,
+                        qaqfLevel: selectedContent.qaqfLevel,
+                        characteristics: selectedContent.characteristics
+                      }));
+                      
+                      // Notify user
+                      toast({
+                        title: "Preparing content for regeneration",
+                        description: "Redirecting to content generator with your current settings...",
+                      });
+                      
+                      // Redirect to content generator page
+                      window.location.href = '/content-generator';
+                    }
+                  }}
+                >
+                  <span className="material-icons text-sm mr-1">refresh</span>
+                  Regenerate Content
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="text-center py-10">
