@@ -109,37 +109,27 @@ const QAQFFramework: React.FC = () => {
                 </div>
               </div>
               
-              {/* Connecting lines for pyramid effect */}
-              <div className="absolute bottom-16 left-0 w-6 h-18 border-l-2 border-dashed border-white transform -rotate-12 opacity-50"></div>
-              <div className="absolute bottom-16 right-0 w-6 h-18 border-r-2 border-dashed border-white transform rotate-12 opacity-50"></div>
-              <div className="absolute bottom-34 left-12 w-6 h-18 border-l-2 border-dashed border-white transform -rotate-30 opacity-50"></div>
-              <div className="absolute bottom-34 right-12 w-6 h-18 border-r-2 border-dashed border-white transform rotate-30 opacity-50"></div>
+              {/* No connecting lines */}
             </div>
             
             <div className="mt-4">
               <h4 className="text-sm font-medium mb-2">QAQF Implementation Guidelines</h4>
               <p className="text-sm text-neutral-600 mb-4">
-                The QAQF framework is implemented on a progressive level basis. Higher levels incorporate all characteristics from lower levels with increased sophistication.
+                The QAQF framework is implemented on a progressive level basis where higher levels incorporate all characteristics from lower levels with increased sophistication. The framework ensures consistent quality across academic content through structured criteria.
               </p>
               
-              {/* Pyramid-shaped display of levels matching the visualization above */}
-              <div className="relative">
-                {/* Level 7-9: Advanced - TOP */}
-                <div className="w-2/3 mx-auto p-2 bg-violet-100 rounded-md mb-2 text-center">
-                  <div className="font-medium text-violet-800">Advanced (7-9)</div>
-                  <div className="text-neutral-600 text-xs mt-1">Expert implementation and innovation</div>
-                </div>
-                
-                {/* Level 4-6: Intermediate - MIDDLE */}
-                <div className="w-3/4 mx-auto p-2 bg-purple-100 rounded-md mb-2 text-center">
-                  <div className="font-medium text-purple-800">Intermediate (4-6)</div>
-                  <div className="text-neutral-600 text-xs mt-1">Enhanced application and understanding</div>
-                </div>
-                
-                {/* Level 1-3: Basic - BOTTOM */}
-                <div className="w-full p-2 bg-blue-100 rounded-md text-center">
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2 bg-blue-100 rounded-md">
                   <div className="font-medium text-blue-800">Basic (1-3)</div>
-                  <div className="text-neutral-600 text-xs mt-1">Foundation knowledge and skills</div>
+                  <div className="text-neutral-600 mt-1">Knowledge, Understanding & Cognitive Skills</div>
+                </div>
+                <div className="p-2 bg-purple-100 rounded-md">
+                  <div className="font-medium text-purple-800">Intermediate (4-6)</div>
+                  <div className="text-neutral-600 mt-1">Communication, Accountability & Digitalisation</div>
+                </div>
+                <div className="p-2 bg-violet-100 rounded-md">
+                  <div className="font-medium text-violet-800">Advanced (7-9)</div>
+                  <div className="text-neutral-600 mt-1">Sustainability, Creativity & Innovation</div>
                 </div>
               </div>
             </div>
