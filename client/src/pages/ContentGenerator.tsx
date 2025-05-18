@@ -38,7 +38,7 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-4 text-xs md:text-sm">
+        <TabsList className="grid grid-cols-5 text-xs md:text-sm">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
@@ -46,6 +46,10 @@ const ContentGeneratorPage: React.FC = () => {
           <TabsTrigger value="recent" className="flex items-center">
             <span className="material-icons text-sm mr-2">auto_stories</span>
             Course Content
+          </TabsTrigger>
+          <TabsTrigger value="verify" className="flex items-center">
+            <span className="material-icons text-sm mr-2">verified</span>
+            Content Verify
           </TabsTrigger>
           <TabsTrigger value="approval" className="flex items-center">
             <span className="material-icons text-sm mr-2">check_circle</span>
@@ -107,7 +111,140 @@ const ContentGeneratorPage: React.FC = () => {
               </div>
               
               <div className="overflow-auto">
-                <CourseWorkflowView showWorkflowButtons={true} limit={10} />
+                <CourseWorkflowView showWorkflowButtons={false} limit={10} />
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="verify">
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-3">Content Verification</h3>
+              <p className="text-neutral-600 mb-4">
+                Verify course content against QAQF standards and British educational guidelines before approval.
+              </p>
+              
+              <div className="border rounded-md p-4 bg-neutral-50 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-icons text-blue-500">info</span>
+                  <p className="text-sm font-medium">Content verification ensures academic quality and standards</p>
+                </div>
+                <p className="text-sm text-neutral-600">
+                  The verification process analyzes content to ensure it meets QAQF framework standards and aligns with 
+                  educational best practices. Select content from below to verify against these standards.
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="font-medium mb-3">Select Content to Verify</h4>
+                <div className="space-y-4">
+                  {[
+                    {
+                      id: 2,
+                      title: "Nursing in work place (QAQF Level 2)",
+                      qaqfLevel: 2,
+                      type: "academic_paper",
+                      dateCreated: "May 18, 2025",
+                      status: "pending"
+                    }
+                  ].map((content) => (
+                    <div key={content.id} className="border rounded-md p-4 bg-white hover:shadow-sm transition-all">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                        <div>
+                          <h5 className="font-medium">{content.title}</h5>
+                          <div className="flex items-center gap-2 text-sm text-neutral-500">
+                            <span>Type: {content.type.replace('_', ' ')}</span>
+                            <span>•</span>
+                            <span>Created: {content.dateCreated}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={content.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800" : 
+                                          content.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800" : 
+                                          "bg-violet-100 text-violet-800"}>
+                            QAQF {content.qaqfLevel}
+                          </Badge>
+                          <Badge className="bg-amber-100 text-amber-800">
+                            Pending Verification
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm">
+                          <span className="material-icons text-sm mr-1">visibility</span>
+                          View Content
+                        </Button>
+                        <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800">
+                          <span className="material-icons text-sm mr-1">verified</span>
+                          Verify Content
+                        </Button>
+                        <Button variant="outline" size="sm" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
+                          <span className="material-icons text-sm mr-1">gavel</span>
+                          British Standards Check
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <h4 className="font-medium mb-3">QAQF Verification Report</h4>
+                <div className="border rounded-md p-4 bg-neutral-50">
+                  <p className="text-neutral-500 text-sm italic mb-4">Select a course and click "Verify Content" to generate a QAQF verification report.</p>
+                  
+                  <div className="space-y-4 hidden">
+                    <div className="flex justify-between items-center">
+                      <h5 className="font-medium">Verification Summary</h5>
+                      <Badge className="bg-green-100 text-green-800">PASS</Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-green-600 text-sm">check_circle</span>
+                        <p className="text-sm">Content aligns with QAQF Level 2 expectations</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-green-600 text-sm">check_circle</span>
+                        <p className="text-sm">All required characteristics present</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-amber-600 text-sm">info</span>
+                        <p className="text-sm">Consider adding examples to enhance practical application</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-3">British Standards Check</h4>
+                <div className="border rounded-md p-4 bg-neutral-50">
+                  <p className="text-neutral-500 text-sm italic mb-4">Select a course and click "British Standards Check" to verify compliance with UK educational standards.</p>
+                  
+                  <div className="space-y-4 hidden">
+                    <div className="flex justify-between items-center">
+                      <h5 className="font-medium">British Standards Compliance</h5>
+                      <Badge className="bg-green-100 text-green-800">COMPLIANT</Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-green-600 text-sm">check_circle</span>
+                        <p className="text-sm">Terminology follows British educational conventions</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-green-600 text-sm">check_circle</span>
+                        <p className="text-sm">Content matches UK curriculum standards</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-amber-600 text-sm">info</span>
+                        <p className="text-sm">Consider updating references to include more UK-based sources</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
