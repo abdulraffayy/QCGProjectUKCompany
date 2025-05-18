@@ -109,9 +109,6 @@ const QAQFFramework: React.FC = () => {
                 </div>
               </div>
               
-              {/* Pyramid point */}
-              <div className="absolute bottom-54 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-r-[20px] border-b-[20px] border-transparent border-b-violet-800"></div>
-              
               {/* Connecting lines for pyramid effect */}
               <div className="absolute bottom-16 left-0 w-6 h-18 border-l-2 border-dashed border-white transform -rotate-12 opacity-50"></div>
               <div className="absolute bottom-16 right-0 w-6 h-18 border-r-2 border-dashed border-white transform rotate-12 opacity-50"></div>
