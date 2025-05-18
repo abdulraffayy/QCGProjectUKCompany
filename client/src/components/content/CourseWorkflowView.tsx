@@ -233,7 +233,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
             </div>
           
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="mb-6">
-              <TabsList className="grid grid-cols-4">
+              <TabsList className="grid grid-cols-3">
                 <TabsTrigger value="content">
                   <span className="material-icons text-sm mr-1">description</span>
                   Content
@@ -241,10 +241,6 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 <TabsTrigger value="characteristics">
                   <span className="material-icons text-sm mr-1">category</span>
                   Characteristics
-                </TabsTrigger>
-                <TabsTrigger value="assessment">
-                  <span className="material-icons text-sm mr-1">quiz</span>
-                  Assessment
                 </TabsTrigger>
                 <TabsTrigger value="metadata">
                   <span className="material-icons text-sm mr-1">info</span>
@@ -284,74 +280,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                 </div>
               </TabsContent>
               
-              <TabsContent value="assessment" className="mt-4">
-                <div className="border rounded-md p-4 bg-white">
-                  <Accordion type="single" collapsible className="w-full">
-                    {/* Sample assessment content - in a real app, this would come from the content */}
-                    <AccordionItem value="item-1">
-                      <AccordionTrigger className="text-sm font-medium">
-                        Multiple Choice Questions
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-3 p-2 text-sm">
-                          <div className="p-3 border rounded-md bg-neutral-50">
-                            <p className="font-medium mb-2">Question 1: What is the primary focus of QAQF Level {selectedContent.qaqfLevel}?</p>
-                            <div className="space-y-1 pl-5">
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q1-a" name="q1" className="form-radio" />
-                                <label htmlFor="q1-a">Knowledge and Understanding</label>
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q1-b" name="q1" className="form-radio" />
-                                <label htmlFor="q1-b">Application and Analysis</label>
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q1-c" name="q1" className="form-radio" />
-                                <label htmlFor="q1-c">Evaluation and Creation</label>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="p-3 border rounded-md bg-neutral-50">
-                            <p className="font-medium mb-2">Question 2: Which QAQF characteristic is most important for this content?</p>
-                            <div className="space-y-1 pl-5">
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q2-a" name="q2" className="form-radio" />
-                                <label htmlFor="q2-a">Clarity</label>
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q2-b" name="q2" className="form-radio" />
-                                <label htmlFor="q2-b">Completeness</label>
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <input type="radio" id="q2-c" name="q2" className="form-radio" />
-                                <label htmlFor="q2-c">Relevance</label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="item-2">
-                      <AccordionTrigger className="text-sm font-medium">
-                        Short Answer Questions
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-3 p-2 text-sm">
-                          <div className="p-3 border rounded-md bg-neutral-50">
-                            <p className="font-medium mb-2">Question: Explain how this content supports learning outcomes at QAQF Level {selectedContent.qaqfLevel}.</p>
-                            <textarea 
-                              className="w-full border rounded-md p-2 mt-2 text-sm" 
-                              rows={3}
-                              placeholder="Enter your answer here..."
-                            ></textarea>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </div>
-              </TabsContent>
+
               
               <TabsContent value="metadata" className="mt-4">
                 <div className="border rounded-md p-4 bg-white">
