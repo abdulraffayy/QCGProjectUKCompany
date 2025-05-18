@@ -1446,7 +1446,7 @@ const ContentGenerator: React.FC = () => {
             >
               Close Preview
             </Button>
-            <Button>
+            <Button onClick={handleSaveContent}>
               <span className="material-icons text-sm mr-1">save</span>
               Save Content
             </Button>
