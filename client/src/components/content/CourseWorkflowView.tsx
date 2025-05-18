@@ -415,23 +415,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
         )}
       </CardContent>
       
-      {showWorkflowButtons && selectedContent && (
-        <CardFooter className="bg-neutral-50 border-t flex flex-wrap gap-2">
-          <div className="flex-grow"></div>
-          <Button className="flex items-center" variant="outline" onClick={handleExport}>
-            <span className="material-icons text-sm mr-1">download</span>
-            Export
-          </Button>
-          <Button className="flex items-center" variant="outline" onClick={handleShare}>
-            <span className="material-icons text-sm mr-1">share</span>
-            Share
-          </Button>
-          <Button className="flex items-center" onClick={handleVerify}>
-            <span className="material-icons text-sm mr-1">verified</span>
-            Verify Content
-          </Button>
-        </CardFooter>
-      )}
+      {/* Workflow buttons removed */}
     </Card>
   );
 };
