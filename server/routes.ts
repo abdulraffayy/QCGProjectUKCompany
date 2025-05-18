@@ -16,7 +16,7 @@ import {
   generateSampleContent,
   generateSampleVerification,
   generateSampleBritishStandardsCheck
-} from "./openai";
+} from "./anthropic";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
