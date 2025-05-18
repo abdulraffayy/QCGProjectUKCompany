@@ -785,9 +785,13 @@ const ContentGenerator: React.FC = () => {
                   {generatedContent.assessment && (
                     <TabsTrigger value="assessment">
                       Assessment
-                      <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">New</Badge>
+                      <Badge variant="outline" className="ml-2 bg-primary/10 text-primary text-xs">Required</Badge>
                     </TabsTrigger>
                   )}
+                  <TabsTrigger value="marking">
+                    Marking Criteria
+                    <Badge variant="outline" className="ml-2 bg-accent/10 text-accent text-xs">QAQF</Badge>
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="content" className="pt-4">
@@ -868,6 +872,77 @@ const ContentGenerator: React.FC = () => {
                     </div>
                   </TabsContent>
                 )}
+                
+                {/* Marking Criteria Content */}
+                <TabsContent value="marking" className="pt-4">
+                  <div className="border rounded-md p-4">
+                    <h3 className="text-lg font-medium mb-3 flex items-center">
+                      <span className="material-icons text-accent text-base mr-2">assessment</span>
+                      QAQF Marking Criteria and Rubric
+                    </h3>
+                    
+                    {markingAssessmentResult ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="p-3 bg-neutral-50 rounded-md">
+                            <h4 className="text-sm font-medium text-neutral-700 mb-1">Rubric Type</h4>
+                            <p className="text-sm">{markingAssessmentResult.rubricType || "Standard"}</p>
+                          </div>
+                          <div className="p-3 bg-neutral-50 rounded-md">
+                            <h4 className="text-sm font-medium text-neutral-700 mb-1">Overall Rating</h4>
+                            <div className="flex items-center">
+                              <span className="text-2xl font-bold text-primary">{markingAssessmentResult.overallResults?.percentage || 0}%</span>
+                              <Badge className="ml-2 bg-primary/10 text-primary">
+                                {markingAssessmentResult.overallResults?.grade || "N/A"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-neutral-50 rounded-md">
+                            <h4 className="text-sm font-medium text-neutral-700 mb-1">Marketing Method</h4>
+                            <p className="text-sm">{markingAssessmentResult.innovativeMethod || "Standard Assessment"}</p>
+                          </div>
+                        </div>
+                        
+                        {markingAssessmentResult.criteria && markingAssessmentResult.criteria.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium mb-2">Criteria Breakdown</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {markingAssessmentResult.criteria.map((criterion, index) => (
+                                <div key={index} className="border p-3 rounded-md">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-medium">{criterion.title}</span>
+                                    <Badge variant={criterion.rating >= 4 ? "default" : "outline"}>
+                                      {criterion.rating}/5
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-neutral-600">{criterion.description}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <span className="material-icons text-neutral-400 text-3xl mb-2">warning</span>
+                        <h4 className="text-base font-medium mb-1">No Marking Criteria Applied</h4>
+                        <p className="text-sm text-neutral-600 mb-4">
+                          You need to add marking criteria to this content before generating.
+                        </p>
+                        <Button 
+                          size="sm"
+                          onClick={() => {
+                            setShowPreview(false);
+                            setActiveTab("marking-criteria");
+                          }}
+                        >
+                          <span className="material-icons text-xs mr-1">add</span>
+                          Add Marking Criteria
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
                 
                 {generatedContent.assessment && (
                   <TabsContent value="assessment" className="pt-4">
