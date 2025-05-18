@@ -131,32 +131,75 @@ const ContentGenerator: React.FC = () => {
   
   // Generate mock assessment content
   const generateMockAssessment = () => {
+    // Add questions based on source materials if they exist
+    const baseQuestions = [
+      {
+        question: `What does QAQF Level ${qaqfLevel} primarily focus on?`,
+        options: [
+          "Basic content structure",
+          "Advanced integration with pedagogical approaches",
+          "Intermediate content organization",
+          "Technical implementation details"
+        ],
+        correctAnswer: 1
+      },
+      {
+        question: `Which of the following is NOT a characteristic of ${subject}?`,
+        options: [
+          "Critical analysis",
+          "Evidence-based practice",
+          "Theoretical foundations",
+          "None of the above"
+        ],
+        correctAnswer: 3
+      }
+    ];
+    
+    // Add source material based questions when sources are provided
+    let sourceMaterialQuestions = [];
+    
+    if (primarySourceMaterial) {
+      // Create a question based on primary source material
+      const primarySourceSnippet = primarySourceMaterial.length > 30 
+        ? primarySourceMaterial.substring(0, 30) + "..." 
+        : primarySourceMaterial;
+        
+      sourceMaterialQuestions.push({
+        question: `Based on the primary source material, which statement is most accurate about ${subject}?`,
+        options: [
+          `${primarySourceSnippet} suggests a theoretical approach to ${subject}`,
+          `${primarySourceSnippet} contradicts established ${subject} principles`,
+          `${primarySourceSnippet} reinforces the importance of evidence-based practice in ${subject}`,
+          `${primarySourceSnippet} is not relevant to ${subject}`
+        ],
+        correctAnswer: 2
+      });
+    }
+    
+    if (secondarySourceMaterial) {
+      // Create a question based on secondary source material
+      const secondarySourceSnippet = secondarySourceMaterial.length > 30 
+        ? secondarySourceMaterial.substring(0, 30) + "..." 
+        : secondarySourceMaterial;
+        
+      sourceMaterialQuestions.push({
+        question: `According to the secondary source material, what is a key element of ${subject}?`,
+        options: [
+          `The integration of ${secondarySourceSnippet} with practical applications`,
+          `The rejection of traditional approaches mentioned in ${secondarySourceSnippet}`,
+          `The historical context described in ${secondarySourceSnippet}`,
+          `None of the above`
+        ],
+        correctAnswer: 0
+      });
+    }
+    
     return {
       type: "multiple-choice",
-      questions: [
-        {
-          question: `What does QAQF Level ${qaqfLevel} primarily focus on?`,
-          options: [
-            "Basic content structure",
-            "Advanced integration with pedagogical approaches",
-            "Intermediate content organization",
-            "Technical implementation details"
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: `Which of the following is NOT a characteristic of ${subject}?`,
-          options: [
-            "Critical analysis",
-            "Evidence-based practice",
-            "Theoretical foundations",
-            "None of the above"
-          ],
-          correctAnswer: 3
-        }
-      ],
+      questions: [...baseQuestions, ...sourceMaterialQuestions],
       timeLimit: 20,
-      passingScore: 70
+      passingScore: 70,
+      sourceBasedQuestions: sourceMaterialQuestions.length > 0
     };
   };
   
@@ -199,6 +242,19 @@ const ContentGenerator: React.FC = () => {
 
     setIsGenerating(true);
     
+    // Log source materials for debugging
+    console.log("Primary Source Material:", primarySourceMaterial ? primarySourceMaterial.substring(0, 100) + "..." : "None");
+    console.log("Secondary Source Material:", secondarySourceMaterial ? secondarySourceMaterial.substring(0, 100) + "..." : "None");
+    
+    // Force set extract characteristics if source materials are present
+    if ((primarySourceMaterial || secondarySourceMaterial) && !extractCharacteristics) {
+      setExtractCharacteristics(true);
+      toast({
+        title: "Source Materials Detected",
+        description: "Automatically enabling extraction of QAQF characteristics from source materials.",
+      });
+    }
+    
     // Simulating content generation
     setTimeout(() => {
       let mockContent;
@@ -206,6 +262,9 @@ const ContentGenerator: React.FC = () => {
       if (contentType === "video") {
         // Create video content with source material integration
         const hasSourceMaterials = primarySourceMaterial || secondarySourceMaterial;
+        
+        // Log source materials for debugging
+        console.log("Generating content with source materials:", hasSourceMaterials);
         
         let videoDescriptionWithSources = videoDescription || `This video explores ${subject} with a focus on QAQF Level ${qaqfLevel} implementation.`;
         
@@ -278,6 +337,16 @@ const ContentGenerator: React.FC = () => {
         let extractedCharacteristics: number[] = [];
         let sourceAnalysis = "";
         let contentBody = "";
+        
+        // Track if we're actually using source materials to create better content
+        const actuallyUsingSourceMaterials = hasSourceMaterials;
+        
+        toast({
+          title: actuallyUsingSourceMaterials ? "Source Materials Applied" : "No Source Materials",
+          description: actuallyUsingSourceMaterials 
+            ? "Generating content with source material integration" 
+            : "No source materials detected. Consider adding source materials for richer content.",
+        });
         
         // Generate content body based on source materials
         if (hasSourceMaterials) {
@@ -620,7 +689,18 @@ const ContentGenerator: React.FC = () => {
                 
                 <div className="space-y-3 mt-2">
                   <div className="border rounded-md p-4 bg-neutral-50">
-                    <h4 className="font-medium mb-3">Source Materials</h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">Source Materials</h4>
+                      {(primarySourceMaterial || secondarySourceMaterial) && (
+                        <Badge variant="outline" className="bg-green-50 text-green-600">
+                          {primarySourceMaterial && secondarySourceMaterial 
+                            ? "Primary & Secondary Sources Added" 
+                            : primarySourceMaterial 
+                              ? "Primary Source Added" 
+                              : "Secondary Source Added"}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
                         <div className="flex items-center justify-between mb-2">
