@@ -25,7 +25,7 @@ const ContentGeneratorPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-4">
+        <TabsList className="grid grid-cols-4 text-xs md:text-sm">
           <TabsTrigger value="create" className="flex items-center">
             <span className="material-icons text-sm mr-2">create</span>
             Create New Course
@@ -36,7 +36,7 @@ const ContentGeneratorPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="approval" className="flex items-center">
             <span className="material-icons text-sm mr-2">check_circle</span>
-            Approval
+            Course Content Approval
           </TabsTrigger>
           <TabsTrigger value="module" className="flex items-center">
             <span className="material-icons text-sm mr-2">menu_book</span>
