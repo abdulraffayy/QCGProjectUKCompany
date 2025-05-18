@@ -108,8 +108,8 @@ const ContentGeneratorPage: React.FC = () => {
               
               <Tabs defaultValue="content" className="mb-6">
                 <TabsList>
-                  <TabsTrigger value="content">Content List</TabsTrigger>
-                  <TabsTrigger value="verify">Content Verify</TabsTrigger>
+                  <TabsTrigger value="content">Module List</TabsTrigger>
+                  <TabsTrigger value="verify">Module Approval</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="content" className="pt-4">
@@ -123,16 +123,16 @@ const ContentGeneratorPage: React.FC = () => {
                     <div className="border rounded-md p-4 bg-neutral-50 mb-6">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="material-icons text-blue-500">info</span>
-                        <p className="text-sm font-medium">Content verification ensures academic quality and standards</p>
+                        <p className="text-sm font-medium">Module approval ensures academic quality and standards</p>
                       </div>
                       <p className="text-sm text-neutral-600">
-                        The verification process analyzes content to ensure it meets QAQF framework standards and aligns with 
-                        educational best practices. Select content from below to verify against these standards.
+                        The approval process analyzes modules to ensure they meet QAQF framework standards and aligns with 
+                        educational best practices. Select a module from below to verify against these standards.
                       </p>
                     </div>
                     
                     <div className="mb-6">
-                      <h4 className="font-medium mb-3">Select Content to Verify</h4>
+                      <h4 className="font-medium mb-3">Select Module to Approve</h4>
                       <div className="space-y-4">
                         {[
                           {
@@ -161,18 +161,18 @@ const ContentGeneratorPage: React.FC = () => {
                                   QAQF {content.qaqfLevel}
                                 </Badge>
                                 <Badge className="bg-amber-100 text-amber-800">
-                                  Pending Verification
+                                  Pending Approval
                                 </Badge>
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Button variant="outline" size="sm">
                                 <span className="material-icons text-sm mr-1">visibility</span>
-                                View Content
+                                View Module
                               </Button>
                               <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800">
                                 <span className="material-icons text-sm mr-1">verified</span>
-                                Verify Content
+                                Approve Module
                               </Button>
                               <Button variant="outline" size="sm" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
                                 <span className="material-icons text-sm mr-1">gavel</span>
@@ -186,9 +186,9 @@ const ContentGeneratorPage: React.FC = () => {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <h4 className="font-medium mb-3">QAQF Verification Report</h4>
+                        <h4 className="font-medium mb-3">QAQF Approval Report</h4>
                         <div className="border rounded-md p-4 bg-neutral-50">
-                          <p className="text-neutral-500 text-sm italic mb-4">Select a course and click "Verify Content" to generate a QAQF verification report.</p>
+                          <p className="text-neutral-500 text-sm italic mb-4">Select a module and click "Approve Module" to generate a QAQF approval report.</p>
                           
                           <div className="space-y-4 hidden">
                             <div className="flex justify-between items-center">
