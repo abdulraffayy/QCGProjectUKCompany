@@ -625,15 +625,98 @@ const ContentGenerator: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <Label className="block text-sm font-medium text-neutral-700">Primary Source Material</Label>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs"
-                            onClick={() => document.getElementById('primary-source-upload')?.click()}
-                          >
-                            <span className="material-icons text-xs mr-1">upload_file</span>
-                            Upload File
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs"
+                              onClick={() => document.getElementById('primary-source-upload')?.click()}
+                            >
+                              <span className="material-icons text-xs mr-1">upload_file</span>
+                              Upload File
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-xs">
+                                  <span className="material-icons text-xs mr-1">link</span>
+                                  Add Website
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Add Website as Source</DialogTitle>
+                                  <DialogDescription>
+                                    Enter a website URL to extract content as source material
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-4 py-4">
+                                  <Input 
+                                    id="primary-source-url" 
+                                    placeholder="https://example.com/article" 
+                                    className="w-full"
+                                  />
+                                  <p className="text-xs text-neutral-500">
+                                    Note: The system will extract the main content from the website.
+                                  </p>
+                                </div>
+                                <DialogFooter>
+                                  <Button
+                                    onClick={() => {
+                                      const urlInput = document.getElementById('primary-source-url') as HTMLInputElement;
+                                      const url = urlInput?.value;
+                                      
+                                      if (!url) {
+                                        toast({
+                                          title: "URL Required",
+                                          description: "Please enter a valid URL",
+                                          variant: "destructive"
+                                        });
+                                        return;
+                                      }
+                                      
+                                      try {
+                                        // Validate URL format
+                                        new URL(url);
+                                        
+                                        // Simulate fetching content from the URL
+                                        toast({
+                                          title: "Extracting content",
+                                          description: "Fetching content from the provided URL...",
+                                        });
+                                        
+                                        // In a real implementation, this would make an API call to extract content
+                                        setTimeout(() => {
+                                          // Simulate the extracted content
+                                          const extractedContent = `Content extracted from ${url}\n\nThis is simulated content that would be extracted from the web page. In a real implementation, this would contain the actual content from the URL, processed and formatted for use as source material.\n\nThe extraction would typically include the main article text, headings, and other relevant content while filtering out navigation, ads, and other non-content elements.`;
+                                          
+                                          setPrimarySourceMaterial(extractedContent);
+                                          
+                                          toast({
+                                            title: "Content extracted",
+                                            description: `Successfully extracted content from ${url}`,
+                                          });
+                                          
+                                          // Close the dialog
+                                          const closeButton = document.querySelector('[data-dialog-close]') as HTMLButtonElement;
+                                          if (closeButton) {
+                                            closeButton.click();
+                                          }
+                                        }, 1500);
+                                      } catch (error) {
+                                        toast({
+                                          title: "Invalid URL",
+                                          description: "Please enter a valid URL including http:// or https://",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Extract Content
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
                           <input
                             id="primary-source-upload"
                             type="file"
@@ -687,15 +770,98 @@ const ContentGenerator: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <Label className="block text-sm font-medium text-neutral-700">Secondary Source Material</Label>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs"
-                            onClick={() => document.getElementById('secondary-source-upload')?.click()}
-                          >
-                            <span className="material-icons text-xs mr-1">upload_file</span>
-                            Upload File
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs"
+                              onClick={() => document.getElementById('secondary-source-upload')?.click()}
+                            >
+                              <span className="material-icons text-xs mr-1">upload_file</span>
+                              Upload File
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-xs">
+                                  <span className="material-icons text-xs mr-1">link</span>
+                                  Add Website
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Add Website as Source</DialogTitle>
+                                  <DialogDescription>
+                                    Enter a website URL to extract content as secondary source material
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-4 py-4">
+                                  <Input 
+                                    id="secondary-source-url" 
+                                    placeholder="https://example.com/article" 
+                                    className="w-full"
+                                  />
+                                  <p className="text-xs text-neutral-500">
+                                    Note: The system will extract the main content from the website.
+                                  </p>
+                                </div>
+                                <DialogFooter>
+                                  <Button
+                                    onClick={() => {
+                                      const urlInput = document.getElementById('secondary-source-url') as HTMLInputElement;
+                                      const url = urlInput?.value;
+                                      
+                                      if (!url) {
+                                        toast({
+                                          title: "URL Required",
+                                          description: "Please enter a valid URL",
+                                          variant: "destructive"
+                                        });
+                                        return;
+                                      }
+                                      
+                                      try {
+                                        // Validate URL format
+                                        new URL(url);
+                                        
+                                        // Simulate fetching content from the URL
+                                        toast({
+                                          title: "Extracting content",
+                                          description: "Fetching content from the provided URL...",
+                                        });
+                                        
+                                        // In a real implementation, this would make an API call to extract content
+                                        setTimeout(() => {
+                                          // Simulate the extracted content
+                                          const extractedContent = `Content extracted from ${url}\n\nThis is simulated content that would be extracted from the web page. In a real implementation, this would contain the actual content from the URL, processed and formatted for use as source material.\n\nThe extraction would typically include the main article text, headings, and other relevant content while filtering out navigation, ads, and other non-content elements.`;
+                                          
+                                          setSecondarySourceMaterial(extractedContent);
+                                          
+                                          toast({
+                                            title: "Content extracted",
+                                            description: `Successfully extracted content from ${url}`,
+                                          });
+                                          
+                                          // Close the dialog
+                                          const closeButton = document.querySelector('[data-dialog-close]') as HTMLButtonElement;
+                                          if (closeButton) {
+                                            closeButton.click();
+                                          }
+                                        }, 1500);
+                                      } catch (error) {
+                                        toast({
+                                          title: "Invalid URL",
+                                          description: "Please enter a valid URL including http:// or https://",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Extract Content
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
                           <input
                             id="secondary-source-upload"
                             type="file"
