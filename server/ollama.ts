@@ -163,7 +163,7 @@ This module provides a structured approach to understanding ${subject} within th
 // Verify content against QAQF framework using Ollama
 export async function verifyContent(content: string, qaqfLevel: number) {
   try {
-    const qaqfLevelDetails = QAQFLevels.find(level => level.level === qaqfLevel);
+    const qaqfLevelDetails = QAQFLevels.find(level => level.id === qaqfLevel);
     
     const prompt = `Verify the following academic content against QAQF framework level ${qaqfLevel} (${qaqfLevelDetails?.name || 'Unknown'}).
     
