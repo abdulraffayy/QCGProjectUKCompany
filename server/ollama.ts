@@ -6,9 +6,11 @@ import { QAQFLevels, QAQFCharacteristics } from "../client/src/lib/qaqf";
 export { generateSampleContent, generateSampleVerification, generateSampleBritishStandardsCheck };
 
 // Initialize Ollama client
-const ollama = new Ollama();
+const ollama = new Ollama({
+  host: 'https://ollama.com' // Use the hosted version of Ollama for cloud environments
+});
 // Default model to use - Llama 3 is a good choice for educational content generation
-const DEFAULT_MODEL = "llama3";
+const DEFAULT_MODEL = "llama3:latest";
 
 // Schema for content generation request
 export const contentGenerationSchema = z.object({
@@ -37,7 +39,7 @@ export async function generateContent(request: ContentGenerationRequest) {
     );
     
     // Build the prompt for content generation
-    let prompt = `Generate academic content on "${subject}" following the QAQF framework level ${qaqfLevel} (${qaqfLevelDetails?.name || 'Unknown'}).
+    let prompt = `Generate academic content on "${subject}" following the QAQF framework level ${qaqfLevel} (${qaqfLevelDetails?.name || `Level ${qaqfLevel}`}).
     
 The content should incorporate the following QAQF characteristics:
 ${characteristicsDetails.map(c => `- ${c.name}: ${c.description}`).join('\n')}
@@ -165,7 +167,7 @@ export async function verifyContent(content: string, qaqfLevel: number) {
   try {
     const qaqfLevelDetails = QAQFLevels.find(level => level.id === qaqfLevel);
     
-    const prompt = `Verify the following academic content against QAQF framework level ${qaqfLevel} (${qaqfLevelDetails?.name || 'Unknown'}).
+    const prompt = `Verify the following academic content against QAQF framework level ${qaqfLevel} (${qaqfLevelDetails?.name || `Level ${qaqfLevel}`}).
     
 Content to verify:
 ---
