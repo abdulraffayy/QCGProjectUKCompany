@@ -16,7 +16,7 @@ import {
   generateSampleContent,
   generateSampleVerification,
   generateSampleBritishStandardsCheck
-} from "./anthropic";
+} from "./ollama";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
