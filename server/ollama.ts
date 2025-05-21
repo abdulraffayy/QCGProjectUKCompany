@@ -5,11 +5,23 @@ import { QAQFLevels, QAQFCharacteristics } from "../client/src/lib/qaqf";
 // Export the sample content generation function so routes.ts can use it
 export { generateSampleContent, generateSampleVerification, generateSampleBritishStandardsCheck };
 
-// Initialize Ollama client
-const ollama = new Ollama({
-  host: 'https://ollama.com' // Use the hosted version of Ollama for cloud environments
-});
-// Default model to use - Llama 3 is a good choice for educational content generation
+// Initialize Ollama client with error handling
+let ollama: Ollama | null = null;
+try {
+  // Only initialize if OLLAMA_API_KEY is set
+  if (process.env.OLLAMA_API_KEY) {
+    ollama = new Ollama({
+      host: process.env.OLLAMA_API_URL || 'https://ollama.com'
+    });
+    console.log("Ollama client initialized successfully");
+  } else {
+    console.log("No OLLAMA_API_KEY found, using fallback content generation");
+  }
+} catch (error) {
+  console.error("Error initializing Ollama client:", error);
+}
+
+// Default model to use
 const DEFAULT_MODEL = "llama3:latest";
 
 // Schema for content generation request
@@ -25,9 +37,15 @@ export const contentGenerationSchema = z.object({
 
 export type ContentGenerationRequest = z.infer<typeof contentGenerationSchema>;
 
-// Generate academic content using Ollama
+// Generate academic content using Ollama with fallback
 export async function generateContent(request: ContentGenerationRequest) {
   const { contentType, qaqfLevel, subject, characteristics, additionalInstructions, sourceType, sourceContent } = request;
+  
+  // If Ollama isn't available, use sample content generation directly
+  if (!ollama) {
+    console.log("Ollama not initialized, using sample content generation");
+    return generateSampleContent(request);
+  }
   
   try {
     // Get QAQF level details
@@ -71,32 +89,44 @@ Only return the JSON object and nothing else.`;
 
     console.log("Generating content with Ollama...");
     
-    // Send request to Ollama
-    const response = await ollama.generate({
-      model: DEFAULT_MODEL,
-      prompt: prompt,
-      format: 'json',
-    });
-
-    console.log("Ollama response received");
-    
-    // Parse response
     try {
-      // Try to parse the JSON from the response
-      const jsonContent = JSON.parse(response.response);
-      return {
-        title: jsonContent.title || `${subject}: A QAQF Level ${qaqfLevel} Approach`,
-        content: jsonContent.content || "Content generation failed to return structured content.",
-        moduleCode: jsonContent.moduleCode || `EDU${qaqfLevel}01`
-      };
+      // Send request to Ollama with timeout
+      const response = await Promise.race([
+        // We've already checked that ollama is not null above, but TypeScript still flags it
+        // Using non-null assertion operator to tell TypeScript that ollama is definitely not null here
+        ollama!.generate({
+          model: DEFAULT_MODEL,
+          prompt: prompt,
+          format: 'json',
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Ollama request timed out")), 10000)
+        )
+      ]) as { response: string };
+      
+      console.log("Ollama response received");
+      
+      // Parse response
+      try {
+        // Try to parse the JSON from the response
+        const jsonContent = JSON.parse(response.response);
+        return {
+          title: jsonContent.title || `${subject}: A QAQF Level ${qaqfLevel} Approach`,
+          content: jsonContent.content || "Content generation failed to return structured content.",
+          moduleCode: jsonContent.moduleCode || `EDU${qaqfLevel}01`
+        };
+      } catch (error) {
+        console.error("Error parsing Ollama JSON response:", error);
+        // Fallback to sample content if JSON parsing fails
+        return generateSampleContent(request);
+      }
     } catch (error) {
-      console.error("Error parsing Ollama JSON response:", error);
-      // Fallback to sample content if JSON parsing fails
+      console.error("Error with Ollama request:", error);
       return generateSampleContent(request);
     }
   } catch (error) {
-    console.error("Error using Ollama for content generation:", error);
-    // Fallback to sample content if Ollama fails
+    console.error("Error in content generation:", error);
+    // Fallback to sample content if any error occurs
     return generateSampleContent(request);
   }
 }
