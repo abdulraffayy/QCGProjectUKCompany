@@ -6,14 +6,13 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import asyncio
 import logging
-from services.course_generator import CourseGenerator, CourseRequest, CourseResponse
+from services.ai_course_service import enhanced_course_generator, CourseRequest, CourseResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-course_generator = CourseGenerator()
 
 @router.post("/generate/course", response_model=CourseResponse)
 async def generate_course(request: CourseRequest):
@@ -38,7 +37,7 @@ async def generate_course(request: CourseRequest):
             raise HTTPException(status_code=400, detail="At least one learning objective is required")
         
         # Generate course content
-        course = await course_generator.generate_course(request)
+        course = await enhanced_course_generator.generate_course(request)
         
         logger.info(f"Successfully generated course: {course.course_title}")
         
