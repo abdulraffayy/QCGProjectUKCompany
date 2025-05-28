@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from database import engine
 from models import Base
-from routes import content, dashboard, qaqf, videos, activities, ai_services, course_generator, qaqf_admin
+from routes import content, dashboard, qaqf, videos, activities, ai_services, course_generator, qaqf_admin, content_extraction
 
 # Load environment variables
 load_dotenv()
@@ -47,6 +47,7 @@ app.include_router(activities.router, prefix="/api/activities", tags=["activitie
 app.include_router(ai_services.router, prefix="/api", tags=["ai-services"])
 app.include_router(course_generator.router, prefix="/api", tags=["course-generator"])
 app.include_router(qaqf_admin.router, prefix="/api/qaqf", tags=["qaqf-admin"])
+app.include_router(content_extraction.router, prefix="/api", tags=["content-extraction"])
 
 # Health check endpoint
 @app.get("/api/health")

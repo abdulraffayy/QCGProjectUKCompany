@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, BookOpen, FileText, Users, Target, CheckCircle, 
-  GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History
+  GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
+  Upload, Link, FileImage, Globe, Scan
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,7 +43,12 @@ const unifiedGenerationSchema = z.object({
   assessment_methods: z.array(z.string()).min(1, 'Select at least one assessment method'),
   prerequisites: z.string().optional(),
   additional_requirements: z.string().optional(),
-  source_content: z.string().optional()
+  
+  // Source content fields
+  source_type: z.enum(['manual', 'pdf', 'website', 'scanned_doc']).optional(),
+  source_content: z.string().optional(),
+  website_url: z.string().url().optional(),
+  uploaded_files: z.array(z.string()).optional()
 });
 
 type UnifiedGenerationData = z.infer<typeof unifiedGenerationSchema>;
@@ -78,6 +84,10 @@ const UnifiedContentGenerator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('generator');
   const [selectedType, setSelectedType] = useState<'content' | 'course'>('content');
+  const [sourceType, setSourceType] = useState<'manual' | 'pdf' | 'website' | 'scanned_doc'>('manual');
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [extractedContent, setExtractedContent] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -110,9 +120,72 @@ const UnifiedContentGenerator: React.FC = () => {
       assessment_methods: [],
       prerequisites: '',
       additional_requirements: '',
-      source_content: ''
+      source_content: '',
+      source_type: 'manual',
+      website_url: '',
+      uploaded_files: []
     }
   });
+
+  // File upload and processing functions
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    setIsProcessingFiles(true);
+    const fileArray = Array.from(files);
+    setUploadedFiles(fileArray);
+
+    try {
+      const formData = new FormData();
+      fileArray.forEach((file, index) => {
+        formData.append(`file_${index}`, file);
+      });
+      formData.append('source_type', sourceType);
+
+      const response = await fetch('/api/extract-content', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to process files');
+      
+      const result = await response.json();
+      setExtractedContent(result.extracted_text);
+      form.setValue('source_content', result.extracted_text);
+      
+      toast({ title: `Successfully processed ${fileArray.length} file(s)` });
+    } catch (error) {
+      toast({ title: "Failed to process files", variant: "destructive" });
+    } finally {
+      setIsProcessingFiles(false);
+    }
+  };
+
+  const handleWebsiteExtraction = async (url: string) => {
+    if (!url) return;
+    
+    setIsProcessingFiles(true);
+    
+    try {
+      const response = await fetch('/api/extract-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) throw new Error('Failed to extract website content');
+      
+      const result = await response.json();
+      setExtractedContent(result.extracted_text);
+      form.setValue('source_content', result.extracted_text);
+      
+      toast({ title: "Website content extracted successfully" });
+    } catch (error) {
+      toast({ title: "Failed to extract website content", variant: "destructive" });
+    } finally {
+      setIsProcessingFiles(false);
+    }
+  };
 
   const generationMutation = useMutation({
     mutationFn: async (data: UnifiedGenerationData) => {
@@ -426,6 +499,250 @@ const UnifiedContentGenerator: React.FC = () => {
                     rows={4}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Source Content Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Upload className="h-5 w-5" />
+                  <span>Source Content</span>
+                </CardTitle>
+                <CardDescription>
+                  Choose how to provide source material for content generation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card 
+                    className={`cursor-pointer transition-all ${sourceType === 'manual' ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSourceType('manual')}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                      <p className="text-sm font-medium">Manual Input</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card 
+                    className={`cursor-pointer transition-all ${sourceType === 'pdf' ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSourceType('pdf')}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                      <p className="text-sm font-medium">PDF/Books</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card 
+                    className={`cursor-pointer transition-all ${sourceType === 'website' ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSourceType('website')}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <Globe className="h-8 w-8 mx-auto mb-2 text-primary" />
+                      <p className="text-sm font-medium">Website URL</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card 
+                    className={`cursor-pointer transition-all ${sourceType === 'scanned_doc' ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSourceType('scanned_doc')}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <Scan className="h-8 w-8 mx-auto mb-2 text-primary" />
+                      <p className="text-sm font-medium">Scanned Docs</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {sourceType === 'manual' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="source_content">Source Content (Optional)</Label>
+                    <Textarea
+                      id="source_content"
+                      {...form.register('source_content')}
+                      placeholder="Paste or type your source content here..."
+                      rows={6}
+                      value={extractedContent || form.watch('source_content')}
+                      onChange={(e) => {
+                        setExtractedContent(e.target.value);
+                        form.setValue('source_content', e.target.value);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {sourceType === 'pdf' && (
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.txt,.epub"
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                        className="hidden"
+                        id="pdf-upload"
+                        disabled={isProcessingFiles}
+                      />
+                      <label htmlFor="pdf-upload" className="cursor-pointer">
+                        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium text-gray-900">Upload PDFs or Documents</p>
+                        <p className="text-sm text-gray-500">
+                          Supports PDF, DOC, DOCX, TXT, EPUB files. Multiple files allowed.
+                        </p>
+                      </label>
+                    </div>
+                    
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Uploaded Files:</Label>
+                        <div className="space-y-1">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center space-x-2 text-sm">
+                              <FileText className="h-4 w-4" />
+                              <span>{file.name}</span>
+                              <span className="text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {isProcessingFiles && (
+                      <div className="flex items-center space-x-2 text-blue-600">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Processing files...</span>
+                      </div>
+                    )}
+
+                    {extractedContent && (
+                      <div className="space-y-2">
+                        <Label>Extracted Content:</Label>
+                        <Textarea
+                          value={extractedContent}
+                          onChange={(e) => {
+                            setExtractedContent(e.target.value);
+                            form.setValue('source_content', e.target.value);
+                          }}
+                          rows={8}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {sourceType === 'website' && (
+                  <div className="space-y-4">
+                    <div className="flex space-x-2">
+                      <div className="flex-1">
+                        <Label htmlFor="website_url">Website URL</Label>
+                        <Input
+                          id="website_url"
+                          {...form.register('website_url')}
+                          placeholder="https://example.com/article"
+                          type="url"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          onClick={() => handleWebsiteExtraction(form.watch('website_url'))}
+                          disabled={isProcessingFiles || !form.watch('website_url')}
+                          className="flex items-center space-x-2"
+                        >
+                          {isProcessingFiles ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Link className="h-4 w-4" />
+                          )}
+                          <span>Extract</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {extractedContent && (
+                      <div className="space-y-2">
+                        <Label>Extracted Website Content:</Label>
+                        <Textarea
+                          value={extractedContent}
+                          onChange={(e) => {
+                            setExtractedContent(e.target.value);
+                            form.setValue('source_content', e.target.value);
+                          }}
+                          rows={8}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {sourceType === 'scanned_doc' && (
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.tiff"
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                        className="hidden"
+                        id="scan-upload"
+                        disabled={isProcessingFiles}
+                      />
+                      <label htmlFor="scan-upload" className="cursor-pointer">
+                        <FileImage className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium text-gray-900">Upload Scanned Documents</p>
+                        <p className="text-sm text-gray-500">
+                          Supports JPG, PNG, GIF, BMP, TIFF. OCR will extract text automatically.
+                        </p>
+                      </label>
+                    </div>
+                    
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Uploaded Images:</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={file.name}
+                                className="w-full h-24 object-cover rounded border"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b">
+                                {file.name}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {isProcessingFiles && (
+                      <div className="flex items-center space-x-2 text-blue-600">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Processing OCR...</span>
+                      </div>
+                    )}
+
+                    {extractedContent && (
+                      <div className="space-y-2">
+                        <Label>OCR Extracted Text:</Label>
+                        <Textarea
+                          value={extractedContent}
+                          onChange={(e) => {
+                            setExtractedContent(e.target.value);
+                            form.setValue('source_content', e.target.value);
+                          }}
+                          rows={8}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
