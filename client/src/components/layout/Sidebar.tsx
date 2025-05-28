@@ -68,6 +68,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           </a>
         </Link>
         
+        <Link href="/course-generator">
+          <a className={navItemClass("/course-generator")}>
+            <span className="material-icons mr-3 text-inherit">school</span>
+            Course Generator
+          </a>
+        </Link>
+        
         <Link href="/my-content">
           <a className={navItemClass("/my-content")}>
             <span className="material-icons mr-3 text-inherit">history_edu</span>
