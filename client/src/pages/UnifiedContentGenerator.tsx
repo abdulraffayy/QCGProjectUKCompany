@@ -81,9 +81,43 @@ interface GeneratedItem {
 }
 
 const UnifiedContentGenerator: React.FC = () => {
-  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
+  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([
+    {
+      id: 'demo-1',
+      type: 'content',
+      title: 'Introduction to Machine Learning Fundamentals',
+      description: 'Comprehensive overview of ML concepts for advanced learners',
+      qaqf_level: 7,
+      qaqf_compliance_score: 92,
+      content: 'Machine learning represents a paradigm shift in computational problem-solving...',
+      created_at: new Date().toISOString(),
+      status: 'draft'
+    },
+    {
+      id: 'demo-2',
+      type: 'course',
+      title: 'Advanced Data Science Methodology',
+      description: 'Complete course structure for data science professionals',
+      qaqf_level: 8,
+      qaqf_compliance_score: 88,
+      content: 'Course Module 1: Statistical Foundations...',
+      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      status: 'reviewed'
+    },
+    {
+      id: 'demo-3',
+      type: 'content',
+      title: 'Basic Programming Concepts',
+      description: 'Introduction to programming for beginners',
+      qaqf_level: 3,
+      qaqf_compliance_score: 95,
+      content: 'Programming is the process of creating instructions for computers...',
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'approved'
+    }
+  ]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState('generator');
+  const [activeTab, setActiveTab] = useState('processing');
   const [selectedType, setSelectedType] = useState<'content' | 'course'>('content');
   const [sourceType, setSourceType] = useState<'manual' | 'pdf' | 'website' | 'scanned_doc'>('manual');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
