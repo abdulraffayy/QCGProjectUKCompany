@@ -147,14 +147,18 @@ async def extract_from_pdf(content: bytes, filename: str) -> tuple[str, str]:
 async def extract_from_document(content: bytes, filename: str) -> tuple[str, str]:
     """Extract text from Word documents"""
     try:
-        import python_docx2txt
+        from docx import Document
         import io
         
-        text = python_docx2txt.process(io.BytesIO(content))
-        return text, "docx2txt"
+        doc = Document(io.BytesIO(content))
+        text_content = []
+        for paragraph in doc.paragraphs:
+            text_content.append(paragraph.text)
+        
+        return "\n".join(text_content), "python_docx"
     
     except ImportError:
-        return f"Document content from {filename} (text extraction requires python-docx2txt library)", "fallback"
+        return f"Document content from {filename} (text extraction requires python-docx library)", "fallback"
     except Exception as e:
         return f"Error extracting document {filename}: {str(e)}", "error"
 

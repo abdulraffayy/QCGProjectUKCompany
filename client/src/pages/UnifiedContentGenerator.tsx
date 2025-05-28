@@ -648,7 +648,10 @@ const UnifiedContentGenerator: React.FC = () => {
                       <div className="flex items-end">
                         <Button
                           type="button"
-                          onClick={() => handleWebsiteExtraction(form.watch('website_url'))}
+                          onClick={() => {
+                            const url = form.watch('website_url');
+                            if (url) handleWebsiteExtraction(url);
+                          }}
                           disabled={isProcessingFiles || !form.watch('website_url')}
                           className="flex items-center space-x-2"
                         >
