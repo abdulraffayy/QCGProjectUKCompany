@@ -146,6 +146,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           Administration
         </div>
         
+        <Link href="/qaqf-admin">
+          <a className={navItemClass("/qaqf-admin")}>
+            <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
+            QAQF Admin
+          </a>
+        </Link>
+        
         <Link href="/settings">
           <a className={navItemClass("/settings")}>
             <span className="material-icons mr-3 text-inherit">settings</span>
