@@ -18,6 +18,7 @@ import {
   GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
   Upload, Link, FileImage, Globe, Scan
 } from 'lucide-react';
+import ProcessingCenterItem from '@/components/content/ProcessingCenterItem';
 import { useToast } from '@/hooks/use-toast';
 
 // Unified validation schema for both content types
@@ -88,6 +89,9 @@ const UnifiedContentGenerator: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [extractedContent, setExtractedContent] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -185,6 +189,38 @@ const UnifiedContentGenerator: React.FC = () => {
     } finally {
       setIsProcessingFiles(false);
     }
+  };
+
+  // Filter and sort generated items
+  const getFilteredAndSortedItems = () => {
+    let filtered = generatedItems;
+
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(item => item.status === filterStatus);
+    }
+
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(item => item.type === filterType);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'compliance':
+          return b.qaqf_compliance_score - a.qaqf_compliance_score;
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return filtered;
   };
 
   const generationMutation = useMutation({
@@ -850,82 +886,113 @@ const UnifiedContentGenerator: React.FC = () => {
         <TabsContent value="processing" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Content Processing Center</CardTitle>
-              <CardDescription>Review, edit, and approve generated content</CardDescription>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Processing Center</span>
+              </CardTitle>
+              <CardDescription>
+                Review, edit, and approve all generated content with comprehensive workflow management
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {generatedItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No generated content yet. Create some content to see it here!</p>
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No generated content to review yet</p>
+                  <p className="text-sm">Generate some content first to see it here for review and approval.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {generatedItems.map((item) => (
-                    <Card key={item.id} className="border-l-4 border-l-primary">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {item.type === 'content' ? (
-                              <FileText className="h-6 w-6 text-primary" />
-                            ) : (
-                              <GraduationCap className="h-6 w-6 text-primary" />
-                            )}
-                            <div>
-                              <CardTitle className="text-lg">{item.title}</CardTitle>
-                              <CardDescription>
-                                {item.type === 'content' ? 'Content' : 'Course'} • QAQF Level {item.qaqf_level} • 
-                                Compliance: {item.qaqf_compliance_score}%
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge 
-                              variant={item.status === 'approved' ? 'default' : item.status === 'reviewed' ? 'secondary' : 'outline'}
-                            >
-                              {item.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                          
-                          <div className="flex justify-between items-center">
-                            <div className="text-xs text-muted-foreground">
-                              Created: {new Date(item.created_at).toLocaleDateString()}
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button variant="outline" size="sm">
-                                Edit
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                Preview
-                              </Button>
-                              {item.status !== 'approved' && (
-                                <Button 
-                                  size="sm"
-                                  onClick={() => approveItem(item.id)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  <CheckCircle className="h-3 w-3" />
-                                  <span>Approve</span>
-                                </Button>
-                              )}
-                              <Button 
-                                variant="default" 
-                                size="sm"
-                                onClick={() => saveToLibrary(item)}
-                              >
-                                Save to Library
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="space-y-6">
+                  {/* Filter and Sort Controls */}
+                  <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="filter-status">Filter by Status:</Label>
+                      <Select value={filterStatus} onValueChange={setFilterStatus}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="reviewed">Reviewed</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="filter-type">Filter by Type:</Label>
+                      <Select value={filterType} onValueChange={setFilterType}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="content">Content</SelectItem>
+                          <SelectItem value="course">Course</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="sort-by">Sort by:</Label>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="oldest">Oldest First</SelectItem>
+                          <SelectItem value="title">Title A-Z</SelectItem>
+                          <SelectItem value="compliance">Compliance Score</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Content Items */}
+                  <div className="space-y-4">
+                    {getFilteredAndSortedItems().map((item) => (
+                      <ProcessingCenterItem 
+                        key={item.id} 
+                        item={item} 
+                        onUpdate={(updatedItem) => {
+                          setGeneratedItems(prev => 
+                            prev.map(i => i.id === updatedItem.id ? updatedItem : i)
+                          );
+                        }}
+                        onDelete={(itemId) => {
+                          setGeneratedItems(prev => prev.filter(i => i.id !== itemId));
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Summary Stats */}
+                  {getFilteredAndSortedItems().length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">{getFilteredAndSortedItems().length}</p>
+                        <p className="text-sm text-gray-600">Items Shown</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">
+                          {getFilteredAndSortedItems().filter(i => i.status === 'approved').length}
+                        </p>
+                        <p className="text-sm text-gray-600">Approved</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-yellow-600">
+                          {getFilteredAndSortedItems().filter(i => i.status === 'reviewed').length}
+                        </p>
+                        <p className="text-sm text-gray-600">Under Review</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-600">
+                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + item.qaqf_compliance_score, 0) / getFilteredAndSortedItems().length)}%
+                        </p>
+                        <p className="text-sm text-gray-600">Avg. Compliance</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
