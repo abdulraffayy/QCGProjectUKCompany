@@ -17,7 +17,7 @@ import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import LessonPlan from "@/pages/LessonPlan";
 import StudyMaterial from "@/pages/StudyMaterial";
-import CourseGenerator from "@/components/course/CourseGenerator";
+import CourseGenerator from "@/pages/CourseGenerator";
 import QAQFFramework from "@/pages/QAQFFramework";
 import QAQFAdmin from "@/pages/QAQFAdmin";
 
