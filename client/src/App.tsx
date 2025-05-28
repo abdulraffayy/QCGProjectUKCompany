@@ -18,6 +18,7 @@ import Settings from "@/pages/Settings";
 import LessonPlan from "@/pages/LessonPlan";
 import StudyMaterial from "@/pages/StudyMaterial";
 import CourseGenerator from "@/components/course/CourseGenerator";
+import QAQFFramework from "@/pages/QAQFFramework";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/lesson-plan" component={LessonPlan} />
         <Route path="/study-material" component={StudyMaterial} />
         <Route path="/course-generator" component={CourseGenerator} />
+        <Route path="/qaqf-framework" component={QAQFFramework} />
         <Route path="/verification" component={Verification} />
         <Route path="/moderation" component={Moderation} />
         <Route path="/assessment" component={Assessment} />
