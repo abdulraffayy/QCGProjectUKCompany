@@ -156,12 +156,352 @@ const QAQFAdmin: React.FC = () => {
     }
   };
 
+  // Mutations for levels and characteristics management
+  const addLevelMutation = useMutation({
+    mutationFn: async (levelData: { level: number; name: string; description: string }) => {
+      const response = await fetch('/api/qaqf/levels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(levelData),
+      });
+      if (!response.ok) throw new Error('Failed to create level');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/levels'] });
+      toast({ title: "Level created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create level", variant: "destructive" });
+    },
+  });
+
+  const updateLevelMutation = useMutation({
+    mutationFn: async ({ id, ...levelData }: { id: number; level?: number; name?: string; description?: string }) => {
+      const response = await fetch(`/api/qaqf/levels/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(levelData),
+      });
+      if (!response.ok) throw new Error('Failed to update level');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/levels'] });
+      toast({ title: "Level updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update level", variant: "destructive" });
+    },
+  });
+
+  const deleteLevelMutation = useMutation({
+    mutationFn: async (levelId: number) => {
+      const response = await fetch(`/api/qaqf/levels/${levelId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete level');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/levels'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/qaqf-stats'] });
+      toast({ title: "Level deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete level", variant: "destructive" });
+    },
+  });
+
+  const addCharacteristicMutation = useMutation({
+    mutationFn: async (charData: { name: string; description: string; category: string }) => {
+      const response = await fetch('/api/qaqf/characteristics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(charData),
+      });
+      if (!response.ok) throw new Error('Failed to create characteristic');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/characteristics'] });
+      toast({ title: "Characteristic created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create characteristic", variant: "destructive" });
+    },
+  });
+
+  const updateCharacteristicMutation = useMutation({
+    mutationFn: async ({ id, ...charData }: { id: number; name?: string; description?: string; category?: string }) => {
+      const response = await fetch(`/api/qaqf/characteristics/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(charData),
+      });
+      if (!response.ok) throw new Error('Failed to update characteristic');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/characteristics'] });
+      toast({ title: "Characteristic updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update characteristic", variant: "destructive" });
+    },
+  });
+
+  const deleteCharacteristicMutation = useMutation({
+    mutationFn: async (charId: number) => {
+      const response = await fetch(`/api/qaqf/characteristics/${charId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete characteristic');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/qaqf/characteristics'] });
+      toast({ title: "Characteristic deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete characteristic", variant: "destructive" });
+    },
+  });
+
+  const getContentCountForLevel = (level: number) => {
+    return contentData?.filter(c => c.qaqf_level === level).length || 0;
+  };
+
   const handleVerifyContent = (content: Content, status: string) => {
     updateContentMutation.mutate({
       id: content.id,
       verification_status: status,
       verified_by_user_id: 1, // Current user ID - would come from auth context
     });
+  };
+
+  // Form components
+  const AddLevelForm = () => {
+    const [level, setLevel] = useState('');
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      addLevelMutation.mutate({
+        level: parseInt(level),
+        name,
+        description,
+      });
+      setLevel('');
+      setName('');
+      setDescription('');
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">Level Number</label>
+          <Input
+            type="number"
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+            placeholder="e.g., 1"
+            min="1"
+            max="9"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Level Name</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Basic"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe this QAQF level..."
+            required
+          />
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button type="submit" disabled={addLevelMutation.isPending}>
+            {addLevelMutation.isPending ? 'Creating...' : 'Create Level'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
+  const EditLevelForm = ({ level }: { level: QAQFLevel }) => {
+    const [levelNum, setLevelNum] = useState(level.level.toString());
+    const [name, setName] = useState(level.name);
+    const [description, setDescription] = useState(level.description);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      updateLevelMutation.mutate({
+        id: level.id,
+        level: parseInt(levelNum),
+        name,
+        description,
+      });
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">Level Number</label>
+          <Input
+            type="number"
+            value={levelNum}
+            onChange={(e) => setLevelNum(e.target.value)}
+            min="1"
+            max="9"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Level Name</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button type="submit" disabled={updateLevelMutation.isPending}>
+            {updateLevelMutation.isPending ? 'Updating...' : 'Update Level'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
+  const AddCharacteristicForm = () => {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [category, setCategory] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      addCharacteristicMutation.mutate({
+        name,
+        description,
+        category,
+      });
+      setName('');
+      setDescription('');
+      setCategory('');
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">Characteristic Name</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Critical Thinking"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe this characteristic..."
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Category</label>
+          <Select value={category} onValueChange={setCategory} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button type="submit" disabled={addCharacteristicMutation.isPending}>
+            {addCharacteristicMutation.isPending ? 'Creating...' : 'Create Characteristic'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
+  const EditCharacteristicForm = ({ characteristic }: { characteristic: QAQFCharacteristic }) => {
+    const [name, setName] = useState(characteristic.name);
+    const [description, setDescription] = useState(characteristic.description);
+    const [category, setCategory] = useState(characteristic.category);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      updateCharacteristicMutation.mutate({
+        id: characteristic.id,
+        name,
+        description,
+        category,
+      });
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">Characteristic Name</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Category</label>
+          <Select value={category} onValueChange={setCategory} required>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button type="submit" disabled={updateCharacteristicMutation.isPending}>
+            {updateCharacteristicMutation.isPending ? 'Updating...' : 'Update Characteristic'}
+          </Button>
+        </div>
+      </form>
+    );
   };
 
   return (
@@ -491,21 +831,87 @@ const QAQFAdmin: React.FC = () => {
         <TabsContent value="levels" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>QAQF Levels</CardTitle>
-                <CardDescription>Manage framework levels and their definitions</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>QAQF Levels</CardTitle>
+                  <CardDescription>Manage framework levels and their definitions</CardDescription>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Level
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New QAQF Level</DialogTitle>
+                      <DialogDescription>
+                        Create a new level for the QAQF framework
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddLevelForm />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {qaqfLevels?.map(level => (
-                    <div key={level.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
+                    <div key={level.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex-1">
                         <p className="font-medium">Level {level.level} - {level.name}</p>
                         <p className="text-sm text-muted-foreground">{level.description}</p>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          {getContentCountForLevel(level.level)} content items using this level
+                        </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-3 w-3" />
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit QAQF Level</DialogTitle>
+                              <DialogDescription>
+                                Modify level details and description
+                              </DialogDescription>
+                            </DialogHeader>
+                            <EditLevelForm level={level} />
+                          </DialogContent>
+                        </Dialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Level {level.level}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this level? This action cannot be undone.
+                                {getContentCountForLevel(level.level) > 0 && (
+                                  <span className="text-red-600 block mt-2">
+                                    Warning: This level is being used by {getContentCountForLevel(level.level)} content items.
+                                  </span>
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteLevelMutation.mutate(level.id)}
+                                disabled={getContentCountForLevel(level.level) > 0}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -513,24 +919,81 @@ const QAQFAdmin: React.FC = () => {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>QAQF Characteristics</CardTitle>
-                <CardDescription>Manage framework characteristics and categories</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>QAQF Characteristics</CardTitle>
+                  <CardDescription>Manage framework characteristics and categories</CardDescription>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Characteristic
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New QAQF Characteristic</DialogTitle>
+                      <DialogDescription>
+                        Create a new characteristic for the QAQF framework
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddCharacteristicForm />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {qaqfCharacteristics?.map(characteristic => (
-                    <div key={characteristic.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
+                    <div key={characteristic.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex-1">
                         <p className="font-medium">{characteristic.name}</p>
                         <p className="text-sm text-muted-foreground">{characteristic.description}</p>
                         <Badge variant="outline" className="mt-1">
                           {characteristic.category}
                         </Badge>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-3 w-3" />
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit QAQF Characteristic</DialogTitle>
+                              <DialogDescription>
+                                Modify characteristic details and category
+                              </DialogDescription>
+                            </DialogHeader>
+                            <EditCharacteristicForm characteristic={characteristic} />
+                          </DialogContent>
+                        </Dialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Characteristic</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{characteristic.name}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteCharacteristicMutation.mutate(characteristic.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   ))}
                 </div>
