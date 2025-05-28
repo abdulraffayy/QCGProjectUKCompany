@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
-import ContentGenerator from "@/pages/ContentGenerator";
+import UnifiedContentGenerator from "@/pages/UnifiedContentGenerator";
 import VideoGenerator from "@/pages/VideoGenerator";
 import MyContent from "@/pages/MyContent";
 import Verification from "@/pages/Verification";
@@ -17,7 +17,6 @@ import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import LessonPlan from "@/pages/LessonPlan";
 import StudyMaterial from "@/pages/StudyMaterial";
-import CourseGenerator from "@/pages/CourseGenerator";
 import QAQFFramework from "@/pages/QAQFFramework";
 import QAQFAdmin from "@/pages/QAQFAdmin";
 
@@ -26,12 +25,11 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/content-generator" component={ContentGenerator} />
+        <Route path="/content-generator" component={UnifiedContentGenerator} />
         <Route path="/video-generator" component={VideoGenerator} />
         <Route path="/my-content" component={MyContent} />
         <Route path="/lesson-plan" component={LessonPlan} />
         <Route path="/study-material" component={StudyMaterial} />
-        <Route path="/course-generator" component={CourseGenerator} />
         <Route path="/qaqf-framework" component={QAQFFramework} />
         <Route path="/qaqf-admin" component={QAQFAdmin} />
         <Route path="/verification" component={Verification} />
