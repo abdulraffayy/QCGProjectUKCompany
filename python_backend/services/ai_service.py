@@ -47,6 +47,11 @@ class AIService:
         """Generate structured academic content based on request parameters"""
         characteristics_text = ', '.join(request.characteristics)
         
+        # Build content with proper string formatting
+        additional_section = ""
+        if request.additional_instructions:
+            additional_section = f"### Additional Information\n{request.additional_instructions}\n\n"
+        
         content = f"""# {title}
 
 ## Module Code: {module_code}
@@ -74,7 +79,7 @@ The assessment approach aligns with QAQF Level {request.qaqf_level} requirements
 - Creative problem-solving approaches
 - Effective communication of complex ideas
 
-{f"### Additional Information\\n{request.additional_instructions}\\n\\n" if request.additional_instructions else ""}
+{additional_section}
 
 ### Conclusion
 This module provides a structured approach to understanding {request.subject} within the QAQF framework, ensuring academic rigor while fostering practical application skills."""
