@@ -60,3 +60,14 @@ async def update_content(content_id: int, content_update: ContentUpdate, db: Ses
     db.commit()
     db.refresh(content)
     return content
+
+@router.delete("/{content_id}")
+async def delete_content(content_id: int, db: Session = Depends(get_db)):
+    """Delete content"""
+    content = db.query(Content).filter(Content.id == content_id).first()
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    
+    db.delete(content)
+    db.commit()
+    return {"message": "Content deleted successfully"}
