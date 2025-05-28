@@ -267,7 +267,7 @@ const QAQFAdmin: React.FC = () => {
   });
 
   const getContentCountForLevel = (level: number) => {
-    return contentData?.filter(c => c.qaqf_level === level).length || 0;
+    return contentList?.filter(c => c.qaqf_level === level).length || 0;
   };
 
   const handleVerifyContent = (content: Content, status: string) => {
