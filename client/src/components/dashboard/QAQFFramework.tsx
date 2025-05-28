@@ -1,4 +1,3 @@
-import { QAQFCharacteristics, QAQFLevels, QAQFLevelCategories } from "@/lib/qaqf";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, ExternalLink, TrendingUp, Users, BookOpen } from "lucide-react";
 
 // Define icons for each characteristic
 const characteristicIcons: Record<string, string> = {
@@ -21,8 +22,48 @@ const characteristicIcons: Record<string, string> = {
   "Adaptability": "bubble_chart"
 };
 
+// Types for dynamic QAQF data
+interface QAQFLevel {
+  id: number;
+  level: number;
+  name: string;
+  description: string;
+}
+
+interface QAQFCharacteristic {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+}
+
+interface ContentStats {
+  totalContent: number;
+  verifiedContent: number;
+  levelDistribution: Record<number, number>;
+}
+
 const QAQFFramework: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  
+  // Fetch dynamic QAQF levels from database
+  const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
+    queryKey: ['/api/qaqf/levels'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Fetch dynamic QAQF characteristics from database
+  const { data: qaqfCharacteristics, isLoading: characteristicsLoading } = useQuery<QAQFCharacteristic[]>({
+    queryKey: ['/api/qaqf/characteristics'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Fetch content statistics for dashboard insights
+  const { data: contentStats } = useQuery<ContentStats>({
+    queryKey: ['/api/dashboard/qaqf-stats'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
   
   const getCategoryColor = (level: number) => {
     if (level <= 3) return "bg-blue-500 text-white";
@@ -37,13 +78,34 @@ const QAQFFramework: React.FC = () => {
   };
   
   const getCharacteristicsForLevel = (level: number) => {
-    // For levels 1-3, show first 3 characteristics
-    if (level <= 3) return QAQFCharacteristics.slice(0, 3);
-    // For levels 4-6, show first 6 characteristics
-    if (level <= 6) return QAQFCharacteristics.slice(0, 6);
-    // For levels 7-9, show all characteristics
-    return QAQFCharacteristics;
+    if (!qaqfCharacteristics) return [];
+    // Filter characteristics based on category and level
+    if (level <= 3) return qaqfCharacteristics.filter(char => char.category === 'basic');
+    if (level <= 6) return qaqfCharacteristics.filter(char => ['basic', 'intermediate'].includes(char.category));
+    return qaqfCharacteristics; // All characteristics for advanced levels
   };
+
+  const getContentCountForLevel = (level: number) => {
+    return contentStats?.levelDistribution?.[level] || 0;
+  };
+
+  const getTotalContentForCategory = (category: string) => {
+    if (!contentStats?.levelDistribution) return 0;
+    const levels = category === 'basic' ? [1,2,3] : 
+                  category === 'intermediate' ? [4,5,6] : [7,8,9];
+    return levels.reduce((sum, level) => sum + getContentCountForLevel(level), 0);
+  };
+
+  if (levelsLoading || characteristicsLoading) {
+    return (
+      <Card className="shadow-md border-0">
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Loading QAQF Framework...</span>
+        </CardContent>
+      </Card>
+    );
+  }
   
   return (
     <Card className="shadow-md border-0">
@@ -152,34 +214,37 @@ const QAQFFramework: React.FC = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Sort levels by ID to ensure ascending order */}
-                {QAQFLevels.sort((a, b) => a.id - b.id).map((level) => (
+                {/* Sort levels by level number to ensure ascending order */}
+                {qaqfLevels?.sort((a, b) => a.level - b.level).map((level) => (
                   <div 
                     key={level.id} 
                     className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all"
                   >
-                    <div className={`${getCategoryColor(level.id)} p-2 text-center`}>
+                    <div className={`${getCategoryColor(level.level)} p-2 text-center`}>
                       <h3 className="text-sm font-medium flex items-center justify-center">
                         <span className="bg-white text-sm text-slate-800 w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 font-bold">
-                          {level.id}
+                          {level.level}
                         </span>
                         {level.name}
                       </h3>
                       <Badge variant="outline" className="mt-1 bg-white/20 text-white text-xs">
-                        {getCategoryName(level.id)}
+                        {getCategoryName(level.level)}
                       </Badge>
+                      <div className="mt-1 text-xs opacity-80">
+                        {getContentCountForLevel(level.level)} content items
+                      </div>
                     </div>
                     <div className="p-3">
                       <p className="text-xs text-neutral-600">{level.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {getCharacteristicsForLevel(level.id).slice(0, 3).map((char) => (
+                        {getCharacteristicsForLevel(level.level).slice(0, 3).map((char) => (
                           <span key={char.id} className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">
                             {char.name}
                           </span>
                         ))}
-                        {level.id > 3 && (
+                        {level.level > 3 && (
                           <span className="inline-block text-xs bg-neutral-100 px-2 py-1 rounded-full">
-                            +{getCharacteristicsForLevel(level.id).length - 3} more
+                            +{getCharacteristicsForLevel(level.level).length - 3} more
                           </span>
                         )}
                       </div>
@@ -224,18 +289,19 @@ const QAQFFramework: React.FC = () => {
               </div>
             
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {QAQFCharacteristics
-                  .filter(char => {
+                {qaqfCharacteristics
+                  ?.filter(char => {
                     if (activeCategory === "all") return true;
-                    if (activeCategory === "basic" && char.id <= 3) return true;
-                    if (activeCategory === "intermediate" && char.id > 3 && char.id <= 6) return true;
-                    if (activeCategory === "advanced" && char.id > 6) return true;
+                    if (activeCategory === "basic" && char.category === "basic") return true;
+                    if (activeCategory === "intermediate" && char.category === "intermediate") return true;
+                    if (activeCategory === "advanced" && char.category === "advanced") return true;
                     return false;
                   })
                   .map((characteristic) => (
                     <div 
                       key={characteristic.id}
-                      className="border p-3 rounded-md hover:bg-neutral-50 transition-colors"
+                      className="border p-3 rounded-md hover:bg-neutral-50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedLevel(characteristic.id)}
                     >
                       <div className="flex items-center mb-1">
                         <span className="material-icons text-sm mr-2 text-primary">
@@ -244,9 +310,11 @@ const QAQFFramework: React.FC = () => {
                         <span className="text-sm font-medium">{characteristic.name}</span>
                       </div>
                       <p className="text-xs text-neutral-600">{characteristic.description}</p>
+                      <Badge variant="outline" className="mt-2 text-xs">
+                        {characteristic.category}
+                      </Badge>
                     </div>
-                  ))
-                }
+                  )) || []}
               </div>
             </div>
           </TabsContent>
