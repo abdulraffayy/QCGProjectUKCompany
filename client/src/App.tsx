@@ -26,6 +26,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/content-generator" component={UnifiedContentGenerator} />
+        <Route path="/ai-content-studio" component={UnifiedContentGenerator} />
+        <Route path="/processing-center" component={UnifiedContentGenerator} />
         <Route path="/video-generator" component={VideoGenerator} />
         <Route path="/my-content" component={MyContent} />
         <Route path="/lesson-plan" component={LessonPlan} />

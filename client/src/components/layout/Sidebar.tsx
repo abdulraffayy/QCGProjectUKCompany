@@ -50,113 +50,87 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           Dashboard
         </div>
         
-        <Link href="/">
-          <a className={navItemClass("/")}>
-            <span className="material-icons mr-3 text-inherit">dashboard</span>
-            Overview
-          </a>
+        <Link href="/" className={navItemClass("/")}>
+          <span className="material-icons mr-3 text-inherit">dashboard</span>
+          Overview
         </Link>
         
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Content
         </div>
         
-        <Link href="/content-generator">
-          <a className={navItemClass("/content-generator")}>
-            <span className="material-icons mr-3 text-inherit">auto_awesome</span>
-            AI Content Studio
-          </a>
+        <Link href="/content-generator" className={navItemClass("/content-generator")}>
+          <span className="material-icons mr-3 text-inherit">auto_awesome</span>
+          AI Content Studio
         </Link>
         
-        <Link href="/my-content">
-          <a className={navItemClass("/my-content")}>
-            <span className="material-icons mr-3 text-inherit">history_edu</span>
-            Module Library
-          </a>
+        <Link href="/my-content" className={navItemClass("/my-content")}>
+          <span className="material-icons mr-3 text-inherit">history_edu</span>
+          Module Library
         </Link>
         
-        <Link href="/lesson-plan">
-          <a className={navItemClass("/lesson-plan")}>
-            <span className="material-icons mr-3 text-inherit">event_note</span>
-            Lesson Plan
-          </a>
+        <Link href="/lesson-plan" className={navItemClass("/lesson-plan")}>
+          <span className="material-icons mr-3 text-inherit">event_note</span>
+          Lesson Plan
         </Link>
         
-        <Link href="/study-material">
-          <a className={navItemClass("/study-material")}>
-            <span className="material-icons mr-3 text-inherit">book</span>
-            Study Material
-          </a>
+        <Link href="/study-material" className={navItemClass("/study-material")}>
+          <span className="material-icons mr-3 text-inherit">book</span>
+          Study Material
         </Link>
         
-        <Link href="/video-generator">
-          <a className={navItemClass("/video-generator")}>
-            <span className="material-icons mr-3 text-inherit">video_library</span>
-            Video Generator
-          </a>
+        <Link href="/video-generator" className={navItemClass("/video-generator")}>
+          <span className="material-icons mr-3 text-inherit">video_library</span>
+          Video Generator
         </Link>
         
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Quality Assurance
         </div>
         
-        <Link href="/verification">
-          <a className={navItemClass("/verification")}>
-            <span className="material-icons mr-3 text-inherit">verified</span>
-            Verification
-          </a>
+        <Link href="/verification" className={navItemClass("/verification")}>
+          <span className="material-icons mr-3 text-inherit">verified</span>
+          Verification
         </Link>
         
-        <Link href="/moderation">
-          <a className={navItemClass("/moderation")}>
-            <span className="material-icons mr-3 text-inherit">gavel</span>
-            Moderation
-          </a>
+        <Link href="/moderation" className={navItemClass("/moderation")}>
+          <span className="material-icons mr-3 text-inherit">gavel</span>
+          Moderation
         </Link>
         
-        <Link href="/assessment">
-          <a className={navItemClass("/assessment")}>
-            <span className="material-icons mr-3 text-inherit">school</span>
-            Assessment
-          </a>
+        <Link href="/assessment" className={navItemClass("/assessment")}>
+          <span className="material-icons mr-3 text-inherit">school</span>
+          Assessment
         </Link>
         
-        <Link href="/assessment-in-progress">
-          <a className={navItemClass("/assessment-in-progress")}>
-            <span className="material-icons mr-3 text-inherit">assignment_late</span>
-            Assessment in Progress
-          </a>
+        <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}>
+          <span className="material-icons mr-3 text-inherit">assignment_late</span>
+          Assessment in Progress
         </Link>
 
-        <Link href="/analytics">
-          <a className={navItemClass("/analytics")}>
-            <span className="material-icons mr-3 text-inherit">analytics</span>
-            Analytics
-          </a>
+        <Link href="/analytics" className={navItemClass("/analytics")}>
+          <span className="material-icons mr-3 text-inherit">analytics</span>
+          Analytics
         </Link>
         
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Administration
         </div>
         
-        <Link href="/qaqf-admin">
-          <a className={navItemClass("/qaqf-admin")}>
-            <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
-            QAQF Admin
-          </a>
+        <Link href="/qaqf-admin" className={navItemClass("/qaqf-admin")}>
+          <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
+          QAQF Admin
         </Link>
         
-        <Link href="/settings">
-          <a className={navItemClass("/settings")}>
-            <span className="material-icons mr-3 text-inherit">settings</span>
-            Settings
-          </a>
+        <Link href="/settings" className={navItemClass("/settings")}>
+          <span className="material-icons mr-3 text-inherit">settings</span>
+          Settings
         </Link>
         
-        <a href="#" className="sidebar-menu-item flex items-center px-4 py-3 text-neutral-700">
+        <div className="sidebar-menu-item flex items-center px-4 py-3 text-neutral-700 cursor-pointer">
           <span className="material-icons mr-3 text-neutral-500">help</span>
           Help & Guides
-        </a>
+        </div>
       </nav>
     </aside>
   );
