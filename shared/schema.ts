@@ -129,6 +129,42 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   thumbnailUrl: true,
 });
 
+// Lesson Plans schema
+export const lessonPlans = pgTable("lesson_plans", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull(),
+  duration: text("duration").notNull(),
+  qaqfLevel: integer("qaqf_level").notNull(),
+  createdByUserId: integer("created_by_user_id").notNull(),
+  verificationStatus: text("verification_status").notNull().default(VerificationStatus.PENDING),
+  verifiedByUserId: integer("verified_by_user_id"),
+  learningObjectives: json("learning_objectives").notNull(),
+  materials: json("materials").notNull(),
+  activities: json("activities").notNull(),
+  assessmentMethods: json("assessment_methods").notNull(),
+  homework: text("homework"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
+  title: true,
+  subject: true,
+  duration: true,
+  qaqfLevel: true,
+  createdByUserId: true,
+  verificationStatus: true,
+  verifiedByUserId: true,
+  learningObjectives: true,
+  materials: true,
+  activities: true,
+  assessmentMethods: true,
+  homework: true,
+  notes: true,
+});
+
 // Activity schema
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
@@ -163,6 +199,9 @@ export type InsertContent = z.infer<typeof insertContentSchema>;
 
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
+
+export type LessonPlan = typeof lessonPlans.$inferSelect;
+export type InsertLessonPlan = z.infer<typeof insertLessonPlanSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
