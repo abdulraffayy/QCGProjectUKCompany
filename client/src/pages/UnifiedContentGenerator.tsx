@@ -1027,6 +1027,7 @@ const UnifiedContentGenerator: React.FC = () => {
                         onDelete={(itemId) => {
                           setGeneratedItems(prev => prev.filter(i => i.id !== itemId));
                         }}
+                        onCreateLessonPlan={handleCreateLessonPlan}
                       />
                     ))}
                   </div>
@@ -1082,6 +1083,22 @@ const UnifiedContentGenerator: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Lesson Plan Template Modal */}
+      {showLessonPlan && selectedContentForLesson && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <LessonPlanTemplate
+              generatedContent={selectedContentForLesson}
+              onSave={handleSaveLessonPlan}
+              onClose={() => {
+                setShowLessonPlan(false);
+                setSelectedContentForLesson(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
