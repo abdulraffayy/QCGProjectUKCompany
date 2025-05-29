@@ -1068,14 +1068,14 @@ const UnifiedContentGenerator: React.FC = () => {
         <TabsContent value="library" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Content Library</CardTitle>
+              <CardTitle>Module Library</CardTitle>
               <CardDescription>Access your approved and saved content</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  Your content library will display approved content here. 
+                  Your module library will display approved content here. 
                   Save content from the Processing Center to build your library.
                 </p>
               </div>
