@@ -1,11 +1,51 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { LessonPlan } from '@shared/schema';
+import { Clock, Users, Edit, Download, Eye, Trash2 } from 'lucide-react';
 
 const LessonPlanPage: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const { toast } = useToast();
+  
+  // Fetch saved lesson plans from the database
+  const { data: lessonPlans = [], isLoading, refetch } = useQuery<LessonPlan[]>({
+    queryKey: ['/api/lesson-plans'],
+  });
+
+  const handleDeleteLessonPlan = async (id: number) => {
+    try {
+      const response = await fetch(`/api/lesson-plans/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Lesson plan deleted successfully",
+        });
+        refetch();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete lesson plan",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting lesson plan:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the lesson plan",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="container max-w-screen-xl mx-auto py-6 px-4">
@@ -180,69 +220,82 @@ const LessonPlanPage: React.FC = () => {
           
           <div className="flex justify-between items-center mb-4">
             <h4 className="font-medium">Saved Lesson Plans</h4>
-            <Badge>3 plans</Badge>
+            <Badge>{lessonPlans.length} plans</Badge>
           </div>
           
-          <div className="space-y-3">
-            {[
-              {
-                id: 1,
-                title: "Nursing in workplace - Spring Semester",
-                courseTitle: "Nursing in workplace (QAQF Level 5)",
-                weeksPlanned: 12,
-                lastUpdated: "May 15, 2025",
-                contentCount: 24
-              },
-              {
-                id: 2,
-                title: "Healthcare Ethics - Module 2",
-                courseTitle: "Healthcare Ethics Introduction",
-                weeksPlanned: 6,
-                lastUpdated: "May 10, 2025",
-                contentCount: 12
-              },
-              {
-                id: 3,
-                title: "Research Methods - Condensed",
-                courseTitle: "Research Methods in Nursing",
-                weeksPlanned: 8,
-                lastUpdated: "May 7, 2025",
-                contentCount: 16
-              }
-            ].map((plan) => (
-              <div key={plan.id} className="border rounded-md p-4 bg-white hover:shadow-sm transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
-                  <div>
-                    <h5 className="font-medium">{plan.title}</h5>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading lesson plans...</p>
+            </div>
+          ) : lessonPlans.length === 0 ? (
+            <div className="border rounded-md p-8 bg-gray-50 text-center">
+              <p className="text-gray-500 mb-2">No lesson plans found.</p>
+              <p className="text-sm text-gray-400">
+                Create lesson plans in the AI Content Studio Processing Center to see them here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {lessonPlans
+                .filter(plan => selectedCourse === "" || plan.subject === selectedCourse)
+                .map((plan) => (
+                <div key={plan.id} className="border rounded-md p-4 bg-white hover:shadow-sm transition-all">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                    <div>
+                      <h5 className="font-medium">{plan.title}</h5>
+                      <div className="text-sm text-neutral-500">
+                        {plan.subject} • QAQF Level {plan.qaqfLevel} • Duration: {plan.duration} • {Array.isArray(plan.activities) ? plan.activities.length : 0} activities
+                      </div>
+                    </div>
                     <div className="text-sm text-neutral-500">
-                      {plan.courseTitle} • {plan.weeksPlanned} weeks • {plan.contentCount} learning items
+                      Last updated: {new Date(plan.updatedAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <div className="text-sm text-neutral-500">
-                    Last updated: {plan.lastUpdated}
+                  
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 mb-2">Learning Objectives:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.isArray(plan.learningObjectives) && plan.learningObjectives.slice(0, 2).map((objective: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {objective.length > 30 ? `${objective.substring(0, 30)}...` : objective}
+                        </Badge>
+                      ))}
+                      {Array.isArray(plan.learningObjectives) && plan.learningObjectives.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{plan.learningObjectives.length - 2} more
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-1" />
+                      Export
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-700 hover:bg-red-50"
+                      onClick={() => handleDeleteLessonPlan(plan.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm">
-                    <span className="material-icons text-sm mr-1">edit</span>
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <span className="material-icons text-sm mr-1">visibility</span>
-                    View
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <span className="material-icons text-sm mr-1">download</span>
-                    Export
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-red-700 hover:bg-red-50">
-                    <span className="material-icons text-sm mr-1">delete</span>
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
