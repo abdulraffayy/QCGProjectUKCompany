@@ -21,7 +21,9 @@ import {
   BarChart3,
   Lightbulb,
   Download,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  PlayCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,9 +43,10 @@ interface ProcessingCenterItemProps {
   item: GeneratedItem;
   onUpdate: (item: GeneratedItem) => void;
   onDelete: (id: string) => void;
+  onCreateLessonPlan?: (item: GeneratedItem) => void;
 }
 
-const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({ item, onUpdate, onDelete }) => {
+const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({ item, onUpdate, onDelete, onCreateLessonPlan }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editedItem, setEditedItem] = useState(item);
@@ -222,6 +225,17 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({ item, onUpd
               <span>Approve</span>
             </Button>
           )}
+
+          {/* Create Lesson Plan */}
+          <Button 
+            onClick={() => onCreateLessonPlan?.(item)} 
+            variant="outline" 
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Lesson Plan</span>
+          </Button>
 
           {/* Export/Download */}
           <Button variant="outline" size="sm" className="flex items-center space-x-1">

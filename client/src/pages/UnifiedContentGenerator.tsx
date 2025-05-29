@@ -19,6 +19,7 @@ import {
   Upload, Link, FileImage, Globe, Scan
 } from 'lucide-react';
 import ProcessingCenterItem from '@/components/content/ProcessingCenterItem';
+import LessonPlanTemplate from '@/components/content/LessonPlanTemplate';
 import { useToast } from '@/hooks/use-toast';
 
 // Unified validation schema for both content types
@@ -126,6 +127,8 @@ const UnifiedContentGenerator: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
+  const [showLessonPlan, setShowLessonPlan] = useState(false);
+  const [selectedContentForLesson, setSelectedContentForLesson] = useState<GeneratedItem | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -255,6 +258,34 @@ const UnifiedContentGenerator: React.FC = () => {
     });
 
     return filtered;
+  };
+
+  // Handle lesson plan creation
+  const handleCreateLessonPlan = (item: GeneratedItem) => {
+    setSelectedContentForLesson(item);
+    setShowLessonPlan(true);
+  };
+
+  const handleSaveLessonPlan = (lessonPlanData: any) => {
+    const lessonPlanItem: GeneratedItem = {
+      id: `lesson-${Date.now()}`,
+      type: 'content',
+      title: `Lesson Plan: ${lessonPlanData.title}`,
+      description: `${lessonPlanData.duration} lesson for ${lessonPlanData.subject}`,
+      qaqf_level: lessonPlanData.qaqf_level,
+      qaqf_compliance_score: 90,
+      content: lessonPlanData,
+      created_at: new Date().toISOString(),
+      status: 'draft'
+    };
+
+    setGeneratedItems(prev => [lessonPlanItem, ...prev]);
+    setShowLessonPlan(false);
+    setSelectedContentForLesson(null);
+    toast({ 
+      title: "Lesson plan created successfully!",
+      description: "Your lesson plan is now available in the Processing Center."
+    });
   };
 
   const generationMutation = useMutation({
