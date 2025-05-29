@@ -32,6 +32,9 @@ const AssessmentTool: React.FC = () => {
   const [showQuizOptions, setShowQuizOptions] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [generatedAssessment, setGeneratedAssessment] = useState<any>(null);
+  const [savedAssessments, setSavedAssessments] = useState<any[]>([]);
+  const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   // Puzzle specific options
   const [puzzleType, setPuzzleType] = useState("crossword");

@@ -39,37 +39,151 @@ const AnalyticsPage: React.FC = () => {
     if (dateRange === "all-time") return contents;
     
     const now = new Date();
-    let startDate: Date;
+    const filterDate = new Date();
     
     switch (dateRange) {
       case "this-month":
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        filterDate.setMonth(now.getMonth(), 1);
         break;
       case "last-month":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-        return contents.filter(content => {
-          const date = new Date(content.createdAt);
-          return date >= startDate && date <= endDate;
-        });
+        filterDate.setMonth(now.getMonth() - 1, 1);
+        break;
       case "last-3-months":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        filterDate.setMonth(now.getMonth() - 3);
         break;
       case "last-6-months":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        filterDate.setMonth(now.getMonth() - 6);
         break;
       case "this-year":
-        startDate = new Date(now.getFullYear(), 0, 1);
+        filterDate.setFullYear(now.getFullYear(), 0, 1);
         break;
       default:
         return contents;
     }
     
-    return contents.filter(content => {
-      const date = new Date(content.createdAt);
-      return date >= startDate;
-    });
+    return contents.filter(content => 
+      new Date(content.createdAt) >= filterDate
+    );
   };
+
+  // Calculate analytics metrics
+  const calculateMetrics = () => {
+    const filteredData = getFilteredContents();
+    return {
+      totalContent: filteredData.length,
+      verifiedContent: filteredData.filter(c => c.verificationStatus === 'verified').length,
+      pendingContent: filteredData.filter(c => c.verificationStatus === 'pending').length,
+      contentByLevel: filteredData.reduce((acc, content) => {
+        acc[content.qaqfLevel] = (acc[content.qaqfLevel] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>)
+    };
+  };
+
+  const metrics = calculateMetrics();
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select date range" />
+            </SelectTrigger>
+            <SelectContent>
+              {dateRangeOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.totalContent}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Verified Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.verifiedContent}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.pendingContent}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="qaqf-analysis">QAQF Analysis</TabsTrigger>
+          <TabsTrigger value="batch-processing">Batch Processing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content by QAQF Level</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(metrics.contentByLevel).map(([level, count]) => (
+                    <div key={level} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <span>Level {level}</span>
+                      <span className="font-semibold">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">
+                  Activity tracking will be displayed here based on user interactions.
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="qaqf-analysis">
+          <QAQFAnalytics contents={getFilteredContents()} />
+        </TabsContent>
+
+        <TabsContent value="batch-processing">
+          <BatchProcessingPanel 
+            contents={getFilteredContents()} 
+            onContentUpdate={handleContentUpdate} 
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AnalyticsPage;
   
   const filteredContents = getFilteredContents();
   
