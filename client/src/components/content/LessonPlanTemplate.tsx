@@ -153,8 +153,38 @@ const LessonPlanTemplate: React.FC<LessonPlanTemplateProps> = ({
     }
   };
 
-  const handleSave = () => {
-    onSave(lessonPlan);
+  const handleSave = async () => {
+    try {
+      // Save to database via API
+      const response = await fetch('/api/lesson-plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: lessonPlan.title,
+          subject: lessonPlan.subject,
+          duration: lessonPlan.duration,
+          qaqfLevel: lessonPlan.qaqf_level,
+          learningObjectives: lessonPlan.learning_objectives,
+          materials: lessonPlan.materials,
+          activities: lessonPlan.activities,
+          assessmentMethods: lessonPlan.assessment_methods,
+          homework: lessonPlan.homework,
+          notes: lessonPlan.notes,
+        }),
+      });
+
+      if (response.ok) {
+        const savedLessonPlan = await response.json();
+        console.log('Lesson plan saved:', savedLessonPlan);
+        onSave(lessonPlan);
+      } else {
+        console.error('Failed to save lesson plan');
+      }
+    } catch (error) {
+      console.error('Error saving lesson plan:', error);
+    }
   };
 
   return (
