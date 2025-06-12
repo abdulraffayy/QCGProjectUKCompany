@@ -73,17 +73,17 @@ export default function StudyMaterial() {
   const queryClient = useQueryClient();
 
   // Fetch study materials
-  const { data: materials = [], isLoading: materialsLoading } = useQuery({
+  const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
     queryKey: ['/api/study-materials'],
   });
 
   // Fetch collections
-  const { data: collections = [], isLoading: collectionsLoading } = useQuery({
+  const { data: collections = [], isLoading: collectionsLoading } = useQuery<Collection[]>({
     queryKey: ['/api/collections'],
   });
 
   // Fetch material templates
-  const { data: templates = [], isLoading: templatesLoading } = useQuery({
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<MaterialTemplate[]>({
     queryKey: ['/api/material-templates'],
   });
 
@@ -383,7 +383,7 @@ export default function StudyMaterial() {
               <div className="text-center py-8">Loading materials...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {materials.map((material: StudyMaterial) => (
+                {materials.map((material) => (
                   <Card key={material.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -449,7 +449,7 @@ export default function StudyMaterial() {
               <div className="text-center py-8">Loading collections...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {collections.map((collection: Collection) => (
+                {collections.map((collection) => (
                   <Card key={collection.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -502,7 +502,7 @@ export default function StudyMaterial() {
               <div className="text-center py-8">Loading templates...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templates.map((template: MaterialTemplate) => (
+                {templates.map((template) => (
                   <Card key={template.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
