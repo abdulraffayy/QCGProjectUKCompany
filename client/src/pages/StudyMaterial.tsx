@@ -123,7 +123,7 @@ export default function StudyMaterial() {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
       toast({ title: 'Material updated successfully' });
       setShowEditDialog(false);
-      setSelectedFile(null);
+      setSelectedItem(null);
     },
     onError: () => {
       toast({ title: 'Failed to update material', variant: 'destructive' });
@@ -168,6 +168,28 @@ export default function StudyMaterial() {
     },
   });
 
+  // Update collection mutation
+  const updateCollectionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string } }) => {
+      const response = await fetch(`/api/collections/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update collection');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      toast({ title: 'Collection updated successfully' });
+      setShowEditDialog(false);
+      setSelectedItem(null);
+    },
+    onError: () => {
+      toast({ title: 'Failed to update collection', variant: 'destructive' });
+    },
+  });
+
   // Delete collection mutation
   const deleteCollectionMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -203,6 +225,28 @@ export default function StudyMaterial() {
     },
     onError: () => {
       toast({ title: 'Failed to create template', variant: 'destructive' });
+    },
+  });
+
+  // Update template mutation
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`/api/material-templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update template');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
+      toast({ title: 'Template updated successfully' });
+      setShowEditDialog(false);
+      setSelectedItem(null);
+    },
+    onError: () => {
+      toast({ title: 'Failed to update template', variant: 'destructive' });
     },
   });
 
@@ -331,7 +375,12 @@ export default function StudyMaterial() {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
     };
-    createCollectionMutation.mutate(data);
+    
+    if (selectedItem) {
+      updateCollectionMutation.mutate({ id: selectedItem.id, data });
+    } else {
+      createCollectionMutation.mutate(data);
+    }
   };
 
   const handleSubmitTemplate = (event: React.FormEvent<HTMLFormElement>) => {
@@ -345,7 +394,12 @@ export default function StudyMaterial() {
       templateContent: formData.get('templateContent') as string,
       placeholders: [],
     };
-    createTemplateMutation.mutate(data);
+    
+    if (selectedItem) {
+      updateTemplateMutation.mutate({ id: selectedItem.id, data });
+    } else {
+      createTemplateMutation.mutate(data);
+    }
   };
 
   const formatFileSize = (bytes?: number) => {
