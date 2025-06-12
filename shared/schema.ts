@@ -184,6 +184,92 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   details: true,
 });
 
+// Study Materials schema
+export const studyMaterials = pgTable("study_materials", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // article, worksheet, handout, guide, glossary
+  qaqfLevel: integer("qaqf_level").notNull(),
+  fileName: text("file_name"),
+  filePath: text("file_path"),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  content: text("content"),
+  tags: json("tags"),
+  createdByUserId: integer("created_by_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertStudyMaterialSchema = createInsertSchema(studyMaterials).pick({
+  title: true,
+  description: true,
+  type: true,
+  qaqfLevel: true,
+  fileName: true,
+  filePath: true,
+  fileSize: true,
+  mimeType: true,
+  content: true,
+  tags: true,
+  createdByUserId: true,
+});
+
+// Collections schema
+export const collections = pgTable("collections", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdByUserId: integer("created_by_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCollectionSchema = createInsertSchema(collections).pick({
+  title: true,
+  description: true,
+  createdByUserId: true,
+});
+
+// Collection Materials (junction table)
+export const collectionMaterials = pgTable("collection_materials", {
+  id: serial("id").primaryKey(),
+  collectionId: integer("collection_id").notNull(),
+  materialId: integer("material_id").notNull(),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+});
+
+export const insertCollectionMaterialSchema = createInsertSchema(collectionMaterials).pick({
+  collectionId: true,
+  materialId: true,
+});
+
+// Material Templates schema
+export const materialTemplates = pgTable("material_templates", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // quiz, worksheet, handout, guide
+  qaqfLevel: text("qaqf_level"), // "1-3", "4-6", "7-9", "Various"
+  templateContent: text("template_content").notNull(),
+  placeholders: json("placeholders"), // Fields that can be customized
+  usageCount: integer("usage_count").default(0),
+  createdByUserId: integer("created_by_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertMaterialTemplateSchema = createInsertSchema(materialTemplates).pick({
+  title: true,
+  description: true,
+  type: true,
+  qaqfLevel: true,
+  templateContent: true,
+  placeholders: true,
+  createdByUserId: true,
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -205,6 +291,18 @@ export type InsertLessonPlan = z.infer<typeof insertLessonPlanSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type StudyMaterial = typeof studyMaterials.$inferSelect;
+export type InsertStudyMaterial = z.infer<typeof insertStudyMaterialSchema>;
+
+export type Collection = typeof collections.$inferSelect;
+export type InsertCollection = z.infer<typeof insertCollectionSchema>;
+
+export type CollectionMaterial = typeof collectionMaterials.$inferSelect;
+export type InsertCollectionMaterial = z.infer<typeof insertCollectionMaterialSchema>;
+
+export type MaterialTemplate = typeof materialTemplates.$inferSelect;
+export type InsertMaterialTemplate = z.infer<typeof insertMaterialTemplateSchema>;
 
 // Note: We're not setting up relations explicitly for this version
 // to simplify the implementation and will rely on field references
