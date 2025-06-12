@@ -549,6 +549,200 @@ export class DatabaseStorage implements IStorage {
     return newActivity;
   }
   
+  // Study Material operations
+  async getStudyMaterials(): Promise<StudyMaterial[]> {
+    return await db.select().from(studyMaterials).orderBy(desc(studyMaterials.createdAt));
+  }
+
+  async getStudyMaterialById(id: number): Promise<StudyMaterial | undefined> {
+    const [material] = await db.select().from(studyMaterials).where(eq(studyMaterials.id, id));
+    return material || undefined;
+  }
+
+  async createStudyMaterial(material: InsertStudyMaterial): Promise<StudyMaterial> {
+    const [newMaterial] = await db
+      .insert(studyMaterials)
+      .values({
+        ...material,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newMaterial;
+  }
+
+  async updateStudyMaterial(id: number, updates: Partial<StudyMaterial>): Promise<StudyMaterial | undefined> {
+    const [updatedMaterial] = await db
+      .update(studyMaterials)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(studyMaterials.id, id))
+      .returning();
+    return updatedMaterial || undefined;
+  }
+
+  async deleteStudyMaterial(id: number): Promise<void> {
+    await db.delete(studyMaterials).where(eq(studyMaterials.id, id));
+  }
+
+  // Collection operations
+  async getCollections(): Promise<Collection[]> {
+    return await db.select().from(collections).orderBy(desc(collections.createdAt));
+  }
+
+  async getCollectionById(id: number): Promise<Collection | undefined> {
+    const [collection] = await db.select().from(collections).where(eq(collections.id, id));
+    return collection || undefined;
+  }
+
+  async getCollectionMaterials(collectionId: number): Promise<StudyMaterial[]> {
+    return await db
+      .select({
+        id: studyMaterials.id,
+        title: studyMaterials.title,
+        description: studyMaterials.description,
+        type: studyMaterials.type,
+        qaqfLevel: studyMaterials.qaqfLevel,
+        fileName: studyMaterials.fileName,
+        filePath: studyMaterials.filePath,
+        fileSize: studyMaterials.fileSize,
+        mimeType: studyMaterials.mimeType,
+        content: studyMaterials.content,
+        tags: studyMaterials.tags,
+        createdByUserId: studyMaterials.createdByUserId,
+        createdAt: studyMaterials.createdAt,
+        updatedAt: studyMaterials.updatedAt,
+      })
+      .from(studyMaterials)
+      .innerJoin(collectionMaterials, eq(studyMaterials.id, collectionMaterials.materialId))
+      .where(eq(collectionMaterials.collectionId, collectionId))
+      .orderBy(desc(collectionMaterials.addedAt));
+  }
+
+  async createCollection(collection: InsertCollection): Promise<Collection> {
+    const [newCollection] = await db
+      .insert(collections)
+      .values({
+        ...collection,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newCollection;
+  }
+
+  async updateCollection(id: number, updates: Partial<Collection>): Promise<Collection | undefined> {
+    const [updatedCollection] = await db
+      .update(collections)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(collections.id, id))
+      .returning();
+    return updatedCollection || undefined;
+  }
+
+  async deleteCollection(id: number): Promise<void> {
+    await db.delete(collectionMaterials).where(eq(collectionMaterials.collectionId, id));
+    await db.delete(collections).where(eq(collections.id, id));
+  }
+
+  async addMaterialToCollection(collectionId: number, materialId: number): Promise<void> {
+    await db
+      .insert(collectionMaterials)
+      .values({
+        collectionId,
+        materialId,
+        addedAt: new Date()
+      });
+  }
+
+  async removeMaterialFromCollection(collectionId: number, materialId: number): Promise<void> {
+    await db
+      .delete(collectionMaterials)
+      .where(
+        and(
+          eq(collectionMaterials.collectionId, collectionId),
+          eq(collectionMaterials.materialId, materialId)
+        )
+      );
+  }
+
+  // Material Template operations
+  async getMaterialTemplates(): Promise<MaterialTemplate[]> {
+    return await db.select().from(materialTemplates).orderBy(desc(materialTemplates.createdAt));
+  }
+
+  async getMaterialTemplateById(id: number): Promise<MaterialTemplate | undefined> {
+    const [template] = await db.select().from(materialTemplates).where(eq(materialTemplates.id, id));
+    return template || undefined;
+  }
+
+  async createMaterialTemplate(template: InsertMaterialTemplate): Promise<MaterialTemplate> {
+    const [newTemplate] = await db
+      .insert(materialTemplates)
+      .values({
+        ...template,
+        usageCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newTemplate;
+  }
+
+  async updateMaterialTemplate(id: number, updates: Partial<MaterialTemplate>): Promise<MaterialTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(materialTemplates)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(materialTemplates.id, id))
+      .returning();
+    return updatedTemplate || undefined;
+  }
+
+  async deleteMaterialTemplate(id: number): Promise<void> {
+    await db.delete(materialTemplates).where(eq(materialTemplates.id, id));
+  }
+
+  async createMaterialFromTemplate(templateId: number, customizations: any): Promise<StudyMaterial> {
+    const template = await this.getMaterialTemplateById(templateId);
+    if (!template) {
+      throw new Error('Template not found');
+    }
+
+    await db
+      .update(materialTemplates)
+      .set({ usageCount: (template.usageCount || 0) + 1 })
+      .where(eq(materialTemplates.id, templateId));
+
+    let content = template.templateContent;
+    if (template.placeholders && customizations) {
+      (template.placeholders as any[]).forEach((placeholder: any) => {
+        if (customizations[placeholder.key]) {
+          content = content.replace(`{{${placeholder.key}}}`, customizations[placeholder.key]);
+        }
+      });
+    }
+
+    const materialData: InsertStudyMaterial = {
+      title: customizations.title || template.title,
+      description: customizations.description || template.description,
+      type: template.type,
+      qaqfLevel: customizations.qaqfLevel || (template.qaqfLevel === 'Various' ? 1 : parseInt(template.qaqfLevel?.split('-')[0] || '1')),
+      content,
+      tags: customizations.tags || [],
+      createdByUserId: 1,
+    };
+
+    return await this.createStudyMaterial(materialData);
+  }
+
   async getDashboardStats(): Promise<{
     contentCount: number;
     verifiedContentCount: number;
@@ -612,12 +806,9 @@ async function initializeDatabase() {
   }
 }
 
-// Initialize storage with database
-export const storage = new DatabaseStorage();
-
 // Import database module and helpers
 import { db } from "./db";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, and } from "drizzle-orm";
 import { 
   users, 
   qaqfLevels, 
@@ -625,8 +816,15 @@ import {
   contents, 
   videos, 
   activities,
+  studyMaterials,
+  collections,
+  collectionMaterials,
+  materialTemplates,
   VerificationStatus as SchemaVerificationStatus
 } from "@shared/schema";
+
+// Initialize storage with database
+export const storage = new DatabaseStorage();
 
 // Initialize the database with default data
 initializeDatabase().catch(console.error);
