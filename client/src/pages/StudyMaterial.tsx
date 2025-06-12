@@ -354,8 +354,8 @@ const StudyMaterialPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold">Study Material Templates</h3>
-                <Button>
-                  <span className="material-icons text-sm mr-2">add</span>
+                <Button onClick={() => handleCreateNew('template')}>
+                  <Plus className="h-4 w-4 mr-2" />
                   Create Template
                 </Button>
               </div>
@@ -417,16 +417,16 @@ const StudyMaterialPage: React.FC = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm">
-                        <span className="material-icons text-sm mr-1">content_copy</span>
+                      <Button variant="outline" size="sm" onClick={() => handleUseTemplate(template)}>
+                        <FileText className="h-4 w-4 mr-1" />
                         Use Template
                       </Button>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="material-icons text-sm">edit</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(template)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600">
-                          <span className="material-icons text-sm">delete</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => handleDelete(template)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardFooter>
