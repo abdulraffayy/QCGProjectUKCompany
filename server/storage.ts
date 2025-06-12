@@ -11,6 +11,14 @@ import {
   InsertVideo,
   Activity,
   InsertActivity,
+  StudyMaterial,
+  InsertStudyMaterial,
+  Collection,
+  InsertCollection,
+  CollectionMaterial,
+  InsertCollectionMaterial,
+  MaterialTemplate,
+  InsertMaterialTemplate,
   VerificationStatus,
 } from "@shared/schema";
 
@@ -53,6 +61,31 @@ export interface IStorage {
   getActivitiesByUser(userId: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   
+  // Study Material operations
+  getStudyMaterials(): Promise<StudyMaterial[]>;
+  getStudyMaterialById(id: number): Promise<StudyMaterial | undefined>;
+  createStudyMaterial(material: InsertStudyMaterial): Promise<StudyMaterial>;
+  updateStudyMaterial(id: number, updates: Partial<StudyMaterial>): Promise<StudyMaterial | undefined>;
+  deleteStudyMaterial(id: number): Promise<void>;
+
+  // Collection operations
+  getCollections(): Promise<Collection[]>;
+  getCollectionById(id: number): Promise<Collection | undefined>;
+  getCollectionMaterials(collectionId: number): Promise<StudyMaterial[]>;
+  createCollection(collection: InsertCollection): Promise<Collection>;
+  updateCollection(id: number, updates: Partial<Collection>): Promise<Collection | undefined>;
+  deleteCollection(id: number): Promise<void>;
+  addMaterialToCollection(collectionId: number, materialId: number): Promise<void>;
+  removeMaterialFromCollection(collectionId: number, materialId: number): Promise<void>;
+
+  // Material Template operations
+  getMaterialTemplates(): Promise<MaterialTemplate[]>;
+  getMaterialTemplateById(id: number): Promise<MaterialTemplate | undefined>;
+  createMaterialTemplate(template: InsertMaterialTemplate): Promise<MaterialTemplate>;
+  updateMaterialTemplate(id: number, updates: Partial<MaterialTemplate>): Promise<MaterialTemplate | undefined>;
+  deleteMaterialTemplate(id: number): Promise<void>;
+  createMaterialFromTemplate(templateId: number, customizations: any): Promise<StudyMaterial>;
+
   // Dashboard stats
   getDashboardStats(): Promise<{
     contentCount: number;
