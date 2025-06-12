@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -6,12 +7,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Download, Edit, Eye, Trash2, FileText, FolderOpen, Plus } from 'lucide-react';
 
 const StudyMaterialPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("library");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch study materials from API
+  const { data: materials = [], isLoading } = useQuery({
+    queryKey: ['/api/content'],
+  });
+
+  // Action handlers
+  const handleView = (item: any) => {
+    toast({
+      title: "Opening Material",
+      description: `Viewing ${item.title}`,
+    });
+    // In a real app, this would open a viewer/modal
+    console.log('Viewing:', item);
+  };
+
+  const handleDownload = (item: any) => {
+    toast({
+      title: "Downloading",
+      description: `Downloading ${item.title}`,
+    });
+    // In a real app, this would trigger a file download
+    console.log('Downloading:', item);
+  };
+
+  const handleEdit = (item: any) => {
+    toast({
+      title: "Opening Editor",
+      description: `Editing ${item.title}`,
+    });
+    // In a real app, this would open an editor
+    console.log('Editing:', item);
+  };
+
+  const handleDelete = (item: any) => {
+    if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+      toast({
+        title: "Deleted",
+        description: `${item.title} has been deleted`,
+      });
+      // In a real app, this would make an API call to delete
+      console.log('Deleting:', item);
+    }
+  };
+
+  const handleUseTemplate = (template: any) => {
+    toast({
+      title: "Template Applied",
+      description: `Using ${template.title} template`,
+    });
+    // In a real app, this would create new content from template
+    console.log('Using template:', template);
+  };
+
+  const handleCreateNew = (type: string) => {
+    toast({
+      title: "Creating New",
+      description: `Creating new ${type}`,
+    });
+    // In a real app, this would open a creation modal/form
+    console.log('Creating new:', type);
+  };
 
   return (
     <div className="container max-w-screen-xl mx-auto py-6 px-4">
@@ -172,19 +239,19 @@ const StudyMaterialPage: React.FC = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between pt-0">
-                      <Button variant="outline" size="sm">
-                        <span className="material-icons text-sm mr-1">visibility</span>
+                      <Button variant="outline" size="sm" onClick={() => handleView(material)}>
+                        <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="material-icons text-sm">download</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownload(material)}>
+                          <Download className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="material-icons text-sm">edit</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(material)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600">
-                          <span className="material-icons text-sm">delete</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => handleDelete(material)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardFooter>
@@ -207,8 +274,8 @@ const StudyMaterialPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold">Your Collections</h3>
-                <Button>
-                  <span className="material-icons text-sm mr-2">add</span>
+                <Button onClick={() => handleCreateNew('collection')}>
+                  <Plus className="h-4 w-4 mr-2" />
                   New Collection
                 </Button>
               </div>
@@ -262,16 +329,16 @@ const StudyMaterialPage: React.FC = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm">
-                        <span className="material-icons text-sm mr-1">visibility</span>
+                      <Button variant="outline" size="sm" onClick={() => handleView(collection)}>
+                        <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="material-icons text-sm">edit</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(collection)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600">
-                          <span className="material-icons text-sm">delete</span>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => handleDelete(collection)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardFooter>
