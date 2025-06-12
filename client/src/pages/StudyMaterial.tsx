@@ -65,6 +65,7 @@ export default function StudyMaterial() {
   const [activeTab, setActiveTab] = useState('materials');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [createType, setCreateType] = useState<'material' | 'collection' | 'template'>('material');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -277,14 +278,29 @@ export default function StudyMaterial() {
   const handleDownload = (material: StudyMaterial) => {
     if (material.filePath) {
       // Create download link for file
+      const filename = material.filePath.split('/').pop() || material.fileName;
       const link = document.createElement('a');
-      link.href = `/uploads/${material.filePath.split('/').pop()}`;
-      link.download = material.fileName || 'download';
+      link.href = `/uploads/${filename}`;
+      link.download = material.fileName || filename || 'download';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } else {
       toast({ title: 'No file available for download', variant: 'destructive' });
+    }
+  };
+
+  const handleView = (item: any) => {
+    if (activeTab === 'materials') {
+      setSelectedItem(item);
+      setShowViewDialog(true);
+    } else if (activeTab === 'collections') {
+      // Navigate to collection view page or show materials in collection
+      setSelectedItem(item);
+      setShowViewDialog(true);
+    } else if (activeTab === 'templates') {
+      setSelectedItem(item);
+      setShowViewDialog(true);
     }
   };
 
@@ -414,10 +430,16 @@ export default function StudyMaterial() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm" onClick={() => handleDownload(material)}>
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="outline" size="sm" onClick={() => handleView(material)}>
+                          <FileText className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleDownload(material)}>
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(material)}>
                           <Edit className="h-4 w-4" />
@@ -467,9 +489,9 @@ export default function StudyMaterial() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm">
-                        <File className="h-4 w-4 mr-1" />
-                        View Materials
+                      <Button variant="outline" size="sm" onClick={() => handleView(collection)}>
+                        <Folder className="h-4 w-4 mr-1" />
+                        View
                       </Button>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(collection)}>
@@ -529,10 +551,16 @@ export default function StudyMaterial() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm" onClick={() => handleUseTemplate(template)}>
-                        <FileText className="h-4 w-4 mr-1" />
-                        Use Template
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="outline" size="sm" onClick={() => handleView(template)}>
+                          <Layout className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleUseTemplate(template)}>
+                          <FileText className="h-4 w-4 mr-1" />
+                          Use
+                        </Button>
+                      </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(template)}>
                           <Edit className="h-4 w-4" />
@@ -687,6 +715,238 @@ export default function StudyMaterial() {
               </div>
               <Button type="submit" className="w-full" disabled={createTemplateMutation.isPending}>
                 {createTemplateMutation.isPending ? 'Creating...' : 'Create Template'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {activeTab === 'materials' && 'View Study Material'}
+              {activeTab === 'collections' && 'View Collection'}
+              {activeTab === 'templates' && 'View Template'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedItem && (
+            <div className="space-y-4">
+              <div>
+                <Label className="font-semibold">Title</Label>
+                <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.title}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Description</Label>
+                <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.description}</p>
+              </div>
+              
+              {activeTab === 'materials' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="font-semibold">Type</Label>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.type}</p>
+                    </div>
+                    <div>
+                      <Label className="font-semibold">QAQF Level</Label>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqfLevel}</p>
+                    </div>
+                  </div>
+                  
+                  {selectedItem.fileName && (
+                    <div>
+                      <Label className="font-semibold">File Information</Label>
+                      <div className="mt-1 p-2 bg-gray-50 rounded space-y-1">
+                        <p><strong>Name:</strong> {selectedItem.fileName}</p>
+                        <p><strong>Size:</strong> {selectedItem.fileSize ? `${(selectedItem.fileSize / 1024).toFixed(1)} KB` : 'Unknown'}</p>
+                        <p><strong>Type:</strong> {selectedItem.mimeType || 'Unknown'}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedItem.content && (
+                    <div>
+                      <Label className="font-semibold">Content</Label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded max-h-40 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm">{selectedItem.content}</pre>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeTab === 'templates' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="font-semibold">Type</Label>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.type}</p>
+                    </div>
+                    <div>
+                      <Label className="font-semibold">QAQF Level</Label>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqfLevel}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="font-semibold">Template Content</Label>
+                    <div className="mt-1 p-3 bg-gray-50 rounded max-h-40 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm">{selectedItem.templateContent}</pre>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="font-semibold">Usage Count</Label>
+                    <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.usageCount}</p>
+                  </div>
+                </>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                <div>
+                  <Label className="font-semibold">Created</Label>
+                  <p className="mt-1">{new Date(selectedItem.createdAt).toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="font-semibold">Updated</Label>
+                  <p className="mt-1">{new Date(selectedItem.updatedAt).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {activeTab === 'materials' && 'Edit Study Material'}
+              {activeTab === 'collections' && 'Edit Collection'}
+              {activeTab === 'templates' && 'Edit Template'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedItem && activeTab === 'materials' && (
+            <form onSubmit={handleSubmitMaterial} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input name="title" defaultValue={selectedItem.title} required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" defaultValue={selectedItem.description} required />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" defaultValue={selectedItem.type}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="document">Document</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                    <SelectItem value="worksheet">Worksheet</SelectItem>
+                    <SelectItem value="reference">Reference Material</SelectItem>
+                    <SelectItem value="guide">Study Guide</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="qaqfLevel">QAQF Level</Label>
+                <Select name="qaqfLevel" defaultValue={selectedItem.qaqfLevel?.toString()}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6,7,8,9].map(level => (
+                      <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="file">Replace File (optional)</Label>
+                <Input type="file" onChange={handleFileSelect} accept=".pdf,.doc,.docx,.txt" />
+              </div>
+              <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
+                {updateMaterialMutation.isPending ? 'Updating...' : 'Update Material'}
+              </Button>
+            </form>
+          )}
+
+          {selectedItem && activeTab === 'collections' && (
+            <form onSubmit={handleSubmitCollection} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input name="title" defaultValue={selectedItem.title} required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" defaultValue={selectedItem.description} required />
+              </div>
+              <Button type="submit" className="w-full" disabled={updateCollectionMutation.isPending}>
+                {updateCollectionMutation.isPending ? 'Updating...' : 'Update Collection'}
+              </Button>
+            </form>
+          )}
+
+          {selectedItem && activeTab === 'templates' && (
+            <form onSubmit={handleSubmitTemplate} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input name="title" defaultValue={selectedItem.title} required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" defaultValue={selectedItem.description} required />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" defaultValue={selectedItem.type}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lesson_plan">Lesson Plan</SelectItem>
+                    <SelectItem value="assessment">Assessment</SelectItem>
+                    <SelectItem value="worksheet">Worksheet</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                    <SelectItem value="handout">Handout</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="qaqfLevel">QAQF Level</Label>
+                <Select name="qaqfLevel" defaultValue={selectedItem.qaqfLevel}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-3">Basic (1-3)</SelectItem>
+                    <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
+                    <SelectItem value="7-9">Advanced (7-9)</SelectItem>
+                    <SelectItem value="Various">Various Levels</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="templateContent">Template Content</Label>
+                <Textarea 
+                  name="templateContent" 
+                  defaultValue={selectedItem.templateContent}
+                  required 
+                  placeholder="Use {{variable_name}} for placeholders"
+                  rows={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={updateTemplateMutation.isPending}>
+                {updateTemplateMutation.isPending ? 'Updating...' : 'Update Template'}
               </Button>
             </form>
           )}
