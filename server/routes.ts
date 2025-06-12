@@ -726,6 +726,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // File serving route
+  app.get('/uploads/:filename', (req: Request, res: Response) => {
+    const filename = req.params.filename;
+    const filepath = path.join(uploadDir, filename);
+    
+    if (fs.existsSync(filepath)) {
+      res.download(filepath);
+    } else {
+      res.status(404).json({ message: 'File not found' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
