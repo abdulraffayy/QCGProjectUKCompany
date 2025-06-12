@@ -1,252 +1,424 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Download, Edit, Eye, Trash2, FileText, FolderOpen, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Plus, 
+  FileText, 
+  Download, 
+  Edit, 
+  Trash2, 
+  Upload,
+  FolderPlus,
+  Library,
+  Layout,
+  File,
+  Folder
+} from 'lucide-react';
 
-const StudyMaterialPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("library");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterLevel, setFilterLevel] = useState("");
+interface StudyMaterial {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  qaqfLevel: number;
+  fileName?: string;
+  filePath?: string;
+  fileSize?: number;
+  mimeType?: string;
+  content?: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Collection {
+  id: number;
+  title: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MaterialTemplate {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  qaqfLevel: string;
+  templateContent: string;
+  placeholders?: any[];
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function StudyMaterial() {
+  const [activeTab, setActiveTab] = useState('materials');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [createType, setCreateType] = useState<'material' | 'collection' | 'template'>('material');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch study materials from API
-  const { data: materials = [], isLoading } = useQuery({
-    queryKey: ['/api/content'],
+  // Fetch study materials
+  const { data: materials = [], isLoading: materialsLoading } = useQuery({
+    queryKey: ['/api/study-materials'],
   });
 
-  // Action handlers
-  const handleView = (item: any) => {
-    toast({
-      title: "Opening Material",
-      description: `Viewing ${item.title}`,
-    });
-    // In a real app, this would open a viewer/modal
-    console.log('Viewing:', item);
-  };
+  // Fetch collections
+  const { data: collections = [], isLoading: collectionsLoading } = useQuery({
+    queryKey: ['/api/collections'],
+  });
 
-  const handleDownload = (item: any) => {
-    toast({
-      title: "Downloading",
-      description: `Downloading ${item.title}`,
-    });
-    // In a real app, this would trigger a file download
-    console.log('Downloading:', item);
+  // Fetch material templates
+  const { data: templates = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/material-templates'],
+  });
+
+  // Create material mutation
+  const createMaterialMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch('/api/study-materials', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Failed to create material');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      toast({ title: 'Material created successfully' });
+      setShowCreateDialog(false);
+      setSelectedFile(null);
+    },
+    onError: () => {
+      toast({ title: 'Failed to create material', variant: 'destructive' });
+    },
+  });
+
+  // Update material mutation
+  const updateMaterialMutation = useMutation({
+    mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
+      const response = await fetch(`/api/study-materials/${id}`, {
+        method: 'PATCH',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Failed to update material');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      toast({ title: 'Material updated successfully' });
+      setShowEditDialog(false);
+      setSelectedFile(null);
+    },
+    onError: () => {
+      toast({ title: 'Failed to update material', variant: 'destructive' });
+    },
+  });
+
+  // Delete material mutation
+  const deleteMaterialMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/study-materials/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete material');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      toast({ title: 'Material deleted successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete material', variant: 'destructive' });
+    },
+  });
+
+  // Create collection mutation
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: { title: string; description: string }) => {
+      const response = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create collection');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      toast({ title: 'Collection created successfully' });
+      setShowCreateDialog(false);
+    },
+    onError: () => {
+      toast({ title: 'Failed to create collection', variant: 'destructive' });
+    },
+  });
+
+  // Delete collection mutation
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/collections/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete collection');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      toast({ title: 'Collection deleted successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete collection', variant: 'destructive' });
+    },
+  });
+
+  // Create template mutation
+  const createTemplateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/material-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create template');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
+      toast({ title: 'Template created successfully' });
+      setShowCreateDialog(false);
+    },
+    onError: () => {
+      toast({ title: 'Failed to create template', variant: 'destructive' });
+    },
+  });
+
+  // Delete template mutation
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/material-templates/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete template');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
+      toast({ title: 'Template deleted successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete template', variant: 'destructive' });
+    },
+  });
+
+  // Use template mutation
+  const useTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, customizations }: { templateId: number; customizations: any }) => {
+      const response = await fetch(`/api/material-templates/${templateId}/use`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customizations }),
+      });
+      if (!response.ok) throw new Error('Failed to use template');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
+      toast({ title: 'Material created from template successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to create material from template', variant: 'destructive' });
+    },
+  });
+
+  const handleCreateNew = (type: 'material' | 'collection' | 'template') => {
+    setCreateType(type);
+    setSelectedItem(null);
+    setShowCreateDialog(true);
   };
 
   const handleEdit = (item: any) => {
-    toast({
-      title: "Opening Editor",
-      description: `Editing ${item.title}`,
-    });
-    // In a real app, this would open an editor
-    console.log('Editing:', item);
+    setSelectedItem(item);
+    setShowEditDialog(true);
   };
 
   const handleDelete = (item: any) => {
-    if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
-      toast({
-        title: "Deleted",
-        description: `${item.title} has been deleted`,
-      });
-      // In a real app, this would make an API call to delete
-      console.log('Deleting:', item);
+    if (confirm('Are you sure you want to delete this item?')) {
+      if (activeTab === 'materials') {
+        deleteMaterialMutation.mutate(item.id);
+      } else if (activeTab === 'collections') {
+        deleteCollectionMutation.mutate(item.id);
+      } else if (activeTab === 'templates') {
+        deleteTemplateMutation.mutate(item.id);
+      }
     }
   };
 
-  const handleUseTemplate = (template: any) => {
-    toast({
-      title: "Template Applied",
-      description: `Using ${template.title} template`,
-    });
-    // In a real app, this would create new content from template
-    console.log('Using template:', template);
+  const handleUseTemplate = (template: MaterialTemplate) => {
+    const customizations = {
+      title: `${template.title} - Copy`,
+      description: template.description,
+    };
+    useTemplateMutation.mutate({ templateId: template.id, customizations });
   };
 
-  const handleCreateNew = (type: string) => {
-    toast({
-      title: "Creating New",
-      description: `Creating new ${type}`,
-    });
-    // In a real app, this would open a creation modal/form
-    console.log('Creating new:', type);
+  const handleDownload = (material: StudyMaterial) => {
+    if (material.filePath) {
+      // Create download link for file
+      const link = document.createElement('a');
+      link.href = `/uploads/${material.filePath.split('/').pop()}`;
+      link.download = material.fileName || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      toast({ title: 'No file available for download', variant: 'destructive' });
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setSelectedFile(file || null);
+  };
+
+  const handleSubmitMaterial = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
+    if (selectedFile) {
+      formData.append('file', selectedFile);
+    }
+
+    if (selectedItem) {
+      updateMaterialMutation.mutate({ id: selectedItem.id, formData });
+    } else {
+      createMaterialMutation.mutate(formData);
+    }
+  };
+
+  const handleSubmitCollection = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const data = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+    };
+    createCollectionMutation.mutate(data);
+  };
+
+  const handleSubmitTemplate = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const data = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      type: formData.get('type') as string,
+      qaqfLevel: formData.get('qaqfLevel') as string,
+      templateContent: formData.get('templateContent') as string,
+      placeholders: [],
+    };
+    createTemplateMutation.mutate(data);
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return 'Unknown size';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getQAQFLevelBadge = (level: number) => {
+    if (level <= 3) return <Badge variant="secondary">Basic (1-3)</Badge>;
+    if (level <= 6) return <Badge variant="default">Intermediate (4-6)</Badge>;
+    return <Badge variant="destructive">Advanced (7-9)</Badge>;
   };
 
   return (
-    <div className="container max-w-screen-xl mx-auto py-6 px-4">
-      <div className="flex flex-col gap-2 mb-6">
-        <h1 className="text-2xl font-bold">Study Material Library</h1>
-        <p className="text-neutral-600">Access, manage, and organize your study materials and resources</p>
+    <div className="container mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Study Material Management</h1>
+        <p className="text-gray-600">Manage your educational materials, collections, and templates</p>
       </div>
 
-      <Tabs defaultValue="library" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-3 text-xs md:text-sm">
-          <TabsTrigger value="library" className="flex items-center">
-            <span className="material-icons text-sm mr-2">auto_stories</span>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="materials" className="flex items-center gap-2">
+            <Library className="h-4 w-4" />
             Material Library
           </TabsTrigger>
-          <TabsTrigger value="collections" className="flex items-center">
-            <span className="material-icons text-sm mr-2">folder</span>
+          <TabsTrigger value="collections" className="flex items-center gap-2">
+            <Folder className="h-4 w-4" />
             Collections
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center">
-            <span className="material-icons text-sm mr-2">dashboard_customize</span>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Layout className="h-4 w-4" />
             Templates
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="library">
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                    <span className="material-icons text-sm">search</span>
-                  </span>
-                  <Input 
-                    type="text" 
-                    placeholder="Search materials" 
-                    className="pl-10 w-full md:w-80" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Material Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="article">Article</SelectItem>
-                      <SelectItem value="worksheet">Worksheet</SelectItem>
-                      <SelectItem value="handout">Handout</SelectItem>
-                      <SelectItem value="guide">Study Guide</SelectItem>
-                      <SelectItem value="glossary">Glossary</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={filterLevel} onValueChange={setFilterLevel}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="QAQF Level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all_levels">All Levels</SelectItem>
-                      <SelectItem value="1-3">Basic (1-3)</SelectItem>
-                      <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
-                      <SelectItem value="7-9">Advanced (7-9)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button variant="outline" size="default">
-                    <span className="material-icons text-sm mr-2">filter_list</span>
-                    More Filters
-                  </Button>
-                </div>
-              </div>
-              
+
+        {/* Material Library Tab */}
+        <TabsContent value="materials" className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">Study Materials</h3>
+              <Button onClick={() => handleCreateNew('material')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Upload Material
+              </Button>
+            </div>
+            
+            {materialsLoading ? (
+              <div className="text-center py-8">Loading materials...</div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    id: 1,
-                    title: "Healthcare Ethics Quick Reference",
-                    type: "handout",
-                    qaqfLevel: 3,
-                    lastUpdated: "May 15, 2025",
-                    pages: 2,
-                    featured: true
-                  },
-                  {
-                    id: 2,
-                    title: "Patient Assessment Techniques Glossary",
-                    type: "glossary",
-                    qaqfLevel: 4,
-                    lastUpdated: "May 10, 2025",
-                    pages: 5,
-                    featured: false
-                  },
-                  {
-                    id: 3,
-                    title: "Research Methods Worksheet",
-                    type: "worksheet",
-                    qaqfLevel: 6,
-                    lastUpdated: "May 7, 2025",
-                    pages: 8,
-                    featured: false
-                  },
-                  {
-                    id: 4,
-                    title: "Nursing Case Studies Collection",
-                    type: "guide",
-                    qaqfLevel: 5,
-                    lastUpdated: "May 12, 2025",
-                    pages: 15,
-                    featured: true
-                  },
-                  {
-                    id: 5,
-                    title: "Medical Terminology Reference",
-                    type: "glossary",
-                    qaqfLevel: 2,
-                    lastUpdated: "May 8, 2025",
-                    pages: 12,
-                    featured: false
-                  },
-                  {
-                    id: 6,
-                    title: "Anatomy & Physiology Visual Guide",
-                    type: "handout",
-                    qaqfLevel: 3,
-                    lastUpdated: "May 5, 2025",
-                    pages: 10,
-                    featured: true
-                  }
-                ].map((material) => (
-                  <Card key={material.id} className={`overflow-hidden ${material.featured ? 'border-primary border-2' : ''}`}>
+                {materials.map((material: StudyMaterial) => (
+                  <Card key={material.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-base">{material.title}</CardTitle>
-                        {material.featured && (
-                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
-                            Featured
-                          </Badge>
+                      <div className="flex items-start justify-between">
+                        <FileText className="h-8 w-8 text-blue-500 mb-2" />
+                        {getQAQFLevelBadge(material.qaqfLevel)}
+                      </div>
+                      <CardTitle className="text-lg">{material.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <p className="text-sm text-gray-600 line-clamp-2">{material.description}</p>
+                      <div className="space-y-1 text-xs text-gray-500">
+                        <div className="flex justify-between">
+                          <span>Type:</span>
+                          <span className="capitalize">{material.type}</span>
+                        </div>
+                        {material.fileName && (
+                          <div className="flex justify-between">
+                            <span>File:</span>
+                            <span>{material.fileName}</span>
+                          </div>
+                        )}
+                        {material.fileSize && (
+                          <div className="flex justify-between">
+                            <span>Size:</span>
+                            <span>{formatFileSize(material.fileSize)}</span>
+                          </div>
                         )}
                       </div>
-                      <CardDescription className="flex items-center gap-1">
-                        <span className="capitalize">{material.type}</span>
-                        <span className="text-xs">•</span>
-                        <span>{material.pages} pages</span>
-                        <span className="text-xs">•</span>
-                        <Badge className={material.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800" : 
-                                        material.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800" : 
-                                        "bg-violet-100 text-violet-800"}>
-                          QAQF {material.qaqfLevel}
-                        </Badge>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                      <div className="text-sm text-neutral-600">
-                        Last updated: {material.lastUpdated}
-                      </div>
                     </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <Button variant="outline" size="sm" onClick={() => handleView(material)}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
+                    <CardFooter className="flex justify-between">
+                      <Button variant="outline" size="sm" onClick={() => handleDownload(material)}>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
                       </Button>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownload(material)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(material)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -258,80 +430,46 @@ const StudyMaterialPage: React.FC = () => {
                   </Card>
                 ))}
               </div>
-              
-              <div className="mt-6 flex justify-center">
-                <Button variant="outline">
-                  <span className="material-icons text-sm mr-2">refresh</span>
-                  Load More
-                </Button>
-              </div>
-            </div>
+            )}
           </div>
         </TabsContent>
-        
-        <TabsContent value="collections">
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold">Your Collections</h3>
-                <Button onClick={() => handleCreateNew('collection')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Collection
-                </Button>
-              </div>
-              
+
+        {/* Collections Tab */}
+        <TabsContent value="collections" className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">Material Collections</h3>
+              <Button onClick={() => handleCreateNew('collection')}>
+                <FolderPlus className="h-4 w-4 mr-2" />
+                New Collection
+              </Button>
+            </div>
+            
+            {collectionsLoading ? (
+              <div className="text-center py-8">Loading collections...</div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    id: 1,
-                    title: "Nursing Fundamentals",
-                    description: "Core materials for introductory nursing concepts",
-                    itemCount: 12,
-                    lastUpdated: "May 15, 2025",
-                  },
-                  {
-                    id: 2,
-                    title: "Healthcare Ethics",
-                    description: "Case studies and worksheets on ethical considerations",
-                    itemCount: 8,
-                    lastUpdated: "May 12, 2025",
-                  },
-                  {
-                    id: 3,
-                    title: "Clinical Practice Resources",
-                    description: "Guides and worksheets for clinical rotations",
-                    itemCount: 15,
-                    lastUpdated: "May 10, 2025",
-                  },
-                  {
-                    id: 4,
-                    title: "Research Methods",
-                    description: "Materials for teaching research principles",
-                    itemCount: 10,
-                    lastUpdated: "May 8, 2025",
-                  }
-                ].map((collection) => (
-                  <Card key={collection.id}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{collection.title}</CardTitle>
-                      <CardDescription>{collection.description}</CardDescription>
+                {collections.map((collection: Collection) => (
+                  <Card key={collection.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <Folder className="h-8 w-8 text-purple-500 mb-2" />
+                      </div>
+                      <CardTitle className="text-lg">{collection.title}</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-sm">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-neutral-600">Items:</span>
-                          <span className="font-medium">{collection.itemCount}</span>
-                        </div>
+                    <CardContent className="space-y-2">
+                      <p className="text-sm text-gray-600 line-clamp-2">{collection.description}</p>
+                      <div className="text-xs text-gray-500">
                         <div className="flex justify-between">
-                          <span className="text-neutral-600">Last updated:</span>
-                          <span>{collection.lastUpdated}</span>
+                          <span>Created:</span>
+                          <span>{new Date(collection.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm" onClick={() => handleView(collection)}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
+                      <Button variant="outline" size="sm">
+                        <File className="h-4 w-4 mr-1" />
+                        View Materials
                       </Button>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(collection)}>
@@ -345,74 +483,48 @@ const StudyMaterialPage: React.FC = () => {
                   </Card>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </TabsContent>
-        
-        <TabsContent value="templates">
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold">Study Material Templates</h3>
-                <Button onClick={() => handleCreateNew('template')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Template
-                </Button>
-              </div>
-              
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">Study Material Templates</h3>
+              <Button onClick={() => handleCreateNew('template')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Template
+              </Button>
+            </div>
+            
+            {templatesLoading ? (
+              <div className="text-center py-8">Loading templates...</div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    id: 1,
-                    title: "Weekly Quiz Template",
-                    description: "Standard format for weekly knowledge checks",
-                    qaqfLevel: "Various",
-                    lastUpdated: "May 15, 2025",
-                    usageCount: 23
-                  },
-                  {
-                    id: 2,
-                    title: "Case Study Worksheet",
-                    description: "Template for analyzing healthcare cases",
-                    qaqfLevel: "4-6",
-                    lastUpdated: "May 12, 2025",
-                    usageCount: 18
-                  },
-                  {
-                    id: 3,
-                    title: "Vocabulary Handout",
-                    description: "Glossary template for medical terminology",
-                    qaqfLevel: "1-3",
-                    lastUpdated: "May 8, 2025",
-                    usageCount: 31
-                  },
-                  {
-                    id: 4,
-                    title: "Lab Report Guide",
-                    description: "Structured template for lab activities",
-                    qaqfLevel: "5-7",
-                    lastUpdated: "May 5, 2025",
-                    usageCount: 14
-                  }
-                ].map((template) => (
-                  <Card key={template.id}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{template.title}</CardTitle>
-                      <CardDescription>{template.description}</CardDescription>
+                {templates.map((template: MaterialTemplate) => (
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <Layout className="h-8 w-8 text-green-500 mb-2" />
+                        <Badge variant="outline">{template.qaqfLevel}</Badge>
+                      </div>
+                      <CardTitle className="text-lg">{template.title}</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-sm">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-neutral-600">QAQF Level:</span>
-                          <span className="font-medium">{template.qaqfLevel}</span>
+                    <CardContent className="space-y-2">
+                      <p className="text-sm text-gray-600 line-clamp-2">{template.description}</p>
+                      <div className="space-y-1 text-xs text-gray-500">
+                        <div className="flex justify-between">
+                          <span>Type:</span>
+                          <span className="capitalize">{template.type}</span>
                         </div>
-                        <div className="flex justify-between mb-2">
-                          <span className="text-neutral-600">Used:</span>
+                        <div className="flex justify-between">
+                          <span>Used:</span>
                           <span>{template.usageCount} times</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-neutral-600">Last updated:</span>
-                          <span>{template.lastUpdated}</span>
+                          <span>Last updated:</span>
+                          <span>{new Date(template.updatedAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -433,12 +545,153 @@ const StudyMaterialPage: React.FC = () => {
                   </Card>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Create/Upload Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {createType === 'material' && 'Upload Study Material'}
+              {createType === 'collection' && 'Create New Collection'}
+              {createType === 'template' && 'Create New Template'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {createType === 'material' && (
+            <form onSubmit={handleSubmitMaterial} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input name="title" required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="article">Article</SelectItem>
+                    <SelectItem value="worksheet">Worksheet</SelectItem>
+                    <SelectItem value="handout">Handout</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                    <SelectItem value="glossary">Glossary</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="qaqfLevel">QAQF Level</Label>
+                <Select name="qaqfLevel" required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
+                      <SelectItem key={level} value={level.toString()}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="content">Content (optional)</Label>
+                <Textarea name="content" placeholder="Text content if no file is uploaded" />
+              </div>
+              <div>
+                <Label htmlFor="file">File (optional)</Label>
+                <Input 
+                  type="file" 
+                  onChange={handleFileSelect}
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                />
+                {selectedFile && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                  </p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" disabled={createMaterialMutation.isPending}>
+                {createMaterialMutation.isPending ? 'Uploading...' : 'Upload Material'}
+              </Button>
+            </form>
+          )}
+
+          {createType === 'collection' && (
+            <form onSubmit={handleSubmitCollection} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Collection Name</Label>
+                <Input name="title" required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" />
+              </div>
+              <Button type="submit" className="w-full" disabled={createCollectionMutation.isPending}>
+                {createCollectionMutation.isPending ? 'Creating...' : 'Create Collection'}
+              </Button>
+            </form>
+          )}
+
+          {createType === 'template' && (
+            <form onSubmit={handleSubmitTemplate} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Template Name</Label>
+                <Input name="title" required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea name="description" />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="worksheet">Worksheet</SelectItem>
+                    <SelectItem value="handout">Handout</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="qaqfLevel">QAQF Level Range</Label>
+                <Select name="qaqfLevel" required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-3">Basic (1-3)</SelectItem>
+                    <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
+                    <SelectItem value="7-9">Advanced (7-9)</SelectItem>
+                    <SelectItem value="Various">Various Levels</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="templateContent">Template Content</Label>
+                <Textarea 
+                  name="templateContent" 
+                  required 
+                  placeholder="Use {{variable_name}} for placeholders"
+                  rows={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={createTemplateMutation.isPending}>
+                {createTemplateMutation.isPending ? 'Creating...' : 'Create Template'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-export default StudyMaterialPage;
+}
