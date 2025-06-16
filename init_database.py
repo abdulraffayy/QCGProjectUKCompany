@@ -37,7 +37,8 @@ def test_connection():
     try:
         with engine.connect() as conn:
             result = conn.execute(text("SELECT 1"))
-            if result.fetchone()[0] == 1:
+            row = result.fetchone()
+            if row and row[0] == 1:
                 print("✓ Database connection successful")
                 return True
     except Exception as e:
@@ -47,6 +48,7 @@ def test_connection():
 
 def insert_initial_data():
     """Insert initial QAQF data"""
+    db = None
     try:
         db = next(get_db())
         
@@ -97,11 +99,11 @@ def insert_initial_data():
         
     except Exception as e:
         print(f"✗ Error inserting initial data: {e}")
-        if 'db' in locals():
+        if db:
             db.rollback()
         return False
     finally:
-        if 'db' in locals():
+        if db:
             db.close()
 
 def main():
