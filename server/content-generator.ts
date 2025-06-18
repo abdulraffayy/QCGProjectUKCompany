@@ -14,29 +14,23 @@ export const contentGenerationSchema = z.object({
 
 export type ContentGenerationRequest = z.infer<typeof contentGenerationSchema>;
 
-// For local development, use sample content generation
-console.log("Using sample content generation for local development");
-
 // Generate academic content using sample data for local development
 export async function generateContent(request: ContentGenerationRequest) {
-  console.log("Using sample content generation for local development");
   return generateSampleContent(request);
 }
 
 // Verify content against QAQF framework using sample data for local development
 export async function verifyContent(content: string, qaqfLevel: number) {
-  console.log("Using sample verification for local development");
   return generateSampleVerification(content, qaqfLevel);
 }
 
 // Check content against British academic standards using sample data for local development
 export async function checkBritishStandards(content: string) {
-  console.log("Using sample British standards check for local development");
   return generateSampleBritishStandardsCheck(content);
 }
 
 // Function to generate sample academic content
-function generateSampleContent(request: ContentGenerationRequest) {
+export function generateSampleContent(request: ContentGenerationRequest) {
   const { contentType, qaqfLevel, subject, characteristics, additionalInstructions } = request;
   
   const qaqfLevelDetails = QAQFLevels.find(level => level.id === qaqfLevel);
@@ -122,7 +116,7 @@ This ${contentType.toLowerCase()} provides a comprehensive foundation in ${subje
 }
 
 // Function to generate sample verification response
-function generateSampleVerification(content: string, qaqfLevel: number) {
+export function generateSampleVerification(content: string, qaqfLevel: number) {
   const baseScore = Math.min(85, 60 + (qaqfLevel * 3) + Math.floor(Math.random() * 15));
   
   const characteristics = {
@@ -147,7 +141,7 @@ function generateSampleVerification(content: string, qaqfLevel: number) {
 }
 
 // Function to generate sample British standards check
-function generateSampleBritishStandardsCheck(content: string) {
+export function generateSampleBritishStandardsCheck(content: string) {
   const compliant = Math.random() > 0.2; // 80% chance of being compliant
   
   const issues = compliant ? [] : [
@@ -169,6 +163,3 @@ function generateSampleBritishStandardsCheck(content: string) {
     suggestions
   };
 }
-
-// Export sample functions for use in routes
-export { generateSampleContent, generateSampleVerification, generateSampleBritishStandardsCheck };

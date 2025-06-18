@@ -116,7 +116,13 @@ The Educational Content Platform is a comprehensive full-stack application desig
 
 ```
 Changelog:
-- June 18, 2025. Initial setup
+- June 18, 2025: Initial setup
+- June 18, 2025: Fixed Windows 11 compatibility issues
+  * Resolved WebSocket connection errors (wss://localhost/v2 ECONNREFUSED)
+  * Fixed network binding issues (ENOTSUP on 0.0.0.0:5000)
+  * Replaced Ollama WebSocket dependencies with local content generation
+  * Created content-generator.ts for offline development
+  * Updated server to use localhost binding on Windows platform
 ```
 
 ## User Preferences
