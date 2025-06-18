@@ -22,7 +22,7 @@ import {
   generateSampleContent,
   generateSampleVerification,
   generateSampleBritishStandardsCheck
-} from "./openai";
+} from "./ollama";
 
 // Configure multer for file uploads
 const uploadDir = 'uploads';
