@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import ContentModerator from "@/components/moderation/ContentModerator";
+import ContentModerator from "../components/moderation/ContentModerator";
 
 const ModerationPage: React.FC = () => {
   // Get content query for moderation
