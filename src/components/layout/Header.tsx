@@ -1,8 +1,8 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { useAuth } from "../../contexts/AuthContext";
 import { LogOut, Settings, User } from "lucide-react";
 
 interface HeaderProps {
