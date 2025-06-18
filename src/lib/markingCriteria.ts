@@ -1,396 +1,293 @@
-// Marking Criteria Framework
-import { QAQFLevels, QAQFCharacteristics } from './qaqf';
+// Marking Criteria and Rubric Templates for QAQF Assessment
 
-// Rubric Score Definitions
-export const RubricScores = [
-  {
-    id: 1,
-    score: 'Exceptional',
-    description: 'Exceeds all expectations and demonstrates exceptional mastery.',
-    percentageRange: '90-100%',
-    gradeEquivalent: 'A+',
-    color: 'green'
-  },
-  {
-    id: 2,
-    score: 'Excellent',
-    description: 'Meets all expectations with high-quality work and demonstrates significant understanding.',
-    percentageRange: '80-89%',
-    gradeEquivalent: 'A',
-    color: 'emerald'
-  },
-  {
-    id: 3,
-    score: 'Very Good',
-    description: 'Meets most expectations with good quality work and demonstrates solid understanding.',
-    percentageRange: '70-79%',
-    gradeEquivalent: 'B',
-    color: 'teal'
-  },
-  {
-    id: 4,
-    score: 'Good',
-    description: 'Meets basic expectations with satisfactory work and demonstrates adequate understanding.',
-    percentageRange: '60-69%',
-    gradeEquivalent: 'C',
-    color: 'cyan'
-  },
-  {
-    id: 5,
-    score: 'Satisfactory',
-    description: 'Meets some expectations with acceptable work and demonstrates basic understanding.',
-    percentageRange: '50-59%',
-    gradeEquivalent: 'D',
-    color: 'yellow'
-  },
-  {
-    id: 6,
-    score: 'Needs Improvement',
-    description: 'Falls below expectations with minimal work and demonstrates limited understanding.',
-    percentageRange: '40-49%',
-    gradeEquivalent: 'E',
-    color: 'orange'
-  },
-  {
-    id: 7,
-    score: 'Unsatisfactory',
-    description: 'Does not meet expectations with inadequate work and demonstrates insufficient understanding.',
-    percentageRange: '0-39%',
-    gradeEquivalent: 'F',
-    color: 'red'
-  }
-];
+export interface RubricLevel {
+  id: string;
+  name: string;
+  description: string;
+  score: number;
+  color: string;
+}
 
-// Default Rubric Template
-export const DefaultRubricTemplate = {
-  id: 'default-rubric',
-  name: 'QAQF Standard Rubric',
-  description: 'Standard assessment rubric based on QAQF characteristics',
-  criteria: QAQFCharacteristics.map(characteristic => ({
-    id: `criterion-${characteristic.id}`,
-    name: characteristic.name,
-    description: characteristic.description,
-    category: characteristic.category,
-    icon: characteristic.icon,
-    weight: 100 / QAQFCharacteristics.length, // Equal weight distribution
-    levels: RubricScores.map(score => ({
-      id: `${characteristic.id}-level-${score.id}`,
-      name: score.score,
-      description: `${score.description} for ${characteristic.name}`,
-      points: 8 - score.id, // Reverse score (7 to 1)
-      color: score.color
-    }))
-  }))
-};
+export interface RubricCriterion {
+  id: string;
+  name: string;
+  description: string;
+  weight: number;
+  icon?: string;
+  levels: RubricLevel[];
+}
 
-// Marketing-specific Rubric Template
-export const MarketingRubricTemplate = {
-  id: 'marketing-rubric',
-  name: 'Marketing Assessment Rubric',
-  description: 'Specialized rubric for marketing content and strategies',
+export interface Rubric {
+  id: string;
+  name: string;
+  description: string;
+  criteria: RubricCriterion[];
+}
+
+// Default QAQF Rubric Template
+export const DefaultRubricTemplate: Rubric = {
+  id: 'qaqf-default',
+  name: 'QAQF Standard Assessment Rubric',
+  description: 'Standard rubric for assessing content alignment with QAQF framework characteristics',
   criteria: [
     {
-      id: 'market-analysis',
-      name: 'Market Analysis',
-      description: 'Depth and quality of market research and target audience analysis',
-      category: 'research',
-      icon: 'search',
-      weight: 15,
-      levels: RubricScores.map(score => ({
-        id: `market-analysis-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in terms of market research depth, audience insights, and competitive analysis.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
-    },
-    {
-      id: 'strategic-planning',
-      name: 'Strategic Planning',
-      description: 'Quality of strategic planning, goal setting, and alignment with business objectives',
-      category: 'strategy',
-      icon: 'route',
-      weight: 15,
-      levels: RubricScores.map(score => ({
-        id: `strategic-planning-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in developing clear, measurable marketing goals and strategies aligned with business objectives.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
-    },
-    {
-      id: 'creative-execution',
-      name: 'Creative Execution',
-      description: 'Creativity, innovation, and quality of content and campaign materials',
-      category: 'creativity',
-      icon: 'palette',
+      id: 'clarity',
+      name: 'Clarity and Communication',
+      description: 'How clearly the content communicates concepts and ideas',
       weight: 20,
-      levels: RubricScores.map(score => ({
-        id: `creative-execution-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in developing creative, engaging, and original marketing content and materials.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
+      icon: 'visibility',
+      levels: [
+        { id: 'clarity-1', name: 'Needs Work', description: 'Unclear or confusing', score: 1, color: 'red' },
+        { id: 'clarity-2', name: 'Developing', description: 'Somewhat clear with minor issues', score: 2, color: 'orange' },
+        { id: 'clarity-3', name: 'Proficient', description: 'Clear and well-communicated', score: 3, color: 'yellow' },
+        { id: 'clarity-4', name: 'Excellent', description: 'Exceptionally clear and engaging', score: 4, color: 'green' }
+      ]
     },
     {
-      id: 'digital-integration',
-      name: 'Digital Integration',
-      description: 'Effective use of digital marketing channels, tools, and technologies',
-      category: 'digital',
-      icon: 'devices',
-      weight: 15,
-      levels: RubricScores.map(score => ({
-        id: `digital-integration-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in leveraging digital platforms, tools, and data-driven approaches.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
+      id: 'accuracy',
+      name: 'Accuracy and Correctness',
+      description: 'Factual accuracy and correctness of information',
+      weight: 25,
+      icon: 'check_circle',
+      levels: [
+        { id: 'accuracy-1', name: 'Needs Work', description: 'Multiple errors present', score: 1, color: 'red' },
+        { id: 'accuracy-2', name: 'Developing', description: 'Few minor errors', score: 2, color: 'orange' },
+        { id: 'accuracy-3', name: 'Proficient', description: 'Accurate with no significant errors', score: 3, color: 'yellow' },
+        { id: 'accuracy-4', name: 'Excellent', description: 'Completely accurate and precise', score: 4, color: 'green' }
+      ]
     },
     {
-      id: 'brand-consistency',
-      name: 'Brand Consistency',
-      description: 'Consistency of brand messaging, identity, and values across marketing materials',
-      category: 'branding',
-      icon: 'verified',
-      weight: 10,
-      levels: RubricScores.map(score => ({
-        id: `brand-consistency-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in maintaining consistent brand voice, visual identity, and messaging.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
+      id: 'completeness',
+      name: 'Completeness and Coverage',
+      description: 'How thoroughly the content covers required topics',
+      weight: 20,
+      icon: 'assignment',
+      levels: [
+        { id: 'completeness-1', name: 'Needs Work', description: 'Major gaps in coverage', score: 1, color: 'red' },
+        { id: 'completeness-2', name: 'Developing', description: 'Some gaps present', score: 2, color: 'orange' },
+        { id: 'completeness-3', name: 'Proficient', description: 'Comprehensive coverage', score: 3, color: 'yellow' },
+        { id: 'completeness-4', name: 'Excellent', description: 'Thorough and extensive coverage', score: 4, color: 'green' }
+      ]
     },
     {
-      id: 'roi-metrics',
-      name: 'ROI & Metrics',
-      description: 'Effective measurement, analysis, and reporting of marketing performance and ROI',
-      category: 'analytics',
-      icon: 'trending_up',
-      weight: 15,
-      levels: RubricScores.map(score => ({
-        id: `roi-metrics-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in defining KPIs, tracking metrics, and demonstrating ROI.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
-    },
-    {
-      id: 'innovation-approach',
-      name: 'Innovation Approach',
-      description: 'Implementation of innovative marketing techniques, emerging trends, and technologies',
-      category: 'innovation',
-      icon: 'auto_awesome',
-      weight: 10,
-      levels: RubricScores.map(score => ({
-        id: `innovation-approach-level-${score.id}`,
-        name: score.score,
-        description: `${score.description} in incorporating innovative approaches, emerging trends, and technologies.`,
-        points: 8 - score.id,
-        color: score.color
-      }))
+      id: 'alignment',
+      name: 'QAQF Alignment',
+      description: 'Alignment with QAQF level requirements and characteristics',
+      weight: 35,
+      icon: 'target',
+      levels: [
+        { id: 'alignment-1', name: 'Needs Work', description: 'Poor alignment with QAQF standards', score: 1, color: 'red' },
+        { id: 'alignment-2', name: 'Developing', description: 'Partial alignment achieved', score: 2, color: 'orange' },
+        { id: 'alignment-3', name: 'Proficient', description: 'Good alignment with standards', score: 3, color: 'yellow' },
+        { id: 'alignment-4', name: 'Excellent', description: 'Perfect alignment with QAQF framework', score: 4, color: 'green' }
+      ]
     }
   ]
 };
 
-// Innovative Assessment Methodologies
-export const InnovativeAssessmentMethods = [
+// Marketing-Specific Rubric Template
+export const MarketingRubricTemplate: Rubric = {
+  id: 'marketing-rubric',
+  name: 'Marketing Assessment Rubric',
+  description: 'Specialized rubric for marketing content and strategy assessment',
+  criteria: [
+    {
+      id: 'market-analysis',
+      name: 'Market Analysis',
+      description: 'Quality of market research and analysis',
+      weight: 25,
+      icon: 'analytics',
+      levels: [
+        { id: 'market-1', name: 'Basic', description: 'Limited market understanding', score: 1, color: 'red' },
+        { id: 'market-2', name: 'Developing', description: 'Some market insights present', score: 2, color: 'orange' },
+        { id: 'market-3', name: 'Proficient', description: 'Good market analysis', score: 3, color: 'yellow' },
+        { id: 'market-4', name: 'Expert', description: 'Comprehensive market insights', score: 4, color: 'green' }
+      ]
+    },
+    {
+      id: 'strategy',
+      name: 'Strategic Thinking',
+      description: 'Strategic approach and planning quality',
+      weight: 30,
+      icon: 'strategy',
+      levels: [
+        { id: 'strategy-1', name: 'Basic', description: 'Limited strategic thinking', score: 1, color: 'red' },
+        { id: 'strategy-2', name: 'Developing', description: 'Some strategic elements', score: 2, color: 'orange' },
+        { id: 'strategy-3', name: 'Proficient', description: 'Well-developed strategy', score: 3, color: 'yellow' },
+        { id: 'strategy-4', name: 'Expert', description: 'Sophisticated strategic approach', score: 4, color: 'green' }
+      ]
+    },
+    {
+      id: 'creativity',
+      name: 'Creativity and Innovation',
+      description: 'Creative and innovative approaches',
+      weight: 20,
+      icon: 'lightbulb',
+      levels: [
+        { id: 'creativity-1', name: 'Basic', description: 'Conventional approaches', score: 1, color: 'red' },
+        { id: 'creativity-2', name: 'Developing', description: 'Some creative elements', score: 2, color: 'orange' },
+        { id: 'creativity-3', name: 'Proficient', description: 'Creative and engaging', score: 3, color: 'yellow' },
+        { id: 'creativity-4', name: 'Expert', description: 'Highly innovative and original', score: 4, color: 'green' }
+      ]
+    },
+    {
+      id: 'implementation',
+      name: 'Implementation Feasibility',
+      description: 'Practicality and feasibility of proposed solutions',
+      weight: 25,
+      icon: 'build',
+      levels: [
+        { id: 'implementation-1', name: 'Basic', description: 'Impractical or vague', score: 1, color: 'red' },
+        { id: 'implementation-2', name: 'Developing', description: 'Somewhat feasible', score: 2, color: 'orange' },
+        { id: 'implementation-3', name: 'Proficient', description: 'Practical and actionable', score: 3, color: 'yellow' },
+        { id: 'implementation-4', name: 'Expert', description: 'Highly practical with clear execution plan', score: 4, color: 'green' }
+      ]
+    }
+  ]
+};
+
+// Innovative Assessment Methods
+export interface AssessmentMethod {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  metrics?: Array<{ name: string; description: string }>;
+  simulationTypes?: Array<{ name: string; description: string }>;
+  components?: Array<{ name: string; description: string }>;
+  journeyStages?: Array<{ name: string; description: string }>;
+  adaptiveElements?: Array<{ name: string; description: string }>;
+}
+
+export const InnovativeAssessmentMethods: AssessmentMethod[] = [
   {
     id: 'competitive-analysis',
-    name: 'Competitive Analysis',
-    description: 'Evaluate marketing strategies against competitors using prescribed metrics',
-    category: 'comparative',
-    icon: 'leaderboard',
+    name: 'Competitive Analysis Assessment',
+    description: 'Evaluate students\' ability to analyze competitors and market positioning',
+    icon: 'compare_arrows',
     metrics: [
-      { name: 'Market Position', description: 'Relative market position compared to competitors' },
-      { name: 'Brand Strength', description: 'Brand recognition and loyalty relative to market' },
-      { name: 'Campaign Effectiveness', description: 'Effectiveness of campaigns compared to competitors' },
-      { name: 'Innovation Index', description: 'Level of innovation relative to industry standards' },
-      { name: 'Digital Presence', description: 'Strength of digital footprint compared to competitors' }
+      { name: 'Market Share Analysis', description: 'Ability to assess and interpret market share data' },
+      { name: 'Competitive Positioning', description: 'Understanding of competitive landscape' },
+      { name: 'SWOT Analysis', description: 'Quality of strengths, weaknesses, opportunities, threats analysis' },
+      { name: 'Strategic Recommendations', description: 'Practical and actionable strategic insights' }
     ]
   },
   {
     id: 'scenario-simulation',
-    name: 'Market Scenario Simulation',
-    description: 'Interactive simulation of market conditions and strategy implementation',
-    category: 'interactive',
-    icon: 'imagesearch_roller',
+    name: 'Scenario-Based Simulation',
+    description: 'Real-world scenario simulations for practical skill assessment',
+    icon: 'psychology',
     simulationTypes: [
-      { name: 'Market Disruption', description: 'Response to unexpected market changes' },
-      { name: 'Competitive Challenge', description: 'Response to competitor actions' },
-      { name: 'Budget Constraint', description: 'Optimization within limited resources' },
-      { name: 'Channel Shift', description: 'Adaptation to changing channel dynamics' },
-      { name: 'Crisis Management', description: 'Response to brand or market crisis' }
+      { name: 'Crisis Management', description: 'Handle marketing crises and reputation management' },
+      { name: 'Product Launch', description: 'Plan and execute new product introduction strategies' },
+      { name: 'Budget Allocation', description: 'Optimize marketing budget across channels and campaigns' },
+      { name: 'Customer Retention', description: 'Develop strategies to improve customer loyalty and retention' }
     ]
   },
   {
     id: 'data-visualization',
     name: 'Data Storytelling Assessment',
-    description: 'Evaluation of ability to transform marketing data into compelling narratives',
-    category: 'analytical',
-    icon: 'insights',
+    description: 'Evaluate ability to interpret and present marketing data effectively',
+    icon: 'bar_chart',
     components: [
-      { name: 'Data Selection', description: 'Relevance and quality of data selected' },
-      { name: 'Visualization Design', description: 'Clarity and effectiveness of visualizations' },
-      { name: 'Narrative Structure', description: 'Coherence and persuasiveness of data story' },
-      { name: 'Insight Extraction', description: 'Depth and value of insights derived' },
-      { name: 'Action Recommendations', description: 'Quality of data-driven recommendations' }
+      { name: 'Data Interpretation', description: 'Accuracy in reading and understanding marketing metrics' },
+      { name: 'Visual Design', description: 'Effectiveness of charts, graphs, and visual presentations' },
+      { name: 'Narrative Structure', description: 'Clarity and persuasiveness of data-driven stories' },
+      { name: 'Actionable Insights', description: 'Quality of recommendations based on data analysis' }
     ]
   },
   {
     id: 'consumer-journey',
     name: 'Consumer Journey Mapping',
-    description: 'Assessment of understanding and optimization of the consumer experience',
-    category: 'experiential',
-    icon: 'timeline',
+    description: 'Assessment of understanding customer experience and touchpoint optimization',
+    icon: 'route',
     journeyStages: [
-      { name: 'Awareness', description: 'Strategies for building initial awareness' },
-      { name: 'Consideration', description: 'Approaches to influence consideration phase' },
-      { name: 'Conversion', description: 'Techniques to drive conversion actions' },
-      { name: 'Retention', description: 'Programs to enhance customer loyalty' },
-      { name: 'Advocacy', description: 'Methods to encourage brand advocacy' }
+      { name: 'Awareness', description: 'Understanding how customers first learn about products/services' },
+      { name: 'Consideration', description: 'Analysis of evaluation and comparison processes' },
+      { name: 'Purchase', description: 'Optimization of conversion and purchase experience' },
+      { name: 'Retention', description: 'Post-purchase experience and loyalty building' },
+      { name: 'Advocacy', description: 'Turning customers into brand advocates and referral sources' }
     ]
   },
   {
     id: 'adaptive-assessment',
-    name: 'Adaptive Marketing Assessment',
-    description: 'Dynamic assessment that adapts difficulty based on performance',
-    category: 'personalized',
-    icon: 'alt_route',
+    name: 'Adaptive Learning Assessment',
+    description: 'Personalized assessment that adapts to student performance and learning pace',
+    icon: 'tune',
     adaptiveElements: [
-      { name: 'Knowledge Pathways', description: 'Branching scenarios based on responses' },
-      { name: 'Difficulty Scaling', description: 'Progressive challenge based on performance' },
-      { name: 'Strength Analysis', description: 'Identification of strengths and focus areas' },
-      { name: 'Personalized Feedback', description: 'Tailored guidance based on response patterns' },
-      { name: 'Skill Gap Identification', description: 'Targeted skill development recommendations' }
+      { name: 'Difficulty Adjustment', description: 'Questions adapt based on previous responses' },
+      { name: 'Learning Path Customization', description: 'Personalized learning recommendations' },
+      { name: 'Real-time Feedback', description: 'Immediate feedback and guidance during assessment' },
+      { name: 'Competency Mapping', description: 'Track progress across multiple skill areas' }
     ]
   }
 ];
 
-// Assessment Response Templates
-export const AssessmentResponseTemplates = {
-  rubricFeedback: (criterionName: string, scoreName: string, score: number, maxScore: number, feedback: string) => {
-    return {
-      criterionName,
-      scoreName,
-      score,
-      maxScore,
-      percentage: Math.round((score / maxScore) * 100),
-      feedback
-    };
-  },
-  
-  overallFeedback: (totalScore: number, maxPossibleScore: number, strengths: string[], areasForImprovement: string[]) => {
-    const percentage = Math.round((totalScore / maxPossibleScore) * 100);
-    let gradeLetter = '';
-    
-    if (percentage >= 90) gradeLetter = 'A+';
-    else if (percentage >= 80) gradeLetter = 'A';
-    else if (percentage >= 70) gradeLetter = 'B';
-    else if (percentage >= 60) gradeLetter = 'C';
-    else if (percentage >= 50) gradeLetter = 'D';
-    else if (percentage >= 40) gradeLetter = 'E';
-    else gradeLetter = 'F';
-    
-    return {
-      totalScore,
-      maxPossibleScore,
-      percentage,
-      gradeLetter,
-      strengths,
-      areasForImprovement
-    };
-  }
-};
-
-// Helper function to get appropriate rubric based on content type and subject
-export function getRubricByContentType(contentType: string, subject?: string): typeof DefaultRubricTemplate {
-  // For marketing-related content
-  if (subject?.toLowerCase().includes('marketing') || 
-      subject?.toLowerCase().includes('brand') || 
-      subject?.toLowerCase().includes('advertising')) {
+// Utility Functions
+export function getRubricByContentType(contentType: string, subject: string): Rubric {
+  if (subject.toLowerCase().includes('marketing') || contentType.includes('marketing')) {
     return MarketingRubricTemplate;
   }
-  
-  // Default rubric for all other content
   return DefaultRubricTemplate;
 }
 
-// Helper function to get innovative assessment method based on content requirements
-export function getInnovativeAssessmentMethod(contentType: string, subject?: string): typeof InnovativeAssessmentMethods[0] | undefined {
-  if (subject?.toLowerCase().includes('market analysis') || subject?.toLowerCase().includes('competitor')) {
-    return InnovativeAssessmentMethods.find(method => method.id === 'competitive-analysis');
-  }
-  
-  if (subject?.toLowerCase().includes('scenario') || subject?.toLowerCase().includes('simulation')) {
-    return InnovativeAssessmentMethods.find(method => method.id === 'scenario-simulation');
-  }
-  
-  if (subject?.toLowerCase().includes('data') || subject?.toLowerCase().includes('analytics')) {
-    return InnovativeAssessmentMethods.find(method => method.id === 'data-visualization');
-  }
-  
-  if (subject?.toLowerCase().includes('customer') || subject?.toLowerCase().includes('journey')) {
-    return InnovativeAssessmentMethods.find(method => method.id === 'consumer-journey');
-  }
-  
-  if (subject?.toLowerCase().includes('adaptive') || subject?.toLowerCase().includes('personalized')) {
-    return InnovativeAssessmentMethods.find(method => method.id === 'adaptive-assessment');
-  }
-  
-  // Return a random innovative method as default
-  const randomIndex = Math.floor(Math.random() * InnovativeAssessmentMethods.length);
-  return InnovativeAssessmentMethods[randomIndex];
+export function getInnovativeAssessmentMethod(methodId: string): AssessmentMethod | undefined {
+  return InnovativeAssessmentMethods.find(method => method.id === methodId);
 }
 
-// Calculate rubric score based on criteria and ratings
-export function calculateRubricScore(rubric: typeof DefaultRubricTemplate, ratings: Record<string, number>): {
-  criteriaScores: Array<{
-    criterionId: string;
-    criterionName: string;
-    score: number;
-    maxScore: number;
-    weightedScore: number;
-    percentage: number;
-  }>;
-  totalScore: number;
-  totalWeightedScore: number;
-  maxPossibleScore: number;
-  maxPossibleWeightedScore: number;
-  overallPercentage: number;
-} {
-  const criteriaScores = rubric.criteria.map(criterion => {
-    const criterionId = criterion.id;
-    const rating = ratings[criterionId] || 0;
-    const maxScore = criterion.levels.length;
-    const weightedScore = (rating / maxScore) * criterion.weight;
-    
-    return {
-      criterionId,
-      criterionName: criterion.name,
-      score: rating,
-      maxScore,
-      weightedScore,
-      percentage: Math.round((rating / maxScore) * 100)
-    };
+export function calculateRubricScore(rubric: Rubric, ratings: Record<string, number>) {
+  let totalScore = 0;
+  let totalWeight = 0;
+
+  rubric.criteria.forEach(criterion => {
+    const rating = ratings[criterion.id];
+    if (rating && rating > 0) {
+      const maxScore = criterion.levels.length;
+      const normalizedScore = (rating / maxScore) * 100;
+      totalScore += normalizedScore * (criterion.weight / 100);
+      totalWeight += criterion.weight;
+    }
   });
-  
-  const totalScore = criteriaScores.reduce((sum, item) => sum + item.score, 0);
-  const totalWeightedScore = criteriaScores.reduce((sum, item) => sum + item.weightedScore, 0);
-  const maxPossibleScore = rubric.criteria.length * criteriaScores[0].maxScore;
-  const maxPossibleWeightedScore = 100; // Since weights should add up to 100
-  const overallPercentage = Math.round((totalWeightedScore / maxPossibleWeightedScore) * 100);
-  
+
   return {
-    criteriaScores,
-    totalScore,
-    totalWeightedScore,
-    maxPossibleScore,
-    maxPossibleWeightedScore,
-    overallPercentage
+    totalScore: Math.round(totalScore),
+    maxPossibleScore: 100,
+    weightedScore: totalWeight > 0 ? Math.round(totalScore * 100 / totalWeight) : 0,
+    completionPercentage: Math.round((totalWeight / 100) * 100)
   };
 }
+
+// Assessment Response Templates
+export const AssessmentResponseTemplates = {
+  rubricFeedback: (criterionName: string, levelName: string, score: number, maxScore: number, feedback: string) => ({
+    criterionName,
+    levelAchieved: levelName,
+    score,
+    maxScore,
+    percentage: Math.round((score / maxScore) * 100),
+    feedback
+  }),
+
+  overallFeedback: (totalScore: number, maxScore: number, strengths: string[], improvements: string[]) => ({
+    overallScore: totalScore,
+    maxPossibleScore: maxScore,
+    percentage: Math.round((totalScore / maxScore) * 100),
+    gradeLevel: totalScore >= 90 ? 'Excellent' : totalScore >= 75 ? 'Proficient' : totalScore >= 60 ? 'Developing' : 'Needs Work',
+    strengths,
+    areasForImprovement: improvements,
+    recommendations: improvements.length > 0 
+      ? `Focus on improving: ${improvements.join(', ')}` 
+      : 'Continue maintaining high standards across all criteria'
+  }),
+
+  detailedFeedback: (assessment: any) => ({
+    summary: `Assessment completed with ${assessment.criteriaFeedback?.length || 0} criteria evaluated`,
+    timestamp: new Date().toISOString(),
+    nextSteps: [
+      'Review feedback for each criterion',
+      'Focus on areas marked for improvement',
+      'Consider peer review for additional perspectives',
+      'Plan follow-up assessments to track progress'
+    ]
+  })
+};

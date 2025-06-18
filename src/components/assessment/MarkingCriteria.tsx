@@ -6,26 +6,26 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../ui/card";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "../ui/select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Progress } from "../ui/progress";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 import { 
   DefaultRubricTemplate, 
   MarketingRubricTemplate, 
@@ -34,7 +34,7 @@ import {
   getInnovativeAssessmentMethod,
   calculateRubricScore,
   AssessmentResponseTemplates
-} from "@/lib/markingCriteria";
+} from "../../lib/markingCriteria";
 
 interface MarkingCriteriaProps {
   contentType: string;

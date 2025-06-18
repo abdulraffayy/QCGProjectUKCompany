@@ -1,251 +1,164 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  BookOpen, 
-  Clock, 
-  Target, 
-  Users, 
-  CheckCircle, 
-  Plus, 
-  Minus,
-  FileText,
-  Save,
-  Download,
-  Eye
-} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
+import { X, Plus } from 'lucide-react';
 
-interface LessonPlanData {
-  title: string;
-  subject: string;
-  duration: string;
-  qaqf_level: number;
-  learning_objectives: string[];
-  materials: string[];
-  activities: {
-    name: string;
-    duration: string;
-    description: string;
-    type: 'introduction' | 'main' | 'assessment' | 'conclusion';
-  }[];
-  assessment_methods: string[];
-  homework: string;
-  notes: string;
-}
+const lessonPlanSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  subject: z.string().min(2, 'Subject is required'),
+  qaqf_level: z.number().min(1).max(9),
+  duration: z.string().min(1, 'Duration is required'),
+  learning_objectives: z.string().min(10, 'Learning objectives are required'),
+  prerequisites: z.string().optional(),
+  activities: z.array(z.object({
+    name: z.string(),
+    duration: z.string(),
+    description: z.string()
+  })).min(1, 'At least one activity is required'),
+  assessment_methods: z.array(z.string()).min(1, 'At least one assessment method is required'),
+  resources: z.array(z.string()).optional()
+});
+
+type LessonPlanData = z.infer<typeof lessonPlanSchema>;
 
 interface LessonPlanTemplateProps {
-  generatedContent?: any;
+  baseContent?: any;
   onSave: (lessonPlan: LessonPlanData) => void;
-  onClose: () => void;
+  onCancel: () => void;
 }
 
-const LessonPlanTemplate: React.FC<LessonPlanTemplateProps> = ({ 
-  generatedContent, 
-  onSave, 
-  onClose 
+const LessonPlanTemplate: React.FC<LessonPlanTemplateProps> = ({
+  baseContent,
+  onSave,
+  onCancel
 }) => {
-  const [lessonPlan, setLessonPlan] = useState<LessonPlanData>({
-    title: generatedContent?.title || '',
-    subject: generatedContent?.subject || '',
-    duration: '60 minutes',
-    qaqf_level: generatedContent?.qaqf_level || 5,
-    learning_objectives: generatedContent?.learning_objectives || [''],
-    materials: ['Textbook', 'Whiteboard', 'Projector'],
-    activities: [
-      {
-        name: 'Introduction',
-        duration: '10 minutes',
-        description: 'Welcome students and introduce the topic',
-        type: 'introduction'
-      },
-      {
-        name: 'Main Content',
-        duration: '35 minutes', 
-        description: generatedContent?.content || 'Main lesson content',
-        type: 'main'
-      },
-      {
-        name: 'Assessment',
-        duration: '10 minutes',
-        description: 'Quick assessment to check understanding',
-        type: 'assessment'
-      },
-      {
-        name: 'Conclusion',
-        duration: '5 minutes',
-        description: 'Summarize key points and assign homework',
-        type: 'conclusion'
-      }
-    ],
-    assessment_methods: ['Oral Questions', 'Quick Quiz'],
-    homework: 'Read chapter 3 and complete exercises 1-5',
-    notes: ''
+  const [activities, setActivities] = useState([
+    { name: 'Introduction', duration: '10 minutes', description: 'Welcome and overview' }
+  ]);
+  const [resources, setResources] = useState(['']);
+
+  const form = useForm<LessonPlanData>({
+    resolver: zodResolver(lessonPlanSchema),
+    defaultValues: {
+      title: baseContent ? `Lesson: ${baseContent.title}` : '',
+      subject: '',
+      qaqf_level: baseContent?.qaqf_level || 1,
+      duration: '60 minutes',
+      learning_objectives: '',
+      prerequisites: '',
+      activities: activities,
+      assessment_methods: [],
+      resources: resources.filter(r => r.length > 0)
+    }
   });
 
-  const addObjective = () => {
-    setLessonPlan(prev => ({
-      ...prev,
-      learning_objectives: [...prev.learning_objectives, '']
-    }));
+  const addActivity = () => {
+    setActivities([...activities, { name: '', duration: '', description: '' }]);
   };
 
-  const removeObjective = (index: number) => {
-    setLessonPlan(prev => ({
-      ...prev,
-      learning_objectives: prev.learning_objectives.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateObjective = (index: number, value: string) => {
-    setLessonPlan(prev => ({
-      ...prev,
-      learning_objectives: prev.learning_objectives.map((obj, i) => 
-        i === index ? value : obj
-      )
-    }));
-  };
-
-  const addMaterial = () => {
-    setLessonPlan(prev => ({
-      ...prev,
-      materials: [...prev.materials, '']
-    }));
-  };
-
-  const removeMaterial = (index: number) => {
-    setLessonPlan(prev => ({
-      ...prev,
-      materials: prev.materials.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateMaterial = (index: number, value: string) => {
-    setLessonPlan(prev => ({
-      ...prev,
-      materials: prev.materials.map((material, i) => 
-        i === index ? value : material
-      )
-    }));
+  const removeActivity = (index: number) => {
+    setActivities(activities.filter((_, i) => i !== index));
   };
 
   const updateActivity = (index: number, field: string, value: string) => {
-    setLessonPlan(prev => ({
-      ...prev,
-      activities: prev.activities.map((activity, i) => 
-        i === index ? { ...activity, [field]: value } : activity
-      )
-    }));
+    const updated = activities.map((activity, i) => 
+      i === index ? { ...activity, [field]: value } : activity
+    );
+    setActivities(updated);
+    form.setValue('activities', updated);
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'introduction': return <Users className="h-4 w-4" />;
-      case 'main': return <BookOpen className="h-4 w-4" />;
-      case 'assessment': return <CheckCircle className="h-4 w-4" />;
-      case 'conclusion': return <Target className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
+  const addResource = () => {
+    setResources([...resources, '']);
   };
 
-  const handleSave = async () => {
-    try {
-      // Save to database via API
-      const response = await fetch('/api/lesson-plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: lessonPlan.title,
-          subject: lessonPlan.subject,
-          duration: lessonPlan.duration,
-          qaqfLevel: lessonPlan.qaqf_level,
-          learningObjectives: lessonPlan.learning_objectives,
-          materials: lessonPlan.materials,
-          activities: lessonPlan.activities,
-          assessmentMethods: lessonPlan.assessment_methods,
-          homework: lessonPlan.homework,
-          notes: lessonPlan.notes,
-        }),
-      });
-
-      if (response.ok) {
-        const savedLessonPlan = await response.json();
-        console.log('Lesson plan saved:', savedLessonPlan);
-        onSave(lessonPlan);
-      } else {
-        console.error('Failed to save lesson plan');
-      }
-    } catch (error) {
-      console.error('Error saving lesson plan:', error);
-    }
+  const removeResource = (index: number) => {
+    setResources(resources.filter((_, i) => i !== index));
   };
+
+  const updateResource = (index: number, value: string) => {
+    const updated = resources.map((resource, i) => i === index ? value : resource);
+    setResources(updated);
+    form.setValue('resources', updated.filter(r => r.length > 0));
+  };
+
+  const onSubmit = (data: LessonPlanData) => {
+    onSave({
+      ...data,
+      activities: activities,
+      resources: resources.filter(r => r.length > 0)
+    });
+  };
+
+  const assessmentMethods = [
+    'Formative Assessment',
+    'Summative Assessment',
+    'Peer Assessment',
+    'Self-Assessment',
+    'Portfolio Assessment',
+    'Project-Based Assessment',
+    'Presentation',
+    'Written Test',
+    'Practical Demonstration'
+  ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <BookOpen className="h-5 w-5" />
-            <span>Lesson Plan Template</span>
-          </CardTitle>
-          <CardDescription>
-            Create a structured lesson plan from your generated content
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Basic Information */}
+    <Card className="max-w-4xl mx-auto">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Create Lesson Plan</CardTitle>
+            <CardDescription>
+              Design a comprehensive lesson plan aligned with QAQF standards
+            </CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="title">Lesson Title</Label>
-              <Input
+              <Input 
                 id="title"
-                value={lessonPlan.title}
-                onChange={(e) => setLessonPlan(prev => ({ ...prev, title: e.target.value }))}
+                {...form.register('title')}
                 placeholder="Enter lesson title"
               />
+              {form.formState.errors.title && (
+                <p className="text-red-500 text-sm mt-1">{form.formState.errors.title.message}</p>
+              )}
             </div>
-            <div className="space-y-2">
+            
+            <div>
               <Label htmlFor="subject">Subject</Label>
-              <Input
+              <Input 
                 id="subject"
-                value={lessonPlan.subject}
-                onChange={(e) => setLessonPlan(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Enter subject"
+                {...form.register('subject')}
+                placeholder="Enter subject area"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
-              <Select 
-                value={lessonPlan.duration} 
-                onValueChange={(value) => setLessonPlan(prev => ({ ...prev, duration: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30 minutes">30 minutes</SelectItem>
-                  <SelectItem value="45 minutes">45 minutes</SelectItem>
-                  <SelectItem value="60 minutes">60 minutes</SelectItem>
-                  <SelectItem value="90 minutes">90 minutes</SelectItem>
-                  <SelectItem value="120 minutes">120 minutes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="qaqf_level">QAQF Level</Label>
               <Select 
-                value={lessonPlan.qaqf_level.toString()} 
-                onValueChange={(value) => setLessonPlan(prev => ({ ...prev, qaqf_level: parseInt(value) }))}
+                value={form.watch('qaqf_level').toString()} 
+                onValueChange={(value) => form.setValue('qaqf_level', parseInt(value))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select QAQF level" />
                 </SelectTrigger>
                 <SelectContent>
                   {[1,2,3,4,5,6,7,8,9].map(level => (
@@ -256,203 +169,147 @@ const LessonPlanTemplate: React.FC<LessonPlanTemplateProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Learning Objectives */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Learning Objectives</Label>
-              <Button onClick={addObjective} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Objective
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {lessonPlan.learning_objectives.map((objective, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={objective}
-                    onChange={(e) => updateObjective(index, e.target.value)}
-                    placeholder={`Learning objective ${index + 1}`}
-                  />
-                  {lessonPlan.learning_objectives.length > 1 && (
-                    <Button
-                      onClick={() => removeObjective(index)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Materials */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Required Materials</Label>
-              <Button onClick={addMaterial} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Material
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {lessonPlan.materials.map((material, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={material}
-                    onChange={(e) => updateMaterial(index, e.target.value)}
-                    placeholder={`Material ${index + 1}`}
-                  />
-                  {lessonPlan.materials.length > 1 && (
-                    <Button
-                      onClick={() => removeMaterial(index)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Activities Timeline */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium">Lesson Activities</Label>
-            <div className="space-y-4">
-              {lessonPlan.activities.map((activity, index) => (
-                <Card key={index} className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Activity Name</Label>
-                        <div className="flex items-center space-x-2">
-                          {getActivityIcon(activity.type)}
-                          <Input
-                            value={activity.name}
-                            onChange={(e) => updateActivity(index, 'name', e.target.value)}
-                            placeholder="Activity name"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Duration</Label>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4" />
-                          <Input
-                            value={activity.duration}
-                            onChange={(e) => updateActivity(index, 'duration', e.target.value)}
-                            placeholder="10 minutes"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Type</Label>
-                        <Select 
-                          value={activity.type} 
-                          onValueChange={(value) => updateActivity(index, 'type', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="introduction">Introduction</SelectItem>
-                            <SelectItem value="main">Main Content</SelectItem>
-                            <SelectItem value="assessment">Assessment</SelectItem>
-                            <SelectItem value="conclusion">Conclusion</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-3 space-y-2">
-                        <Label>Description</Label>
-                        <Textarea
-                          value={activity.description}
-                          onChange={(e) => updateActivity(index, 'description', e.target.value)}
-                          placeholder="Describe what happens during this activity"
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Assessment and Homework */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="assessment">Assessment Methods</Label>
-              <Textarea
-                id="assessment"
-                value={lessonPlan.assessment_methods.join(', ')}
-                onChange={(e) => setLessonPlan(prev => ({ 
-                  ...prev, 
-                  assessment_methods: e.target.value.split(', ').filter(m => m.trim())
-                }))}
-                placeholder="List assessment methods"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="homework">Homework Assignment</Label>
-              <Textarea
-                id="homework"
-                value={lessonPlan.homework}
-                onChange={(e) => setLessonPlan(prev => ({ ...prev, homework: e.target.value }))}
-                placeholder="Describe homework assignment"
-                rows={3}
+            
+            <div>
+              <Label htmlFor="duration">Duration</Label>
+              <Input 
+                id="duration"
+                {...form.register('duration')}
+                placeholder="e.g., 60 minutes, 2 hours"
               />
             </div>
           </div>
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              value={lessonPlan.notes}
-              onChange={(e) => setLessonPlan(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Any additional notes or considerations"
-              rows={4}
+          
+          <div>
+            <Label htmlFor="learning_objectives">Learning Objectives</Label>
+            <Textarea 
+              id="learning_objectives"
+              {...form.register('learning_objectives')}
+              placeholder="What will students learn and be able to do?"
+              className="min-h-[80px]"
             />
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between">
-            <Button onClick={onClose} variant="outline">
-              Cancel
-            </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline">
-                <Eye className="h-4 w-4 mr-1" />
-                Preview
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-1" />
-                Export PDF
-              </Button>
-              <Button onClick={handleSave}>
-                <Save className="h-4 w-4 mr-1" />
-                Save Lesson Plan
+          
+          <div>
+            <Label htmlFor="prerequisites">Prerequisites (Optional)</Label>
+            <Textarea 
+              id="prerequisites"
+              {...form.register('prerequisites')}
+              placeholder="What should students know before this lesson?"
+              className="min-h-[60px]"
+            />
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label>Learning Activities</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addActivity}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Activity
               </Button>
             </div>
+            
+            <div className="space-y-3">
+              {activities.map((activity, index) => (
+                <div key={index} className="border rounded-md p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Activity {index + 1}</span>
+                    {activities.length > 1 && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeActivity(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <Input 
+                      placeholder="Activity name"
+                      value={activity.name}
+                      onChange={(e) => updateActivity(index, 'name', e.target.value)}
+                    />
+                    <Input 
+                      placeholder="Duration"
+                      value={activity.duration}
+                      onChange={(e) => updateActivity(index, 'duration', e.target.value)}
+                    />
+                  </div>
+                  
+                  <Textarea 
+                    placeholder="Activity description"
+                    value={activity.description}
+                    onChange={(e) => updateActivity(index, 'description', e.target.value)}
+                    className="min-h-[60px]"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <div>
+            <Label>Assessment Methods</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+              {assessmentMethods.map((method) => (
+                <label key={method} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    value={method}
+                    {...form.register('assessment_methods')}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm">{method}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label>Resources (Optional)</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addResource}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Resource
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {resources.map((resource, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input 
+                    placeholder="Resource name or description"
+                    value={resource}
+                    onChange={(e) => updateResource(index, e.target.value)}
+                  />
+                  {resources.length > 1 && (
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => removeResource(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" className="flex-1">
+              Save Lesson Plan
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

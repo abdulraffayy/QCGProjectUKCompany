@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import AssessmentTool from "@/components/assessment/AssessmentTool";
+import AssessmentTool from "../components/assessment/AssessmentTool";
 
 const AssessmentPage: React.FC = () => {
   return (
