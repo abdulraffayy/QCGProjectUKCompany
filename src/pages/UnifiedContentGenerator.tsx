@@ -18,9 +18,9 @@ import {
   GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
   Upload, Link, FileImage, Globe, Scan
 } from 'lucide-react';
-import ProcessingCenterItem from '@/components/content/ProcessingCenterItem';
-import LessonPlanTemplate from '@/components/content/LessonPlanTemplate';
-import { useToast } from '@/hooks/use-toast';
+import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
+import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
+import { useToast } from '../hooks/use-toast';
 
 // Unified validation schema for both content types
 const unifiedGenerationSchema = z.object({
