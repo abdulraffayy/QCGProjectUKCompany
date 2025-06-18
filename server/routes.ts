@@ -22,7 +22,7 @@ import {
   generateSampleContent,
   generateSampleVerification,
   generateSampleBritishStandardsCheck
-} from "./ollama";
+} from "./content-generator";
 
 // Configure multer for file uploads
 const uploadDir = 'uploads';

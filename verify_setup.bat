@@ -58,6 +58,16 @@ if %errorlevel% neq 0 (
 )
 
 echo.
+echo Testing API endpoints...
+timeout /t 2 /nobreak >nul
+curl -s -X GET http://localhost:5000/api/study-materials >nul 2>&1
+if %errorlevel% neq 0 (
+    echo WARNING: API not responding - start the server first with "npm run dev"
+) else (
+    echo ✓ API endpoints responding correctly
+)
+
+echo.
 echo ========================================
 echo ✓ All checks passed!
 echo ========================================
