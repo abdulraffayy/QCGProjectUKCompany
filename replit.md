@@ -117,7 +117,12 @@ This is a comprehensive educational content platform built with FastAPI (Python 
 
 Changelog:
 - June 18, 2025. Initial setup
+- June 18, 2025. Created comprehensive Windows 11 local setup guide
+- June 18, 2025. Added static deployment guide for various hosting platforms
+- June 18, 2025. Created complete CRUD API documentation with examples
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Deployment preference: Local Windows 11 development with static deployment options.
+Documentation requirement: Complete guides for local setup, static deployment, and API usage.
