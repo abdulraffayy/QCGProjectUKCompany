@@ -22,16 +22,24 @@ class VerificationStatus(str, Enum):
     REJECTED = "rejected"
     IN_REVIEW = "in_review"
 
-# User model
+# User model with authentication
 class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
-    password = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
     name = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="user")
+    role = Column(String, nullable=False, default="user")  # 'user' or 'admin'
     avatar = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Password reset functionality
+    reset_token = Column(String, nullable=True)
+    reset_token_expires = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     created_contents = relationship("Content", foreign_keys="Content.created_by_user_id", back_populates="creator")
@@ -103,6 +111,67 @@ class Video(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[created_by_user_id], back_populates="created_videos")
     verifier = relationship("User", foreign_keys=[verified_by_user_id], back_populates="verified_videos")
+
+# Study Material model
+class StudyMaterial(Base):
+    __tablename__ = "study_materials"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    type = Column(String, nullable=False)  # 'document', 'video', 'audio', 'link'
+    qaqf_level = Column(Integer, nullable=False)
+    module_code = Column(String)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    verification_status = Column(String, nullable=False, default=VerificationStatus.PENDING)
+    verified_by_user_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(Text)  # For text content
+    file_url = Column(String)  # For uploaded files
+    file_name = Column(String)
+    file_size = Column(Integer)
+    characteristics = Column(JSON, nullable=False)
+    tags = Column(JSON)  # Array of tags
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    creator = relationship("User", foreign_keys=[created_by_user_id])
+    verifier = relationship("User", foreign_keys=[verified_by_user_id])
+
+# Collection model for organizing study materials
+class Collection(Base):
+    __tablename__ = "collections"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_public = Column(Boolean, default=False)
+    material_ids = Column(JSON, default=[])  # Array of study material IDs
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    creator = relationship("User")
+
+# Template model for reusable content structures
+class Template(Base):
+    __tablename__ = "templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    type = Column(String, nullable=False)  # 'lesson_plan', 'assessment', 'course_outline'
+    qaqf_level = Column(Integer, nullable=False)
+    content_structure = Column(JSON, nullable=False)  # Template structure
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_public = Column(Boolean, default=False)
+    usage_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    creator = relationship("User")
 
 # Activity model
 class Activity(Base):

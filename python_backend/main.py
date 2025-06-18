@@ -49,6 +49,11 @@ app.include_router(course_generator.router, prefix="/api", tags=["course-generat
 app.include_router(qaqf_admin.router, prefix="/api/qaqf", tags=["qaqf-admin"])
 app.include_router(content_extraction.router, prefix="/api", tags=["content-extraction"])
 
+# Authentication and study materials routes
+from routes import auth, study_materials
+app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
+app.include_router(study_materials.router, prefix="/api", tags=["study-materials"])
+
 # Health check endpoint
 @app.get("/api/health")
 async def health_check():
