@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Input } from "../components/ui/input";
 import { Content } from '../../shared/schema';
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 import EnhancedVerificationPanel from "../components/verification/EnhancedVerificationPanel";
 import BritishStandardsVerifier from "../components/verification/BritishStandardsVerifier";
 import CourseWorkflowView from "../components/content/CourseWorkflowView";

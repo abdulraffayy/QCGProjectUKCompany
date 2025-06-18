@@ -4,8 +4,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Link } from "wouter";
-import { getColorByLevel } from "../lib/qaqf";
-import { cn } from "../lib/utils";
+import { getColorByLevel } from "../../lib/qaqf";
+import { cn } from "../../lib/utils";
 import { Content } from "@shared/schema";
 
 interface RecentContentProps {

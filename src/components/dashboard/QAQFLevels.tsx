@@ -1,8 +1,8 @@
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { QAQFLevelCategories, getCharacteristicsByCategory } from "../lib/qaqf";
-import { cn } from "../lib/utils";
+import { QAQFLevelCategories, getCharacteristicsByCategory } from "../../lib/qaqf";
+import { cn } from "../../lib/utils";
 
 const QAQFLevels: React.FC = () => {
   return (

@@ -3,7 +3,7 @@ import { Card, CardContent, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
-import { QAQFLevels, QAQFCharacteristics } from "../lib/qaqf";
+import { QAQFLevels, QAQFCharacteristics } from "../../lib/qaqf";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { useToast } from "../../hooks/use-toast";
