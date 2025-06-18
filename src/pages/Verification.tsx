@@ -22,7 +22,7 @@ const VerificationPage: React.FC = () => {
   
   // Filter contents by verification status "pending"
   const pendingContents = contents.filter(
-    content => content.verificationStatus === 'pending'
+    content => content.verification_status === 'pending'
   );
   
   // Filter contents based on search term
@@ -122,11 +122,11 @@ const VerificationPage: React.FC = () => {
                       </p>
                       <div className="flex items-center mt-2">
                         <span className={`text-xs ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>
-                          QAQF Level {content.qaqfLevel}
+                          QAQF Level {content.qaqf_level}
                         </span>
                         <span className="mx-2 text-neutral-300">•</span>
                         <span className={`text-xs ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>
-                          {new Date(content.createdAt).toLocaleDateString()}
+                          {new Date(content.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
