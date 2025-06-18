@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { useToast } from "../hooks/use-toast";
 import { Content } from "@shared/schema";
 
 interface VerificationPanelProps {

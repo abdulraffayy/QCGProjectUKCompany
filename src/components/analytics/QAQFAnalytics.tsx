@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
@@ -12,8 +12,8 @@ import {
   calculateVerificationDistribution,
   calculateContentTypeDistribution,
   analyzeContentOverTime
-} from '@/lib/analyticsHelpers';
-import { QAQFCharacteristics, QAQFLevels } from '@/lib/qaqf';
+} from '../../lib/analyticsHelpers';
+import { QAQFCharacteristics, QAQFLevels } from '../../lib/qaqf';
 import { Content } from '@shared/schema';
 
 interface QAQFAnalyticsProps {
