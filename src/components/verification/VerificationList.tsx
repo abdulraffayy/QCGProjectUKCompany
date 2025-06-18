@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { useToast } from "../../hooks/use-toast";
 import { apiRequest, queryClient } from "../lib/queryClient";
-import { getColorByLevel, QAQFCharacteristics } from "../lib/qaqf";
+import { getColorByLevel, QAQFCharacteristics } from "../../lib/qaqf";
 import { Content, VerificationStatus } from "@shared/schema";
 
 interface VerificationListProps {

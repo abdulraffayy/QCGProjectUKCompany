@@ -7,7 +7,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
 import { useToast } from "../../hooks/use-toast";
-import { QAQFLevels } from "../lib/qaqf";
+import { QAQFLevels } from "../../lib/qaqf";
 
 // Simple arrays for animation styles and duration options
 const AnimationStyles = [

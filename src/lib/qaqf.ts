@@ -1,206 +1,171 @@
-// QAQF Framework Constants and Utilities
-// This file contains the definitions and utilities for working with the QAQF framework
+/**
+ * QAQF (Quality Assurance and Qualifications Framework) Library
+ * Provides utilities and constants for academic content quality assessment
+ */
 
-// QAQF Levels as defined in the QAQF Framework
+// QAQF Levels (1-9)
 export const QAQFLevels = [
-  { id: 1, name: "Level 1", description: "Initial QAQF level - Focus on basic academic structure" },
-  { id: 2, name: "Level 2", description: "Elementary organization of academic content" },
-  { id: 3, name: "Level 3", description: "Systematic approach to academic content structure" },
-  { id: 4, name: "Level 4", description: "Managed academic content with consistent quality" },
-  { id: 5, name: "Level 5", description: "Advanced framework integration with optimized structures" },
-  { id: 6, name: "Level 6", description: "Comprehensive approach with interconnected components" },
-  { id: 7, name: "Level 7", description: "Integrated assessment strategies and adaptive content" },
-  { id: 8, name: "Level 8", description: "Innovative content with dynamic learning pathways" },
-  { id: 9, name: "Level 9", description: "Expert level with advanced pedagogical integration" }
+  { level: 1, name: "Basic Skills", description: "Foundation level skills and knowledge" },
+  { level: 2, name: "Essential Skills", description: "Core competencies and basic understanding" },
+  { level: 3, name: "Intermediate Skills", description: "Applied knowledge with some complexity" },
+  { level: 4, name: "Professional Entry", description: "Skilled professional entry level" },
+  { level: 5, name: "Professional", description: "Advanced professional competence" },
+  { level: 6, name: "Specialist", description: "Specialized expertise and leadership" },
+  { level: 7, name: "Advanced Professional", description: "Expert level with strategic thinking" },
+  { level: 8, name: "Expert", description: "Mastery level with innovation capability" },
+  { level: 9, name: "Authority", description: "Authoritative expertise and thought leadership" }
 ];
 
-// QAQF Characteristics as defined in the QAQF Framework
-export const QAQFCharacteristics = [
-  { id: 1, name: "Clarity", description: "Clear, concise and unambiguous content presentation" },
-  { id: 2, name: "Completeness", description: "Comprehensive coverage of subject matter" },
-  { id: 3, name: "Accuracy", description: "Factually correct information aligned with current knowledge" },
-  { id: 4, name: "Coherence", description: "Logical flow and structure of academic content" },
-  { id: 5, name: "Relevance", description: "Pertinence to learning objectives and real-world contexts" },
-  { id: 6, name: "Engagement", description: "Interactive and motivating learning experience" },
-  { id: 7, name: "Critical Thinking", description: "Stimulation of higher-order thinking skills" },
-  { id: 8, name: "Accessibility", description: "Inclusive design for diverse learners" },
-  { id: 9, name: "Assessment Integration", description: "Embedded evaluation mechanisms" },
-  { id: 10, name: "Adaptability", description: "Flexibility to accommodate different learning styles" }
-];
-
-// Map QAQF level to required characteristics
-export const QAQFLevelRequirements: Record<number, number[]> = {
-  1: [1, 3], // Level 1 requires Clarity and Accuracy
-  2: [1, 2, 3], // Level 2 requires Clarity, Completeness, and Accuracy
-  3: [1, 2, 3, 4], // Level 3 adds Coherence
-  4: [1, 2, 3, 4, 5], // Level 4 adds Relevance
-  5: [1, 2, 3, 4, 5, 8], // Level 5 adds Accessibility
-  6: [1, 2, 3, 4, 5, 6, 8], // Level 6 adds Engagement
-  7: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Level 7 adds Critical Thinking and Assessment Integration
-  8: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Level 8 adds Adaptability
-  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] // Level 9 requires all characteristics with highest quality
+// QAQF Level Categories
+export const QAQFLevelCategories = {
+  basic: { levels: [1, 2, 3], name: "Basic", color: "blue" },
+  intermediate: { levels: [4, 5, 6], name: "Intermediate", color: "yellow" },
+  advanced: { levels: [7, 8, 9], name: "Advanced", color: "red" }
 };
 
-// Validate if content meets QAQF level requirements
-export function validateQAQFCompliance(
-  contentCharacteristics: number[],
-  qaqfLevel: number
-): { isValid: boolean; missingCharacteristics: number[] } {
-  const requiredCharacteristics = QAQFLevelRequirements[qaqfLevel] || [];
+// QAQF Characteristics (10 key characteristics)
+export const QAQFCharacteristics = [
+  { id: 1, name: "Clarity", description: "Clear and understandable presentation", category: "Communication" },
+  { id: 2, name: "Completeness", description: "Comprehensive coverage of topics", category: "Content" },
+  { id: 3, name: "Accuracy", description: "Factual correctness and precision", category: "Quality" },
+  { id: 4, name: "Coherence", description: "Logical structure and flow", category: "Organization" },
+  { id: 5, name: "Relevance", description: "Applicable to learning objectives", category: "Alignment" },
+  { id: 6, name: "Currency", description: "Up-to-date and current information", category: "Timeliness" },
+  { id: 7, name: "Accessibility", description: "Inclusive and accessible design", category: "Usability" },
+  { id: 8, name: "Engagement", description: "Interactive and engaging content", category: "Pedagogy" },
+  { id: 9, name: "Assessment", description: "Effective evaluation methods", category: "Evaluation" },
+  { id: 10, name: "Authenticity", description: "Real-world application and context", category: "Application" }
+];
+
+// Get color by QAQF level
+export const getColorByLevel = (level: number): string => {
+  if (level >= 1 && level <= 3) return "blue";
+  if (level >= 4 && level <= 6) return "yellow";
+  if (level >= 7 && level <= 9) return "red";
+  return "gray";
+};
+
+// Get characteristics by category
+export const getCharacteristicsByCategory = (category: string) => {
+  return QAQFCharacteristics.filter(char => char.category === category);
+};
+
+// Calculate QAQF compliance score
+export const calculateQAQFCompliance = (content: any): number => {
+  if (!content) return 0;
   
-  // Check which required characteristics are missing
-  const missingCharacteristics = requiredCharacteristics.filter(
-    charId => !contentCharacteristics.includes(charId)
-  );
+  let score = 0;
+  const maxScore = 100;
+  
+  // Basic content checks (40 points)
+  if (content.title && content.title.length >= 10) score += 10;
+  if (content.description && content.description.length >= 50) score += 10;
+  if (content.content && content.content.length >= 200) score += 10;
+  if (content.qaqf_level && content.qaqf_level >= 1 && content.qaqf_level <= 9) score += 10;
+  
+  // Characteristics checks (60 points)
+  if (content.characteristics && Array.isArray(content.characteristics)) {
+    const charScore = Math.min(60, content.characteristics.length * 6);
+    score += charScore;
+  }
+  
+  return Math.min(maxScore, score);
+};
+
+// British Standards compliance checker
+export const checkBritishStandardsCompliance = (content: any) => {
+  const checks = {
+    accessibility: content.accessibility_features?.length > 0,
+    language_standards: content.language_level && content.language_level.includes('UK'),
+    curriculum_alignment: content.curriculum_alignment?.length > 0,
+    assessment_criteria: content.assessment_criteria?.length > 0,
+    quality_assurance: content.verification_status === 'verified'
+  };
+  
+  const passedChecks = Object.values(checks).filter(Boolean).length;
+  const totalChecks = Object.keys(checks).length;
   
   return {
-    isValid: missingCharacteristics.length === 0,
-    missingCharacteristics
+    score: (passedChecks / totalChecks) * 100,
+    checks,
+    compliant: passedChecks >= Math.ceil(totalChecks * 0.8)
   };
-}
+};
 
-// Get characteristic name by ID
-export function getCharacteristicById(id: number): string {
-  const characteristic = QAQFCharacteristics.find(char => char.id === id);
-  return characteristic ? characteristic.name : `Unknown Characteristic (${id})`;
-}
+// Content type definitions
+export const ContentTypes = {
+  ACADEMIC_PAPER: "academic_paper",
+  ASSESSMENT: "assessment",
+  VIDEO: "video",
+  LECTURE: "lecture",
+  COURSE: "course"
+};
 
-// Get level name by ID
-export function getLevelById(id: number): string {
-  const level = QAQFLevels.find(level => level.id === id);
-  return level ? level.name : `Unknown Level (${id})`;
-}
+// Verification status types
+export const VerificationStatus = {
+  PENDING: "pending",
+  VERIFIED: "verified",
+  REJECTED: "rejected",
+  IN_REVIEW: "in_review"
+};
 
-// Get recommended content types based on QAQF level
-export function getRecommendedContentTypes(qaqfLevel: number): string[] {
-  if (qaqfLevel <= 3) {
-    return ["lecture", "reading_material", "basic_quiz"];
-  } else if (qaqfLevel <= 6) {
-    return ["lecture", "reading_material", "advanced_quiz", "case_study", "group_activity"];
-  } else {
-    return ["lecture", "reading_material", "advanced_quiz", "case_study", "group_activity", "research_project", "simulation"];
-  }
-}
-
-// Get QAQF level difficulty description
-export function getQAQFLevelDifficulty(qaqfLevel: number): string {
-  if (qaqfLevel <= 3) {
-    return "Basic";
-  } else if (qaqfLevel <= 6) {
-    return "Intermediate";
-  } else {
-    return "Advanced";
-  }
-}
-
-// Get color associated with a QAQF level for visual representation
-export function getColorByLevel(qaqfLevel: number): string {
-  // Color scheme from basic (blue) to advanced (purple)
-  if (qaqfLevel <= 3) {
-    return "#3b82f6"; // Blue for basic levels
-  } else if (qaqfLevel <= 6) {
-    return "#8b5cf6"; // Purple for intermediate levels
-  } else {
-    return "#7c3aed"; // Violet for advanced levels
-  }
-}
-
-// QAQF Level Categories for visual representation and grouping
-export const QAQFLevelCategories = [
-  {
-    name: "Basic",
-    levels: [1, 2, 3],
-    color: "blue",
-    description: "Foundation level content focusing on clarity and accuracy"
-  },
-  {
-    name: "Intermediate",
-    levels: [4, 5, 6],
-    color: "purple",
-    description: "Enhanced content with coherence and engagement features"
-  },
-  {
-    name: "Advanced",
-    levels: [7, 8, 9],
-    color: "violet",
-    description: "Expert level content with all QAQF characteristics"
-  }
-];
-
-// Get characteristics by category (basic, intermediate, advanced)
-export function getCharacteristicsByCategory(category: string): typeof QAQFCharacteristics {
-  switch (category) {
-    case "basic":
-      return QAQFCharacteristics.filter(char => char.id <= 3);
-    case "intermediate":
-      return QAQFCharacteristics.filter(char => char.id > 3 && char.id <= 6);
-    case "advanced":
-      return QAQFCharacteristics.filter(char => char.id > 6);
-    default:
-      return QAQFCharacteristics;
-  }
-}
-
-// Animation styles for video generation
-export const AnimationStyles = [
-  { id: "simple", name: "Simple", description: "Basic transitions and animations" },
-  { id: "moderate", name: "Moderate", description: "More dynamic animations with some effects" },
-  { id: "advanced", name: "Advanced", description: "Complex animations with multiple effects" },
-  { id: "interactive", name: "Interactive", description: "Animations that respond to user interactions" },
-  { id: "custom", name: "Custom", description: "Custom animation style based on requirements" }
-];
-
-// Video duration options
-export const DurationOptions = [
-  { id: "short", name: "Short (2-3 minutes)", value: 180 },
-  { id: "medium", name: "Medium (5-7 minutes)", value: 360 },
-  { id: "long", name: "Long (10-15 minutes)", value: 900 },
-  { id: "extended", name: "Extended (20+ minutes)", value: 1200 },
-  { id: "custom", name: "Custom Duration", value: 0 }
-];
-
-// Content types for QAQF framework
-export const ContentTypes = [
-  { id: "lecture", name: "Lecture", description: "Traditional lecture content with clear structure" },
-  { id: "tutorial", name: "Tutorial", description: "Step-by-step guidance for practical learning" },
-  { id: "case_study", name: "Case Study", description: "Real-world examples for applied learning" },
-  { id: "assessment", name: "Assessment", description: "Evaluation materials for testing knowledge" },
-  { id: "reading_material", name: "Reading Material", description: "Text-based learning resources" },
-  { id: "interactive", name: "Interactive", description: "Content with user interaction elements" },
-  { id: "simulation", name: "Simulation", description: "Simulated environments for experiential learning" },
-  { id: "group_activity", name: "Group Activity", description: "Collaborative learning activities" },
-  { id: "research_project", name: "Research Project", description: "In-depth exploration of topics" }
-];
-
-// Check if the content meets British standards compliance
-export function checkBritishStandardsCompliance(content: string): { 
-  compliant: boolean;
-  issues: string[];
-} {
-  // This is a placeholder for actual British standards compliance checking
-  // In a real implementation, this would integrate with specific British educational standards
-  const issues: string[] = [];
+// Calculate characteristics distribution for analytics
+export const calculateCharacteristicsDistribution = (contents: any[]) => {
+  if (!contents || contents.length === 0) return [];
   
-  // Simple placeholder checks (would be more sophisticated in real implementation)
-  if (!content.includes("learning outcomes") && !content.includes("Learning outcomes")) {
-    issues.push("Missing clearly defined learning outcomes");
-  }
+  const distribution: Record<string, number> = {};
   
-  if (!content.includes("assessment") && !content.includes("Assessment")) {
-    issues.push("Missing assessment strategy or criteria");
-  }
+  contents.forEach(content => {
+    if (content.characteristics && Array.isArray(content.characteristics)) {
+      content.characteristics.forEach((char: string) => {
+        distribution[char] = (distribution[char] || 0) + 1;
+      });
+    }
+  });
   
-  // Simple British spelling check (very basic demonstration)
-  if (content.includes("color") && !content.includes("colour")) {
-    issues.push("Non-British spelling detected: 'color' instead of 'colour'");
-  }
-  
-  if (content.includes("center") && !content.includes("centre")) {
-    issues.push("Non-British spelling detected: 'center' instead of 'centre'");
-  }
+  return Object.entries(distribution).map(([name, count]) => ({
+    name,
+    count,
+    percentage: (count / contents.length) * 100
+  }));
+};
+
+// Generate QAQF report
+export const generateQAQFReport = (content: any) => {
+  const compliance = calculateQAQFCompliance(content);
+  const britishStandards = checkBritishStandardsCompliance(content);
   
   return {
-    compliant: issues.length === 0,
-    issues
+    overall_score: Math.round((compliance + britishStandards.score) / 2),
+    qaqf_compliance: compliance,
+    british_standards: britishStandards,
+    level_category: QAQFLevelCategories.basic.levels.includes(content.qaqf_level) ? 'basic' :
+                    QAQFLevelCategories.intermediate.levels.includes(content.qaqf_level) ? 'intermediate' : 'advanced',
+    recommendations: generateRecommendations(content, compliance, britishStandards.score)
   };
-}
+};
+
+// Generate improvement recommendations
+const generateRecommendations = (content: any, qaqfScore: number, standardsScore: number): string[] => {
+  const recommendations = [];
+  
+  if (qaqfScore < 60) {
+    recommendations.push("Improve content depth and detail");
+    recommendations.push("Add more comprehensive descriptions");
+  }
+  
+  if (standardsScore < 70) {
+    recommendations.push("Enhance accessibility features");
+    recommendations.push("Align with UK curriculum standards");
+  }
+  
+  if (!content.characteristics || content.characteristics.length < 5) {
+    recommendations.push("Include more QAQF characteristics");
+  }
+  
+  if (!content.assessment_criteria || content.assessment_criteria.length < 3) {
+    recommendations.push("Define clear assessment criteria");
+  }
+  
+  return recommendations;
+};
