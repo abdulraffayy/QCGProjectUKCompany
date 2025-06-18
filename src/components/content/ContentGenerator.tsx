@@ -6,7 +6,7 @@ import { Input } from "../ui/input";
 import { QAQFLevels, QAQFCharacteristics } from "../lib/qaqf";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";

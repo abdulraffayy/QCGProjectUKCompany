@@ -10,7 +10,7 @@ import { Label } from "../ui/label";
 import { getColorByLevel } from "../lib/qaqf";
 import { saveContentAsPDF } from "../lib/pdfGenerator";
 import { Content } from "@shared/schema";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 interface ContentListProps {
   contents: Content[];
