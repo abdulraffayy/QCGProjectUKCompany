@@ -31,10 +31,10 @@ This is a comprehensive educational content platform built with FastAPI (Python 
 ## Key Components
 
 ### AI Services Integration
-- **OpenAI**: Primary content generation using GPT models
-- **Anthropic**: Alternative AI provider for content creation
-- **Ollama**: Local AI for course generation with fallback support
-- **Fallback System**: Structured content generation when AI services unavailable
+- **Ollama**: Local AI service for content generation (replaces OpenAI/Anthropic)
+- **Fallback System**: Structured content generation when Ollama is unavailable
+- **Models**: Support for llama3.2, mistral, and other Ollama models
+- **Local Processing**: All AI processing happens locally for privacy and cost control
 
 ### Content Management System
 - **Content Generation**: AI-powered academic content creation
@@ -120,9 +120,14 @@ Changelog:
 - June 18, 2025. Created comprehensive Windows 11 local setup guide
 - June 18, 2025. Added static deployment guide for various hosting platforms
 - June 18, 2025. Created complete CRUD API documentation with examples
+- June 18, 2025. Replaced OpenAI/Anthropic with Ollama for local AI processing
+- June 18, 2025. Implemented local file storage system replacing AWS S3
+- June 18, 2025. Created comprehensive developer guide for new pages and CRUD operations
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 Deployment preference: Local Windows 11 development with static deployment options.
 Documentation requirement: Complete guides for local setup, static deployment, and API usage.
+AI preference: Local Ollama instead of cloud AI services for privacy and cost control.
+Storage preference: Local file system instead of cloud storage services.
