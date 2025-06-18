@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import StatCard from "@/components/dashboard/StatCard";
-import QAQFFramework from "@/components/dashboard/QAQFFramework";
-import VerificationStatus from "@/components/dashboard/VerificationStatus";
-import RecentContent from "@/components/dashboard/RecentContent";
-import QAQFLevels from "@/components/dashboard/QAQFLevels";
-import VideoGeneratorSummary from "@/components/dashboard/VideoGeneratorSummary";
-import RecentActivity from "@/components/activity/RecentActivity";
-import ContentGeneratorSummary from "@/components/dashboard/ContentGeneratorSummary";
-import VerificationPanel from "@/components/verification/VerificationPanel";
-import CourseWorkflowView from "@/components/content/CourseWorkflowView";
+import { Button } from "../components/ui/button";
+import StatCard from "../components/dashboard/StatCard";
+import QAQFFramework from "../components/dashboard/QAQFFramework";
+import VerificationStatus from "../components/dashboard/VerificationStatus";
+import RecentContent from "../components/dashboard/RecentContent";
+import QAQFLevels from "../components/dashboard/QAQFLevels";
+import VideoGeneratorSummary from "../components/dashboard/VideoGeneratorSummary";
+import RecentActivity from "../components/activity/RecentActivity";
+import ContentGeneratorSummary from "../components/dashboard/ContentGeneratorSummary";
+import VerificationPanel from "../components/verification/VerificationPanel";
+import CourseWorkflowView from "../components/content/CourseWorkflowView";
 import { Link } from "wouter";
 
 // Define the stats interface for type safety

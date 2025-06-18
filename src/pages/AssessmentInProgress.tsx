@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from '@/components/ui/separator';
-import MarkingCriteria from '@/components/assessment/MarkingCriteria';
-import MarkingCriteriaModule from '@/components/assessment/MarkingCriteriaModule';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Separator } from '../components/ui/separator';
+import MarkingCriteria from '../components/assessment/MarkingCriteria';
+import MarkingCriteriaModule from '../components/assessment/MarkingCriteriaModule';
 
 const AssessmentInProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("assessments");
