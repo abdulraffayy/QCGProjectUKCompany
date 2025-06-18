@@ -1,139 +1,122 @@
-# Educational Content Platform - QAQF Framework
+# QAQF Academic Content Platform
 
 ## Overview
 
-The Educational Content Platform is a comprehensive full-stack application designed to generate, manage, and verify academic content using the QAQF (Quality Assessment & Qualification Framework) framework. The platform supports AI-powered content generation with multiple AI providers, course creation, assessment tools, and content verification workflows.
+This is a comprehensive educational content platform built with FastAPI (Python backend) and React (TypeScript frontend). The platform facilitates the creation, verification, and management of academic content aligned with the QAQF (Quality Assurance and Qualifications Framework) standards. The system supports AI-powered content generation, course creation, assessment tools, and video generation capabilities.
 
 ## System Architecture
 
+### Backend Architecture
+- **Framework**: FastAPI (Python 3.11)
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Authentication**: JWT-based authentication with role-based access control
+- **API Structure**: RESTful APIs with automatic OpenAPI documentation
+- **Migration Tool**: Alembic for database schema management
+
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
+- **State Management**: TanStack Query for server state, React Context for auth
 - **Routing**: Wouter for client-side routing
-- **State Management**: TanStack Query for server state management
-- **UI Framework**: Shadcn/ui components with Radix UI primitives
-- **Styling**: Tailwind CSS with custom design system
-- **Build Tool**: Vite for development and bundling
+- **UI Components**: Custom component library built on Tailwind CSS
+- **Build Tool**: Vite for development and production builds
 
-### Backend Architecture
-- **Primary Backend**: Python FastAPI with SQLAlchemy (Recommended)
-- **Alternative Backend**: Node.js/TypeScript with Express.js (Legacy)
-- **Database**: PostgreSQL with SQLAlchemy (Python) / Drizzle ORM (Node.js)
-- **API Design**: RESTful endpoints with automatic OpenAPI documentation
-- **File Processing**: Python multipart for file uploads and content extraction
-
-### Data Storage
-- **Database**: PostgreSQL as primary database
-- **ORM**: Drizzle Kit for schema management and migrations
-- **Schema**: Comprehensive schema supporting users, content, QAQF levels, characteristics, activities, and verification workflows
+### Database Schema
+- **Users**: Authentication, roles (user/admin), profile management
+- **Content**: Academic content with QAQF compliance tracking
+- **Videos**: Educational video metadata and generation status
+- **Activities**: User action logging and audit trails
+- **QAQF Framework**: Levels, characteristics, and compliance rules
 
 ## Key Components
 
-### AI Integration Services
-- **OpenAI**: Primary AI service for content generation using GPT-4o
-- **Anthropic**: Claude 3.5 Sonnet integration as alternative AI provider
-- **Ollama**: Local/self-hosted AI integration for cost-effective content generation
-- **Fallback System**: Structured content generation when AI services are unavailable
-
-### QAQF Framework Implementation
-- **9 Levels**: Progressive quality levels from basic to 21st Century Innovation
-- **9 Characteristics**: Comprehensive quality characteristics for educational content
-- **Verification System**: Multi-stage content verification against QAQF standards
-- **British Standards Compliance**: Automated checking for UK academic standards
+### AI Services Integration
+- **OpenAI**: Primary content generation using GPT models
+- **Anthropic**: Alternative AI provider for content creation
+- **Ollama**: Local AI for course generation with fallback support
+- **Fallback System**: Structured content generation when AI services unavailable
 
 ### Content Management System
-- **Content Types**: Support for academic papers, assessments, videos, lectures, and courses
-- **Batch Processing**: Bulk content operations and management
-- **Version Control**: Content versioning and update tracking
-- **Template System**: Reusable content templates and course structures
+- **Content Generation**: AI-powered academic content creation
+- **Course Generator**: Complete course structure development
+- **Video Generator**: Educational video creation workflow
+- **Content Verification**: Multi-stage approval process
+- **British Standards Compliance**: Automated compliance checking
 
-### Assessment & Analytics
-- **Assessment Builder**: QAQF-aligned assessment creation tools
-- **Marking Criteria**: Automated generation of marking rubrics
-- **Analytics Dashboard**: Comprehensive content and usage analytics
-- **Quality Assurance**: Multi-tier quality checking and verification
+### QAQF Framework Implementation
+- **9 Quality Levels**: From basic (Level 1) to expert (Level 9)
+- **10 Characteristics**: Clarity, completeness, accuracy, coherence, etc.
+- **Compliance Validation**: Automated checking against framework requirements
+- **Assessment Integration**: QAQF-aligned assessment tools
+
+### User Interface Components
+- **Dashboard**: Real-time statistics and content overview
+- **Content Generators**: Unified interface for content and course creation
+- **Verification Panel**: Admin tools for content approval
+- **Assessment Tools**: QAQF-aligned assessment creation and evaluation
+- **Analytics**: Content performance and QAQF compliance metrics
 
 ## Data Flow
 
-### Content Generation Flow
-1. User selects content type, QAQF level, and characteristics
-2. Optional source content upload (PDF, DOCX, images with OCR)
-3. AI service processes request with QAQF compliance requirements
-4. Generated content undergoes automated British standards checking
-5. Content enters verification workflow for manual review
-6. Approved content becomes available in content library
-
-### Verification Workflow
-1. Content submitted for verification with QAQF level assignment
-2. Automated checks for format, structure, and basic compliance
-3. Manual review by verified educators or administrators
-4. Feedback loop for content improvements
-5. Final approval and publishing to content library
-
-### Course Generation Flow
-1. Course parameters specified (title, audience, duration, objectives)
-2. AI generates comprehensive course structure with modules and lessons
-3. Learning outcomes and assessment strategies automatically created
-4. Course content aligned with specified QAQF levels
-5. Integration with existing content library for resource recommendations
+1. **Content Creation**: Users create content via AI-powered generators
+2. **QAQF Validation**: System validates content against framework requirements
+3. **Verification Queue**: Content enters approval workflow for moderators
+4. **AI Enhancement**: OpenAI/Anthropic services enhance and verify content quality
+5. **Publication**: Approved content becomes available to target audiences
+6. **Analytics Collection**: System tracks usage and effectiveness metrics
 
 ## External Dependencies
 
 ### AI Services
-- **OpenAI API**: GPT-4o for advanced content generation
-- **Anthropic API**: Claude for alternative AI processing
-- **Ollama API**: Local AI model hosting (optional)
+- **OpenAI API**: GPT models for content generation and verification
+- **Anthropic API**: Claude models as alternative AI provider
+- **Ollama API**: Local AI deployment for course generation
 
-### Database & Infrastructure
-- **PostgreSQL**: Primary database server
-- **Node.js Runtime**: Server-side JavaScript execution
-- **Python Runtime**: Alternative backend implementation
+### Core Libraries
+- **FastAPI**: Modern Python web framework with automatic API documentation
+- **SQLAlchemy**: Python SQL toolkit and ORM
+- **Pydantic**: Data validation using Python type annotations
+- **React Query**: Server state management for React
+- **Tailwind CSS**: Utility-first CSS framework
 
-### File Processing
-- **PDF Processing**: Content extraction from PDF documents
-- **OCR Capabilities**: Text extraction from images using Tesseract
-- **Document Processing**: Support for DOCX and other document formats
+### Development Tools
+- **Alembic**: Database migration tool
+- **Pytest**: Python testing framework
+- **TypeScript**: Type-safe JavaScript development
+- **Vite**: Frontend build tool and development server
 
 ## Deployment Strategy
 
 ### Development Environment
-- **Replit Integration**: Configured for Replit cloud development
-- **Local Development**: Windows 11 setup guides with automated scripts
-- **Hot Reload**: Vite HMR for frontend, nodemon for backend
+- **Replit Integration**: Configured for Replit development environment
+- **Hot Reload**: Both frontend and backend support live reload
+- **Environment Variables**: Secure configuration through .env files
+- **Database**: PostgreSQL 16 running locally
 
-### Production Deployment
-- **Containerization**: Docker support for consistent deployments
-- **Autoscaling**: Configured for autoscale deployment target
-- **Environment Variables**: Comprehensive environment configuration
-- **Database Migrations**: Automated schema updates with Drizzle
+### Production Considerations
+- **Autoscale Deployment**: Configured for cloud autoscaling
+- **Port Configuration**: Frontend (5000), Backend (8000)
+- **CORS Setup**: Configured for cross-origin requests
+- **Security**: JWT authentication, input validation, SQL injection protection
 
-### Monitoring & Logging
-- **Request Logging**: Detailed API request/response logging
-- **Error Handling**: Comprehensive error boundaries and reporting
-- **Performance Monitoring**: Built-in performance tracking
-- **User Activity**: Complete audit trail for content operations
+### File Structure
+```
+├── python_backend/          # FastAPI backend
+│   ├── models.py           # SQLAlchemy database models
+│   ├── schemas.py          # Pydantic validation schemas
+│   ├── routes/             # API endpoint modules
+│   └── services/           # Business logic and AI integration
+├── client/                 # React frontend
+│   ├── src/pages/          # Application pages/routes
+│   ├── src/components/     # Reusable UI components
+│   └── src/lib/            # Utilities and helpers
+└── .replit                 # Replit configuration
+```
 
 ## Changelog
 
-```
 Changelog:
-- June 18, 2025: Initial setup
-- June 18, 2025: Fixed Windows 11 compatibility issues
-  * Resolved WebSocket connection errors (wss://localhost/v2 ECONNREFUSED)
-  * Fixed network binding issues (ENOTSUP on 0.0.0.0:5000)
-  * Replaced Ollama WebSocket dependencies with local content generation
-  * Created content-generator.ts for offline development
-  * Updated server to use localhost binding on Windows platform
-- June 18, 2025: Completely resolved WebSocket connection issues
-  * Identified root cause: Drizzle ORM Neon database WebSocket integration
-  * Replaced Neon WebSocket database with standard PostgreSQL connection
-  * Removed @neondatabase/serverless and ws packages
-  * Added pg and @types/pg for standard PostgreSQL support
-  * API now returns HTTP 200, all endpoints functional
-  * Local Windows development environment fully operational
-```
+- June 18, 2025. Initial setup
 
 ## User Preferences
 
-```
 Preferred communication style: Simple, everyday language.
-```
