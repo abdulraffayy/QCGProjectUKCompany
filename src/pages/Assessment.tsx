@@ -14,7 +14,7 @@ const AssessmentPage: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 gap-6">
-        <AssessmentTool />
+        <AssessmentTool contentType="assessment" qaqfLevel={1} />
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow p-6">
