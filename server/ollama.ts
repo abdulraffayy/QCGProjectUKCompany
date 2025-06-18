@@ -8,17 +8,18 @@ export { generateSampleContent, generateSampleVerification, generateSampleBritis
 // Initialize Ollama client with error handling
 let ollama: Ollama | null = null;
 try {
-  // Only initialize if OLLAMA_API_KEY is set
-  if (process.env.OLLAMA_API_KEY) {
+  // Only initialize if OLLAMA_API_KEY is set and we're not on Windows in dev mode
+  if (process.env.OLLAMA_API_KEY && process.env.NODE_ENV !== 'development') {
     ollama = new Ollama({
       host: process.env.OLLAMA_API_URL || 'https://ollama.com'
     });
     console.log("Ollama client initialized successfully");
   } else {
-    console.log("No OLLAMA_API_KEY found, using fallback content generation");
+    console.log("Using fallback content generation (Ollama disabled for local development)");
   }
 } catch (error) {
   console.error("Error initializing Ollama client:", error);
+  ollama = null;
 }
 
 // Default model to use
@@ -194,6 +195,12 @@ This module provides a structured approach to understanding ${subject} within th
 
 // Verify content against QAQF framework using Ollama
 export async function verifyContent(content: string, qaqfLevel: number) {
+  // If Ollama isn't available, use sample verification directly
+  if (!ollama) {
+    console.log("Ollama not initialized, using sample verification");
+    return generateSampleVerification(content, qaqfLevel);
+  }
+  
   try {
     const qaqfLevelDetails = QAQFLevels.find(level => level.id === qaqfLevel);
     
@@ -231,7 +238,7 @@ Only return the JSON object and nothing else.`;
     console.log("Verifying content with Ollama...");
     
     // Send request to Ollama
-    const response = await ollama.generate({
+    const response = await ollama!.generate({
       model: DEFAULT_MODEL,
       prompt: prompt,
       format: 'json',
@@ -277,6 +284,12 @@ function generateSampleVerification(content: string, qaqfLevel: number) {
 
 // Check content against British academic standards using Ollama
 export async function checkBritishStandards(content: string) {
+  // If Ollama isn't available, use sample British standards check directly
+  if (!ollama) {
+    console.log("Ollama not initialized, using sample British standards check");
+    return generateSampleBritishStandardsCheck(content);
+  }
+  
   try {
     const prompt = `Review the following academic content and evaluate it against British academic standards:
     
