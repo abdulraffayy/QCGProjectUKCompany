@@ -316,7 +316,7 @@ Only return the JSON object and nothing else.`;
     console.log("Checking British standards with Ollama...");
     
     // Send request to Ollama
-    const response = await ollama.generate({
+    const response = await ollama!.generate({
       model: DEFAULT_MODEL,
       prompt: prompt,
       format: 'json',
