@@ -1,29 +1,24 @@
-# Complete CRUD API Guide - QAQF Academic Content Platform
+# API CRUD Guide - QAQF Academic Content Platform
 
-## API Structure Overview
+## Overview
 
-### Base URLs
-- **Development**: `http://localhost:8000`
-- **Production**: `https://your-api-domain.com`
+This guide provides complete examples for using the platform's API endpoints with Ollama integration and local file storage.
 
-### Authentication
-All protected endpoints require JWT token in header:
+## Authentication
+
+All API endpoints require authentication except login and registration.
+
+### Get Access Token
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "admin123"
+  }'
 ```
-Authorization: Bearer <your-jwt-token>
-```
 
-## Authentication APIs
-
-### POST /api/auth/login
-**Purpose**: User login
-**Body**:
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-**Response**:
+Response:
 ```json
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
@@ -32,427 +27,431 @@ Authorization: Bearer <your-jwt-token>
     "id": 1,
     "username": "admin",
     "email": "admin@example.com",
-    "name": "Administrator",
+    "name": "Admin User",
     "role": "admin"
   }
 }
 ```
 
-### POST /api/auth/register
-**Purpose**: Create new user account
-**Body**:
+### Use Token in Requests
+```bash
+export TOKEN="your_access_token_here"
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/endpoint
+```
+
+## Content Generation (Ollama Integration)
+
+### Generate Educational Content
+```bash
+curl -X POST http://localhost:8000/api/generate/content \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_type": "lesson",
+    "qaqf_level": 5,
+    "subject": "Mathematics",
+    "characteristics": ["clarity", "completeness", "accuracy"],
+    "additional_instructions": "Focus on algebra basics for beginners",
+    "source_content": "Cover linear equations and graphing"
+  }'
+```
+
+Response:
 ```json
 {
-  "username": "newuser",
-  "email": "user@example.com",
-  "password": "password123",
-  "name": "New User",
-  "role": "user"
+  "title": "Mathematics - Level 5 Lesson",
+  "content": "# Mathematics - QAQF Level 5\n\n## Learning Objectives...",
+  "module_code": "MAT051"
 }
 ```
 
-### GET /api/auth/me
-**Purpose**: Get current user info
-**Headers**: `Authorization: Bearer <token>`
-**Response**: User object
-
-## Content Management APIs
-
-### GET /api/contents
-**Purpose**: List all content with pagination
-**Query Parameters**:
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 10)
-- `qaqf_level`: Filter by QAQF level (1-9)
-- `type`: Filter by content type
-- `status`: Filter by verification status
-
-**Response**:
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "title": "Introduction to Mathematics",
-      "description": "Basic mathematical concepts",
-      "type": "lesson",
-      "qaqf_level": 3,
-      "verification_status": "verified",
-      "created_at": "2025-01-01T10:00:00Z",
-      "creator": {
-        "id": 1,
-        "name": "Teacher Name"
-      }
-    }
-  ],
-  "total": 100,
-  "page": 1,
-  "limit": 10,
-  "total_pages": 10
-}
+### Verify Content Quality
+```bash
+curl -X POST http://localhost:8000/api/verify/content \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Your educational content here...",
+    "qaqf_level": 5
+  }'
 ```
 
-### POST /api/contents
-**Purpose**: Create new content
-**Headers**: `Authorization: Bearer <token>`
-**Body**:
-```json
-{
-  "title": "New Lesson",
-  "description": "Lesson description",
-  "type": "lesson",
-  "qaqf_level": 5,
-  "module_code": "MATH101",
-  "content": "Lesson content here...",
-  "characteristics": [
-    {"name": "clarity", "score": 8},
-    {"name": "completeness", "score": 9}
-  ]
-}
-```
-
-### GET /api/contents/{id}
-**Purpose**: Get specific content by ID
-**Response**: Single content object with full details
-
-### PUT /api/contents/{id}
-**Purpose**: Update existing content
-**Headers**: `Authorization: Bearer <token>`
-**Body**: Same as POST, partial updates allowed
-
-### DELETE /api/contents/{id}
-**Purpose**: Delete content
-**Headers**: `Authorization: Bearer <token>`
-**Response**: `{"message": "Content deleted successfully"}`
-
-## QAQF Framework APIs
-
-### GET /api/qaqf/levels
-**Purpose**: Get all QAQF levels (1-9)
-**Response**:
-```json
-[
-  {
-    "id": 1,
-    "level": 1,
-    "name": "Basic Foundation",
-    "description": "Fundamental knowledge and skills"
-  },
-  {
-    "id": 2,
-    "level": 2,
-    "name": "Basic Operational",
-    "description": "Basic operational skills"
-  }
-]
-```
-
-### GET /api/qaqf/characteristics
-**Purpose**: Get all quality characteristics
-**Response**:
-```json
-[
-  {
-    "id": 1,
-    "name": "clarity",
-    "description": "Clear and understandable content",
-    "category": "presentation"
-  },
-  {
-    "id": 2,
-    "name": "completeness",
-    "description": "Comprehensive coverage of topic",
-    "category": "content"
-  }
-]
-```
-
-## Content Generation APIs
-
-### POST /api/generate/content
-**Purpose**: AI-powered content generation
-**Headers**: `Authorization: Bearer <token>`
-**Body**:
-```json
-{
-  "content_type": "lesson",
-  "qaqf_level": 5,
-  "subject": "Mathematics",
-  "characteristics": ["clarity", "completeness"],
-  "additional_instructions": "Focus on practical examples",
-  "source_type": "internal",
-  "source_content": "Optional source material"
-}
-```
-**Response**:
-```json
-{
-  "title": "Generated Lesson Title",
-  "content": "Generated lesson content...",
-  "module_code": "MATH101"
-}
-```
-
-### POST /api/generate/course
-**Purpose**: Generate complete course structure
-**Body**:
-```json
-{
-  "subject": "Data Science",
-  "qaqf_level": 7,
-  "duration_weeks": 12,
-  "target_audience": "graduate students"
-}
-```
-
-### POST /api/verify/content
-**Purpose**: Verify content against QAQF standards
-**Body**:
-```json
-{
-  "content": "Content to verify...",
-  "qaqf_level": 5
-}
-```
-**Response**:
+Response:
 ```json
 {
   "score": 85,
-  "feedback": "Content meets most requirements...",
+  "feedback": "Content analysis for QAQF Level 5: Well-structured and appropriate for the level",
   "characteristics": {
     "clarity": 8,
     "completeness": 9,
-    "accuracy": 7
+    "accuracy": 8,
+    "coherence": 8,
+    "appropriateness": 9
   }
 }
 ```
 
-## User Management APIs (Admin Only)
+### Check British Standards Compliance
+```bash
+curl -X POST http://localhost:8000/api/verify/british-standards \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Your content to check for British standards compliance"
+  }'
+```
 
-### GET /api/admin/users
-**Purpose**: List all users
-**Headers**: `Authorization: Bearer <admin-token>`
-**Query Parameters**: `page`, `limit`, `role`, `status`
-
-### PUT /api/admin/users/{id}
-**Purpose**: Update user details/role
-**Body**:
+Response:
 ```json
 {
-  "role": "admin",
-  "is_active": true
+  "compliant": true,
+  "issues": [],
+  "suggestions": ["Content appears to follow British standards"]
 }
 ```
 
-### DELETE /api/admin/users/{id}
-**Purpose**: Deactivate user account
+## Content Management CRUD
 
-## Analytics APIs
+### Create Content
+```bash
+curl -X POST http://localhost:8000/api/content \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Introduction to Algebra",
+    "description": "Basic algebra concepts for QAQF Level 5",
+    "type": "lesson",
+    "qaqf_level": 5,
+    "module_code": "MAT051",
+    "content": "# Algebra Basics\n\nThis lesson covers...",
+    "characteristics": ["clarity", "completeness", "accuracy"]
+  }'
+```
 
-### GET /api/analytics/dashboard
-**Purpose**: Get dashboard statistics
-**Headers**: `Authorization: Bearer <token>`
-**Response**:
+### Get All Content
+```bash
+curl -X GET "http://localhost:8000/api/content?skip=0&limit=10" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get Specific Content
+```bash
+curl -X GET http://localhost:8000/api/content/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Update Content
+```bash
+curl -X PUT http://localhost:8000/api/content/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Algebra Introduction",
+    "description": "Enhanced algebra concepts"
+  }'
+```
+
+### Delete Content
+```bash
+curl -X DELETE http://localhost:8000/api/content/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Approve Content (Admin Only)
+```bash
+curl -X POST http://localhost:8000/api/content/1/approve \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## File Upload and Management
+
+### Upload File
+```bash
+curl -X POST http://localhost:8000/api/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@/path/to/your/file.pdf" \
+  -F "category=documents"
+```
+
+Response:
 ```json
 {
-  "content_count": 150,
-  "verified_content_count": 120,
-  "pending_verification_count": 30,
-  "user_count": 45,
-  "recent_activity": [...]
+  "message": "File uploaded successfully",
+  "file": {
+    "name": "file.pdf",
+    "filename": "uuid-generated-name.pdf",
+    "path": "documents/uuid-generated-name.pdf",
+    "url": "/uploads/documents/uuid-generated-name.pdf",
+    "size": 1048576,
+    "mime_type": "application/pdf",
+    "category": "documents",
+    "uploaded_by": 1,
+    "uploaded_at": "2025-06-18T15:30:00Z",
+    "hash": "md5-hash-here"
+  }
 }
 ```
 
-### GET /api/analytics/content-performance
-**Purpose**: Content performance metrics
-**Query Parameters**: `start_date`, `end_date`, `content_id`
+### List Files
+```bash
+curl -X GET "http://localhost:8000/api/list?category=documents" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-## File Upload APIs
+### Get File Information
+```bash
+curl -X GET http://localhost:8000/api/info/documents/filename.pdf \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-### POST /api/upload/file
-**Purpose**: Upload files (documents, images)
-**Headers**: `Authorization: Bearer <token>`
-**Body**: `multipart/form-data`
-**Response**:
+### Delete File
+```bash
+curl -X DELETE http://localhost:8000/api/delete/documents/filename.pdf \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get Storage Statistics (Admin Only)
+```bash
+curl -X GET http://localhost:8000/api/stats \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Response:
 ```json
 {
-  "file_url": "https://storage.com/uploads/file.pdf",
-  "file_name": "document.pdf",
-  "file_size": 1024000
+  "total_files": 25,
+  "total_size": 52428800,
+  "categories": {
+    "images": {"file_count": 10, "size": 20971520},
+    "documents": {"file_count": 8, "size": 15728640},
+    "videos": {"file_count": 3, "size": 10485760},
+    "audio": {"file_count": 2, "size": 3145728},
+    "archives": {"file_count": 2, "size": 2097152}
+  }
 }
 ```
 
-## Database Schema
+## User Management
 
-### Users Table
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    role VARCHAR(20) DEFAULT 'user',
-    avatar VARCHAR(255),
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Get Current User
+```bash
+curl -X GET http://localhost:8000/api/auth/me \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Contents Table
-```sql
-CREATE TABLE contents (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    qaqf_level INTEGER NOT NULL CHECK (qaqf_level >= 1 AND qaqf_level <= 9),
-    module_code VARCHAR(50),
-    created_by_user_id INTEGER REFERENCES users(id),
-    verification_status VARCHAR(20) DEFAULT 'pending',
-    verified_by_user_id INTEGER REFERENCES users(id),
-    content TEXT NOT NULL,
-    characteristics JSONB NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Update Profile
+```bash
+curl -X PUT http://localhost:8000/api/auth/profile \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Name",
+    "email": "new-email@example.com"
+  }'
 ```
 
-### QAQF Tables
-```sql
-CREATE TABLE qaqf_levels (
-    id SERIAL PRIMARY KEY,
-    level INTEGER UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL
-);
+### Change Password
+```bash
+curl -X POST http://localhost:8000/api/auth/change-password \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_password": "current_password",
+    "new_password": "new_secure_password"
+  }'
+```
 
-CREATE TABLE qaqf_characteristics (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL
-);
+## Analytics and Reporting
+
+### Get Content Statistics
+```bash
+curl -X GET http://localhost:8000/api/analytics/content-stats \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get User Activity
+```bash
+curl -X GET "http://localhost:8000/api/analytics/user-activity?days=30" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get QAQF Compliance Report
+```bash
+curl -X GET http://localhost:8000/api/analytics/qaqf-compliance \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Video Generation
+
+### Generate Video Metadata
+```bash
+curl -X POST http://localhost:8000/api/videos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Algebra Basics Video",
+    "description": "Visual explanation of algebra concepts",
+    "qaqf_level": 5,
+    "module_code": "MAT051",
+    "animation_style": "2D",
+    "duration": "10 minutes",
+    "characteristics": ["visual", "interactive", "engaging"]
+  }'
+```
+
+## Study Materials
+
+### Create Study Material
+```bash
+curl -X POST http://localhost:8000/api/study-materials \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Algebra Reference Guide",
+    "description": "Quick reference for algebra formulas",
+    "type": "document",
+    "qaqf_level": 5,
+    "module_code": "MAT051",
+    "content": "Formula reference content...",
+    "characteristics": ["reference", "comprehensive"],
+    "tags": ["algebra", "formulas", "reference"]
+  }'
+```
+
+### Upload Study Material File
+```bash
+curl -X POST http://localhost:8000/api/study-materials \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Algebra Worksheet",
+    "description": "Practice problems for algebra",
+    "type": "document",
+    "qaqf_level": 5,
+    "file_url": "/uploads/documents/algebra-worksheet.pdf",
+    "file_name": "algebra-worksheet.pdf",
+    "file_size": 1048576,
+    "characteristics": ["practice", "interactive"]
+  }'
+```
+
+## Collections
+
+### Create Collection
+```bash
+curl -X POST http://localhost:8000/api/collections \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Algebra Complete Course",
+    "description": "All materials for algebra course",
+    "is_public": false,
+    "material_ids": [1, 2, 3, 4]
+  }'
+```
+
+## Templates
+
+### Create Template
+```bash
+curl -X POST http://localhost:8000/api/templates \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Standard Lesson Plan",
+    "description": "Template for creating lesson plans",
+    "type": "lesson_plan",
+    "qaqf_level": 5,
+    "content_structure": {
+      "sections": ["objectives", "content", "activities", "assessment"],
+      "duration": "60 minutes",
+      "resources": []
+    },
+    "is_public": true
+  }'
 ```
 
 ## Error Handling
 
-### Standard Error Response Format
+### Common Error Responses
+
+**401 Unauthorized:**
 ```json
 {
-  "error": "validation_error",
-  "message": "Invalid input data",
-  "details": {
-    "field": "qaqf_level",
-    "issue": "Must be between 1 and 9"
-  },
-  "status_code": 400
+  "detail": "Could not validate credentials"
 }
 ```
 
-### HTTP Status Codes
-- `200`: Success
-- `201`: Created
-- `400`: Bad Request
-- `401`: Unauthorized
-- `403`: Forbidden
-- `404`: Not Found
-- `422`: Validation Error
-- `500`: Internal Server Error
+**403 Forbidden:**
+```json
+{
+  "detail": "Not enough permissions"
+}
+```
 
-## Testing the APIs
+**404 Not Found:**
+```json
+{
+  "detail": "Content not found"
+}
+```
 
-### Using curl
+**422 Validation Error:**
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "qaqf_level"],
+      "msg": "ensure this value is greater than or equal to 1",
+      "type": "value_error.number.not_ge"
+    }
+  ]
+}
+```
+
+**503 Service Unavailable (Ollama not running):**
+```json
+{
+  "detail": "Ollama service is not available. Please ensure Ollama is running on localhost:11434"
+}
+```
+
+## Testing with Different Users
+
+### Admin User (Full Access)
 ```bash
-# Login
+# Login as admin
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username": "admin", "password": "admin123"}'
+```
 
-# Get contents (with token)
-curl -X GET http://localhost:8000/api/contents \
-  -H "Authorization: Bearer <your-token>"
-
-# Create content
-curl -X POST http://localhost:8000/api/contents \
-  -H "Authorization: Bearer <your-token>" \
+### Regular User (Limited Access)
+```bash
+# Login as user
+curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "title": "Test Content",
-    "description": "Test description",
-    "type": "lesson",
-    "qaqf_level": 5,
-    "content": "Test content...",
-    "characteristics": []
-  }'
+  -d '{"username": "user", "password": "user123"}'
 ```
 
-### Using Python requests
-```python
-import requests
+## Batch Operations
 
-# Login
-response = requests.post("http://localhost:8000/api/auth/login", 
-                        json={"username": "admin", "password": "admin123"})
-token = response.json()["access_token"]
-
-# Use token for authenticated requests
-headers = {"Authorization": f"Bearer {token}"}
-contents = requests.get("http://localhost:8000/api/contents", headers=headers)
+### Bulk Content Upload
+```bash
+# Create multiple content items
+for i in {1..5}; do
+  curl -X POST http://localhost:8000/api/content \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"title\": \"Test Content $i\",
+      \"description\": \"Test description $i\",
+      \"type\": \"lesson\",
+      \"qaqf_level\": $((i % 9 + 1)),
+      \"content\": \"Test content body $i\",
+      \"characteristics\": [\"clarity\", \"completeness\"]
+    }"
+done
 ```
 
-## Frontend Integration Examples
-
-### React with Axios
-```typescript
-// api/client.ts
-import axios from 'axios';
-
-const apiClient = axios.create({
-  baseURL: 'http://localhost:8000',
-});
-
-// Add auth token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Content operations
-export const contentAPI = {
-  getAll: (params) => apiClient.get('/api/contents', { params }),
-  getById: (id) => apiClient.get(`/api/contents/${id}`),
-  create: (data) => apiClient.post('/api/contents', data),
-  update: (id, data) => apiClient.put(`/api/contents/${id}`, data),
-  delete: (id) => apiClient.delete(`/api/contents/${id}`),
-};
-```
-
-### React Query Integration
-```typescript
-// hooks/useContent.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { contentAPI } from '../api/client';
-
-export const useContents = (params) => {
-  return useQuery({
-    queryKey: ['contents', params],
-    queryFn: () => contentAPI.getAll(params),
-  });
-};
-
-export const useCreateContent = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: contentAPI.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contents'] });
-    },
-  });
-};
-```
+This guide provides comprehensive examples for all major API operations. The platform automatically handles Ollama integration and falls back gracefully when the service is unavailable.
