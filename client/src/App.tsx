@@ -19,6 +19,10 @@ import LessonPlan from "@/pages/LessonPlan";
 import StudyMaterial from "@/pages/StudyMaterial";
 import QAQFFramework from "@/pages/QAQFFramework";
 import QAQFAdmin from "@/pages/QAQFAdmin";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import ForgotPassword from "@/pages/ForgotPassword";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function Router() {
   return (
