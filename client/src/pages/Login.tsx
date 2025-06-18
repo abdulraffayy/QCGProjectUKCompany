@@ -34,21 +34,35 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      const formData = new FormData();
-      formData.append("username", data.username);
-      formData.append("password", data.password);
-
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Login failed");
+      // Mock authentication for demonstration
+      // In production, this would connect to the Python backend
+      if (data.username === "admin" && data.password === "admin123") {
+        return {
+          access_token: "mock-admin-token",
+          user: {
+            id: 1,
+            username: "admin",
+            email: "admin@example.com",
+            name: "Administrator",
+            role: "admin",
+            is_active: true
+          }
+        };
+      } else if (data.username === "user" && data.password === "user123") {
+        return {
+          access_token: "mock-user-token",
+          user: {
+            id: 2,
+            username: "user",
+            email: "user@example.com",
+            name: "Regular User",
+            role: "user",
+            is_active: true
+          }
+        };
+      } else {
+        throw new Error("Invalid credentials. Try admin/admin123 or user/user123");
       }
-
-      return response.json();
     },
     onSuccess: (data) => {
       // Store token and user data
