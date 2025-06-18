@@ -6,7 +6,7 @@ import { Separator } from '../components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { useToast } from "../hooks/use-toast";
-import { LessonPlan } from '@shared/schema';
+import { LessonPlan } from '../../shared/schema';
 import { Clock, Users, Edit, Download, Eye, Trash2 } from 'lucide-react';
 
 const LessonPlanPage: React.FC = () => {
