@@ -15,11 +15,11 @@ The Educational Content Platform is a comprehensive full-stack application desig
 - **Build Tool**: Vite for development and bundling
 
 ### Backend Architecture
-- **Primary Backend**: Node.js/TypeScript with Express.js
-- **Alternative Backend**: Python FastAPI (complete migration available)
-- **Database**: PostgreSQL with Drizzle ORM (Node.js) / SQLAlchemy (Python)
-- **API Design**: RESTful endpoints with proper error handling
-- **File Processing**: Multer for file uploads and content extraction
+- **Primary Backend**: Python FastAPI with SQLAlchemy (Recommended)
+- **Alternative Backend**: Node.js/TypeScript with Express.js (Legacy)
+- **Database**: PostgreSQL with SQLAlchemy (Python) / Drizzle ORM (Node.js)
+- **API Design**: RESTful endpoints with automatic OpenAPI documentation
+- **File Processing**: Python multipart for file uploads and content extraction
 
 ### Data Storage
 - **Database**: PostgreSQL as primary database
