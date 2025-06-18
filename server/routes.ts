@@ -473,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const materialData = {
         title: req.body.title,
         description: req.body.description,
-        type: req.body.type,
+        type: req.body.type || 'article', // Default to 'article' if not provided
         qaqfLevel: parseInt(req.body.qaqfLevel),
         content: req.body.content || '',
         tags: req.body.tags ? JSON.parse(req.body.tags) : [],
