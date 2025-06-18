@@ -11,14 +11,15 @@ This is a comprehensive educational content platform built with FastAPI (Python 
 - **Database**: PostgreSQL with SQLAlchemy ORM
 - **Authentication**: JWT-based authentication with role-based access control
 - **API Structure**: RESTful APIs with automatic OpenAPI documentation
-- **Migration Tool**: Alembic for database schema management
+- **Port**: Backend runs on port 8000
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
 - **State Management**: TanStack Query for server state, React Context for auth
 - **Routing**: Wouter for client-side routing
-- **UI Components**: Custom component library built on Tailwind CSS
+- **UI Components**: Radix UI components with Tailwind CSS styling
 - **Build Tool**: Vite for development and production builds
+- **Port**: Frontend runs on port 5000
 
 ### Database Schema
 - **Users**: Authentication, roles (user/admin), profile management
