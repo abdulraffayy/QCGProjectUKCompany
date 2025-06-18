@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import QAQFAnalytics from "../components/analytics/QAQFAnalytics";
 import BatchProcessingPanel from "../components/content/BatchProcessingPanel";
 import { useToast } from "../hooks/use-toast";
-import { Content } from '@shared/schema';
+import { Content } from '../../shared/schema';
 
 const AnalyticsPage: React.FC = () => {
   const { toast } = useToast();
