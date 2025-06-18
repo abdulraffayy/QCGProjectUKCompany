@@ -123,6 +123,13 @@ Changelog:
   * Replaced Ollama WebSocket dependencies with local content generation
   * Created content-generator.ts for offline development
   * Updated server to use localhost binding on Windows platform
+- June 18, 2025: Completely resolved WebSocket connection issues
+  * Identified root cause: Drizzle ORM Neon database WebSocket integration
+  * Replaced Neon WebSocket database with standard PostgreSQL connection
+  * Removed @neondatabase/serverless and ws packages
+  * Added pg and @types/pg for standard PostgreSQL support
+  * API now returns HTTP 200, all endpoints functional
+  * Local Windows development environment fully operational
 ```
 
 ## User Preferences
