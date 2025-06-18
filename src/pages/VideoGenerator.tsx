@@ -27,7 +27,7 @@ const DurationOptions = [
   "20+ minutes"
 ];
 
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 const VideoGeneratorPage: React.FC = () => {
   const { toast } = useToast();
