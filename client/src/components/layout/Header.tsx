@@ -2,18 +2,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogOut, Settings, User } from "lucide-react";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
-  // Mock user data - in a real app this would come from auth context
-  const user = {
-    name: "Dr. Jane Doe",
-    role: "Academic Moderator",
-    initials: "JD"
-  };
+  const { user, logout } = useAuth();
 
   return (
     <header className="bg-white border-b border-neutral-200 flex items-center justify-between p-4 h-16">
