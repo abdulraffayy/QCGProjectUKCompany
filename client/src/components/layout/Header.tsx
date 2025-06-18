@@ -46,32 +46,37 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex items-center cursor-pointer">
+            <div className="flex items-center cursor-pointer hover:bg-neutral-100 rounded-lg p-2 transition-colors">
               <Avatar className="w-8 h-8 bg-primary text-white">
-                <AvatarFallback>{user.initials}</AvatarFallback>
+                <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="ml-2 mr-2 hidden md:block">
-                <div className="text-sm font-medium">{user.name}</div>
-                <div className="text-xs text-neutral-500">{user.role}</div>
+                <div className="text-sm font-medium">{user?.name || 'User'}</div>
+                <div className="text-xs text-neutral-500">{user?.role === 'admin' ? 'Administrator' : 'User'}</div>
               </div>
               <span className="material-icons text-neutral-700">arrow_drop_down</span>
             </div>
           </DropdownMenuTrigger>
           
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <span className="material-icons mr-2 text-sm">person</span>
+              <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <span className="material-icons mr-2 text-sm">settings</span>
+              <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <span className="material-icons mr-2 text-sm">logout</span>
+            <DropdownMenuItem onClick={logout} className="text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
