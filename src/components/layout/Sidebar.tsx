@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           Dashboard
         </div>
         
-        <Link href="/" className={navItemClass("/")}>
+        <Link href="/dashboard" className={navItemClass("/dashboard")}>
           <span className="material-icons mr-3 text-inherit">dashboard</span>
           Overview
         </Link>

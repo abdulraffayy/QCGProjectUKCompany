@@ -198,6 +198,14 @@ class StudyMaterial(StudyMaterialBase):
     file_size: Optional[int]
     created_at: datetime
     updated_at: datetime
+    content: Optional[str] = None  # For documents, this can be the text content
+    type: str  # 'document', 'video', 'audio', 'link'
+    description: str
+    title:  str
+    qaqf_level: int 
+    module_code:   Optional[str] = None
+    characteristics: Optional[List[Any]] = []
+    tags:   Optional[List[str]] = None
     
     class Config:
         from_attributes = True

@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import { 
   Plus, 
@@ -69,6 +69,8 @@ export default function StudyMaterial() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [createType, setCreateType] = useState<'material' | 'collection' | 'template'>('material');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -76,6 +78,15 @@ export default function StudyMaterial() {
   // Fetch study materials
   const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
     queryKey: ['/api/study-materials'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      console.log('Token used for /api/study-materials:', token);
+      const response = await fetch('/api/study-materials', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error('Failed to fetch study materials');
+      return response.json();
+    },
   });
 
   // Fetch collections
@@ -90,10 +101,15 @@ export default function StudyMaterial() {
 
   // Create material mutation
   const createMaterialMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
+    mutationFn: async (data: { title: string; description: string; type: string; qaqf_level: number; content: string; characteristics: any[]; tags: any[]; }) => {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/study-materials', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Failed to create material');
       return response.json();
@@ -112,8 +128,11 @@ export default function StudyMaterial() {
   // Update material mutation
   const updateMaterialMutation = useMutation({
     mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
+      const token = localStorage.getItem('token');
+      console.log('Token used for update /api/study-materials:', token);
       const response = await fetch(`/api/study-materials/${id}`, {
         method: 'PATCH',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         body: formData,
       });
       if (!response.ok) throw new Error('Failed to update material');
@@ -133,8 +152,11 @@ export default function StudyMaterial() {
   // Delete material mutation
   const deleteMaterialMutation = useMutation({
     mutationFn: async (id: number) => {
+      const token = localStorage.getItem('token');
+      console.log('Deleting material id:', id, 'Token:', token);
       const response = await fetch(`/api/study-materials/${id}`, {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to delete material');
     },
@@ -150,16 +172,19 @@ export default function StudyMaterial() {
   // Create collection mutation
   const createCollectionMutation = useMutation({
     mutationFn: async (data: { title: string; description: string }) => {
-      const response = await fetch('/api/collections', {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/study-materials', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: token
+          ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+          : { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Failed to create collection');
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
       toast({ title: 'Collection created successfully' });
       setShowCreateDialog(false);
     },
@@ -171,7 +196,7 @@ export default function StudyMaterial() {
   // Update collection mutation
   const updateCollectionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string } }) => {
-      const response = await fetch(`/api/collections/${id}`, {
+      const response = await fetch(`/api/study-materials${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -180,7 +205,7 @@ export default function StudyMaterial() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
       toast({ title: 'Collection updated successfully' });
       setShowEditDialog(false);
       setSelectedItem(null);
@@ -300,14 +325,21 @@ export default function StudyMaterial() {
   };
 
   const handleDelete = (item: any) => {
-    if (confirm('Are you sure you want to delete this item?')) {
+    setItemToDelete(item);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
       if (activeTab === 'materials') {
-        deleteMaterialMutation.mutate(item.id);
+        deleteMaterialMutation.mutate(itemToDelete.id);
       } else if (activeTab === 'collections') {
-        deleteCollectionMutation.mutate(item.id);
+        deleteCollectionMutation.mutate(itemToDelete.id);
       } else if (activeTab === 'templates') {
-        deleteTemplateMutation.mutate(item.id);
+        deleteTemplateMutation.mutate(itemToDelete.id);
       }
+      setShowDeleteConfirmDialog(false);
+      setItemToDelete(null);
     }
   };
 
@@ -356,6 +388,30 @@ export default function StudyMaterial() {
   const handleSubmitMaterial = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+
+    // Ensure all text fields are part of formData for update as well
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const type = formData.get('type') as string;
+    const qaqfLevel = formData.get('qaqfLevel');
+    const content = formData.get('content') as string;
+
+    // Add all form fields to formData, handling qaqf_level and JSON string arrays
+    formData.set('title', title);
+    formData.set('description', description);
+    formData.set('type', type);
+    if (qaqfLevel) {
+      formData.set('qaqf_level', String(Number(qaqfLevel)));
+    } else if (selectedItem && typeof selectedItem.qaqfLevel === 'number') {
+        // If qaqfLevel is not in form but exists in selectedItem, use it
+        formData.set('qaqf_level', String(selectedItem.qaqfLevel));
+    }
+    formData.set('content', content || ''); // Ensure content is not null
+    formData.set('characteristics', JSON.stringify([])); // Assuming empty array for now
+    formData.set('tags', JSON.stringify([])); // Assuming empty array for now
+
+    // Remove qaqfLevel form field name if it exists, as we use qaqf_level
+    formData.delete('qaqfLevel');
     
     if (selectedFile) {
       formData.append('file', selectedFile);
@@ -364,7 +420,19 @@ export default function StudyMaterial() {
     if (selectedItem) {
       updateMaterialMutation.mutate({ id: selectedItem.id, formData });
     } else {
-      createMaterialMutation.mutate(formData);
+      // For creation, the backend expects these to be part of the initial data structure
+      // rather than added to FormData individually if not a file.
+      // Assuming createMaterialMutation can handle direct data object or updated to FormData already.
+      // If not, this section might need adjustment to match previous solution attempts.
+      createMaterialMutation.mutate({ 
+        title: title,
+        description: description,
+        type: type,
+        qaqf_level: Number(qaqfLevel),
+        content: content,
+        characteristics: [],
+        tags: [],
+      });
     }
   };
 
@@ -1004,6 +1072,22 @@ export default function StudyMaterial() {
               </Button>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+          </DialogHeader>
+          <DialogDescription>
+            Are you sure you want to delete this Study Material item? 
+            {itemToDelete && <p className='text-red-600 '>Item ID: {itemToDelete.id}</p>}
+          </DialogDescription>
+          <div className="mt-4 space-x-2 flex justify-end">
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setShowDeleteConfirmDialog(false)}>Cancel</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

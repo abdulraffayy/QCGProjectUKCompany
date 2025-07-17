@@ -8,13 +8,12 @@ import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { useToast } from "../hooks/use-toast";
+// import { Link } from 'wouter';
+import { useAuth } from '../contexts/AuthContext';
+// import { useProfile } from '../contexts/UserProfileContext';
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
-  const [name, setName] = useState("Dr. Jane Doe");
-  const [email, setEmail] = useState("jane.doe@example.com");
-  const [institution, setInstitution] = useState("University of Example");
-  const [role, setRole] = useState("Academic Moderator");
   const [isSaving, setIsSaving] = useState(false);
   
   // Notification settings
@@ -28,6 +27,8 @@ const SettingsPage: React.FC = () => {
   
   // Appearance settings
   const [theme, setTheme] = useState("light");
+
+  const { logout, user } = useAuth();
 
   const handleSaveProfile = () => {
     setIsSaving(true);
@@ -53,6 +54,12 @@ const SettingsPage: React.FC = () => {
     }, 500);
   };
 
+  function getInitials(name: string | undefined) {
+    if (!name) return '';
+    const parts = name.split(' ');
+    return parts.length === 1 ? parts[0][0] : parts[0][0] + parts[parts.length - 1][0];
+  }
+
   return (
     <>
       <div className="mb-6">
@@ -71,10 +78,10 @@ const SettingsPage: React.FC = () => {
               <div className="space-y-4 pt-2">
                 <div className="flex flex-col items-center">
                   <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mb-2">
-                    JD
+                    {getInitials(user?.name)}
                   </div>
-                  <h3 className="font-medium text-lg">{name}</h3>
-                  <p className="text-neutral-500 text-sm">{role}</p>
+                  <h3 className="font-medium text-lg">{user?.name || ''}</h3>
+                  <p className="text-neutral-500 text-sm">{user?.role || ''}</p>
                 </div>
                 
                 <Separator />
@@ -101,7 +108,7 @@ const SettingsPage: React.FC = () => {
                 
                 <Separator />
                 
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={logout}>
                   <span className="material-icons mr-2 text-sm">logout</span>
                   Logout
                 </Button>
@@ -129,22 +136,22 @@ const SettingsPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                      <Input id="name" value={user?.name || ''} readOnly />
                     </div>
                     <div>
                       <Label htmlFor="email">Email Address</Label>
-                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                      <Input id="email" type="email" value={user?.email || ''} readOnly />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="institution">Institution</Label>
-                      <Input id="institution" value={institution} onChange={(e) => setInstitution(e.target.value)} />
+                      <Input id="institution" value={user?.institution || ''} readOnly />
                     </div>
                     <div>
                       <Label htmlFor="role">Role</Label>
-                      <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
+                      <Input id="role" value={user?.role || ''} readOnly />
                     </div>
                   </div>
                   

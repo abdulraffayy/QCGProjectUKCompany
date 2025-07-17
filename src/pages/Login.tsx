@@ -8,8 +8,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Alert, AlertDescription } from "../components/ui/alert";
+
 import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../contexts/AuthContext";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
 const loginSchema = z.object({
@@ -23,6 +24,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const {
     register,
@@ -34,40 +36,28 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      // Mock authentication for demonstration
-      // In production, this would connect to the Python backend
-      if (data.username === "admin" && data.password === "admin123") {
-        return {
-          access_token: "mock-admin-token",
-          user: {
-            id: 1,
-            username: "admin",
-            email: "admin@example.com",
-            name: "Administrator",
-            role: "admin",
-            is_active: true
-          }
-        };
-      } else if (data.username === "user" && data.password === "user123") {
-        return {
-          access_token: "mock-user-token",
-          user: {
-            id: 2,
-            username: "user",
-            email: "user@example.com",
-            name: "Regular User",
-            role: "user",
-            is_active: true
-          }
-        };
-      } else {
-        throw new Error("Invalid credentials. Try admin/admin123 or user/user123");
+      // Connect to Python backend authentication
+      const response = await fetch('http://localhost:8000/api/auth/login-json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.username,
+          password: data.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Login failed: ${errorData}`);
       }
+
+      return await response.json();
     },
     onSuccess: (data) => {
-      // Store token and user data
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Use AuthContext login function
+      login(data.access_token, data.user);
       
       toast({
         title: "Login successful",
@@ -75,12 +65,21 @@ export default function Login() {
       });
 
       // Redirect to dashboard
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: Error) => {
+      console.error('Login error:', error);
+      
+      let errorMessage = error.message;
+      if (error.message.includes('Failed to fetch') || error.message.includes('connect')) {
+        errorMessage = "Cannot connect to server. Please start the Python backend first.";
+      } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        errorMessage = "Invalid username or password. Try admin/admin123 or user/user123";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },

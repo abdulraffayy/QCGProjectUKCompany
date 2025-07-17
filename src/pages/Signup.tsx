@@ -68,17 +68,13 @@ export default function Signup() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Store token and user data
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      
       toast({
         title: "Account created successfully",
-        description: `Welcome to the platform, ${data.user.name}!`,
+        description: `Welcome to the platform, ${data.user.name}! Please login to continue.`,
       });
 
-      // Redirect to dashboard
-      setLocation("/");
+      // Redirect to login page
+      setLocation("/login");
     },
     onError: (error: Error) => {
       toast({
@@ -237,7 +233,7 @@ export default function Signup() {
           <div className="text-center">
             <span className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/login">
+              <Link to="/login">
                 <Button variant="link" className="px-0 font-normal">
                   Sign in
                 </Button>

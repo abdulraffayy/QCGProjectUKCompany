@@ -4,6 +4,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useAuth } from "../../contexts/AuthContext";
 import { LogOut, Settings, User } from "lucide-react";
+import { Link } from "wouter";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -71,8 +72,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+            <Link to="/settings" className="flex items-center">
+    <Settings className="mr-2 h-4 w-4" />
+    Settings
+  </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-red-600">

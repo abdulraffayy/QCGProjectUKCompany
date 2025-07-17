@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,39 +13,40 @@ import { Separator } from '../components/ui/separator';
 import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { 
-  Loader2, BookOpen, FileText, Users, Target, CheckCircle, 
+import {
+  Loader2, BookOpen, FileText, Users, Target, CheckCircle,
   GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
-  Upload, Link, FileImage, Globe, Scan
+  Upload, Link, FileImage, Globe, Scan, Eye
 } from 'lucide-react';
 import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
 import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
 import { useToast } from '../hooks/use-toast';
+import { StudyMaterial } from '../../shared/schema'; // adjust path
 
 // Unified validation schema for both content types
 const unifiedGenerationSchema = z.object({
   generation_type: z.enum(['content', 'course']),
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   subject_area: z.string().min(3, 'Subject area is required'),
-  qaqf_level: z.number().min(1).max(9),
+  qaqf_level: z.number().min(1).max(9).optional(),
   target_audience: z.string().min(3, 'Target audience is required'),
   learning_objectives: z.string().min(10, 'Please provide detailed learning objectives'),
-  
+
   // Content-specific fields
   content_type: z.enum(['academic_paper', 'assessment', 'lecture', 'study_guide']).optional(),
   module_code: z.string().optional(),
-  
+
   // Course-specific fields
   duration_weeks: z.number().min(1).max(52).optional(),
   modules_count: z.number().min(3).max(20).optional(),
   delivery_mode: z.enum(['online', 'blended', 'face-to-face']).optional(),
-  
+
   // Shared fields
   selected_characteristics: z.array(z.number()).min(1, 'Select at least one QAQF characteristic'),
   assessment_methods: z.array(z.string()).min(1, 'Select at least one assessment method'),
   prerequisites: z.string().optional(),
   additional_requirements: z.string().optional(),
-  
+
   // Source content fields
   source_type: z.enum(['manual', 'pdf', 'website', 'scanned_doc']).optional(),
   source_content: z.string().optional(),
@@ -71,52 +72,22 @@ interface QAQFCharacteristic {
 
 interface GeneratedItem {
   id: string;
-  type: 'content' | 'course';
+  type: string;
   title: string;
-  description: string;
-  qaqf_level: number;
-  qaqf_compliance_score: number;
-  content: any;
-  created_at: string;
-  status: 'draft' | 'reviewed' | 'approved';
+  description?: string;
+  qaqfLevel?: number;
+  qaqfComplianceScore?: number;
+  content?: string;
+  createdAt: string;
+  createdBy: string;
+  status: 'processing' | 'completed' | 'failed' | 'pending';
+  progress?: number;
+  estimatedTime?: string;
+  metadata?: any;
 }
 
 const UnifiedContentGenerator: React.FC = () => {
-  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([
-    {
-      id: 'demo-1',
-      type: 'content',
-      title: 'Introduction to Machine Learning Fundamentals',
-      description: 'Comprehensive overview of ML concepts for advanced learners',
-      qaqf_level: 7,
-      qaqf_compliance_score: 92,
-      content: 'Machine learning represents a paradigm shift in computational problem-solving...',
-      created_at: new Date().toISOString(),
-      status: 'draft'
-    },
-    {
-      id: 'demo-2',
-      type: 'course',
-      title: 'Advanced Data Science Methodology',
-      description: 'Complete course structure for data science professionals',
-      qaqf_level: 8,
-      qaqf_compliance_score: 88,
-      content: 'Course Module 1: Statistical Foundations...',
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      status: 'reviewed'
-    },
-    {
-      id: 'demo-3',
-      type: 'content',
-      title: 'Basic Programming Concepts',
-      description: 'Introduction to programming for beginners',
-      qaqf_level: 3,
-      qaqf_compliance_score: 95,
-      content: 'Programming is the process of creating instructions for computers...',
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'approved'
-    }
-  ]);
+  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('processing');
   const [selectedType, setSelectedType] = useState<'content' | 'course'>('content');
@@ -131,6 +102,11 @@ const UnifiedContentGenerator: React.FC = () => {
   const [selectedContentForLesson, setSelectedContentForLesson] = useState<GeneratedItem | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedPDFs, setSelectedPDFs] = useState<number[]>([]);
+  const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>('');
+  const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [openLessonId, setOpenLessonId] = useState<string | number | null>(null);
 
   // Fetch QAQF data dynamically
   const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
@@ -143,13 +119,38 @@ const UnifiedContentGenerator: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
+    queryKey: ['/api/study-materials'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/study-materials', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error('Failed to fetch study materials');
+      return response.json();
+    },
+  });
+
+  // 1. Console log for debugging
+  console.log('studyMaterials:', materials);
+
+  // 2. Filter for PDFs (covering both filename and fileName)
+  const uploadedPDFs = materials.filter(
+    (item: any) =>
+    ((item.filename && item.filename.toLowerCase().endsWith('.pdf')) ||
+      (item.fileName && item.fileName.toLowerCase().endsWith('.pdf')) ||
+      (item.mimeType && item.mimeType === 'application/pdf'))
+  );
+
+
+
   const form = useForm<UnifiedGenerationData>({
     resolver: zodResolver(unifiedGenerationSchema),
     defaultValues: {
       generation_type: 'content',
       title: '',
       subject_area: '',
-      qaqf_level: 1,
+      qaqf_level: undefined,
       target_audience: '',
       learning_objectives: '',
       content_type: 'academic_paper',
@@ -168,10 +169,54 @@ const UnifiedContentGenerator: React.FC = () => {
     }
   });
 
-  // File upload and processing functions
+  useEffect(() => {
+    // Load from localStorage on mount
+    const saved = localStorage.getItem('generatedItems');
+    if (saved) {
+      setGeneratedItems(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save to localStorage whenever generatedItems changes
+    localStorage.setItem('generatedItems', JSON.stringify(generatedItems));
+  }, [generatedItems]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        if (!res.ok) throw new Error('Failed to fetch courses');
+        const data = await res.json();
+        setCourses(Array.isArray(data) ? data : []);
+      } catch (err) {
+        // Optionally show a toast
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCourse) {
+      setCourseLessons([]);
+      return;
+    }
+    const fetchLessons = async () => {
+      try {
+        const res = await fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`);
+        if (!res.ok) throw new Error('Failed to fetch lessons');
+        const data = await res.json();
+        setCourseLessons(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setCourseLessons([]);
+      }
+    };
+    fetchLessons();
+  }, [selectedCourse]);
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
+
     setIsProcessingFiles(true);
     const fileArray = Array.from(files);
     setUploadedFiles(fileArray);
@@ -189,11 +234,11 @@ const UnifiedContentGenerator: React.FC = () => {
       });
 
       if (!response.ok) throw new Error('Failed to process files');
-      
+
       const result = await response.json();
       setExtractedContent(result.extracted_text);
       form.setValue('source_content', result.extracted_text);
-      
+
       toast({ title: `Successfully processed ${fileArray.length} file(s)` });
     } catch (error) {
       toast({ title: "Failed to process files", variant: "destructive" });
@@ -204,9 +249,9 @@ const UnifiedContentGenerator: React.FC = () => {
 
   const handleWebsiteExtraction = async (url: string) => {
     if (!url) return;
-    
+
     setIsProcessingFiles(true);
-    
+
     try {
       const response = await fetch('/api/extract-website', {
         method: 'POST',
@@ -215,16 +260,30 @@ const UnifiedContentGenerator: React.FC = () => {
       });
 
       if (!response.ok) throw new Error('Failed to extract website content');
-      
+
       const result = await response.json();
       setExtractedContent(result.extracted_text);
       form.setValue('source_content', result.extracted_text);
-      
+
       toast({ title: "Website content extracted successfully" });
     } catch (error) {
       toast({ title: "Failed to extract website content", variant: "destructive" });
     } finally {
       setIsProcessingFiles(false);
+    }
+  };
+
+  // Handler for drop event
+  const handlePDFDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const pdfId = e.dataTransfer.getData('application/pdf-id');
+    const pdfName = e.dataTransfer.getData('application/pdf-name');
+    if (pdfId) {
+      // Optionally: fetch the PDF content from your API if you want to extract text
+      // For now, just set the name as extracted content
+      setExtractedContent(`PDF selected: ${pdfName}`);
+      form.setValue('source_content', `PDF selected: ${pdfName}`);
+      toast({ title: `PDF "${pdfName}" selected for content generation.` });
     }
   };
 
@@ -246,14 +305,14 @@ const UnifiedContentGenerator: React.FC = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'title':
           return a.title.localeCompare(b.title);
         case 'compliance':
-          return b.qaqf_compliance_score - a.qaqf_compliance_score;
+          return (b.qaqfComplianceScore ?? 0) - (a.qaqfComplianceScore ?? 0);
         case 'newest':
         default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
 
@@ -272,31 +331,38 @@ const UnifiedContentGenerator: React.FC = () => {
       type: 'content',
       title: `Lesson Plan: ${lessonPlanData.title}`,
       description: `${lessonPlanData.duration} lesson for ${lessonPlanData.subject}`,
-      qaqf_level: lessonPlanData.qaqf_level,
-      qaqf_compliance_score: 90,
-      content: lessonPlanData,
-      created_at: new Date().toISOString(),
-      status: 'draft'
+      qaqfLevel: lessonPlanData.qaqf_level,
+      qaqfComplianceScore: 90,
+      content: typeof lessonPlanData === 'string' ? lessonPlanData : JSON.stringify(lessonPlanData),
+      createdAt: new Date().toISOString(),
+      createdBy: 'User',
+      status: 'completed',
     };
-
     setGeneratedItems(prev => [lessonPlanItem, ...prev]);
     setShowLessonPlan(false);
     setSelectedContentForLesson(null);
-    toast({ 
-      title: "Lesson plan created successfully!",
-      description: "Your lesson plan is now available in the Processing Center."
+    toast({
+      title: 'Lesson plan created successfully!',
+      description: 'Your lesson plan is now available in the Processing Center.'
     });
   };
 
   const generationMutation = useMutation({
     mutationFn: async (data: UnifiedGenerationData) => {
-      const endpoint = data.generation_type === 'content' ? '/api/generate/content' : '/api/generate/course';
+      const endpoint = data.generation_type === 'content' ? '/api/ai/generate-content' : '/api/ai/generate-content';
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...data,
-          qaqf_characteristics: qaqfCharacteristics?.filter(c => 
+          qaqf_characteristics: qaqfCharacteristics?.filter(c =>
             data.selected_characteristics.includes(c.id)
           ).map(c => c.name) || []
         }),
@@ -310,26 +376,51 @@ const UnifiedContentGenerator: React.FC = () => {
         type: variables.generation_type,
         title: variables.title,
         description: data.description || 'Generated content',
-        qaqf_level: variables.qaqf_level,
-        qaqf_compliance_score: data.qaqf_compliance_score || 85,
-        content: data,
-        created_at: new Date().toISOString(),
-        status: 'draft'
+        qaqfLevel: variables.qaqf_level || 1,
+        qaqfComplianceScore: data.qaqf_compliance_score || 85,
+        content: typeof data === 'string'
+          ? data
+          : (data.generated_content || data.content || JSON.stringify(data)),
+        createdAt: new Date().toISOString(),
+        createdBy: 'User',
+        status: 'completed',
       };
       setGeneratedItems(prev => [newItem, ...prev]);
       setActiveTab('processing');
       toast({ title: `${variables.generation_type === 'content' ? 'Content' : 'Course'} generated successfully!` });
     },
     onError: (error, variables) => {
-      toast({ 
-        title: `Failed to generate ${variables.generation_type}`, 
-        variant: "destructive" 
+      toast({
+        title: `Failed to generate ${variables.generation_type}`,
+        variant: "destructive"
       });
     },
   });
 
   const onSubmit = (data: UnifiedGenerationData) => {
+    // Map selected_characteristics IDs to names for logging only
+    const selectedNames = (qaqfCharacteristics || [])
+      .filter(c => data.selected_characteristics.includes(c.id))
+      .map(c => c.name);
+
+    // Get selected PDF information
+    const selectedPDFInfo = materials
+      .filter(pdf => selectedPDFs.includes(pdf.id))
+      .map(pdf => ({
+        id: pdf.id,
+        title: pdf.title || pdf.file_name,
+        file_name: pdf.file_name
+      }));
+
+    const dataForLog = {
+      ...data,
+      selected_characteristics: selectedNames,
+      selected_pdfs: selectedPDFInfo,
+    };
     setIsGenerating(true);
+    console.log("Submit button clicked");
+    console.log("Current form data:", dataForLog);
+    console.log("Selected PDFs:", selectedPDFInfo);
     generationMutation.mutate(data);
     setTimeout(() => setIsGenerating(false), 3000);
   };
@@ -355,9 +446,9 @@ const UnifiedContentGenerator: React.FC = () => {
   ];
 
   const approveItem = (id: string) => {
-    setGeneratedItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, status: 'approved' } : item
+    setGeneratedItems(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, status: 'completed' } : item
       )
     );
     toast({ title: "Content approved and ready for deployment" });
@@ -366,6 +457,11 @@ const UnifiedContentGenerator: React.FC = () => {
   const saveToLibrary = (item: GeneratedItem) => {
     // This would integrate with your content API
     toast({ title: `${item.type === 'content' ? 'Content' : 'Course'} saved to module library` });
+  };
+
+  const onView = (item: GeneratedItem) => {
+    setSelectedContentForLesson(item);
+    setShowLessonPlan(true);
   };
 
   if (levelsLoading || characteristicsLoading) {
@@ -378,7 +474,7 @@ const UnifiedContentGenerator: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6">
       <div className="flex items-center space-x-3 mb-6">
         <GraduationCap className="h-8 w-8 text-primary" />
         <div>
@@ -388,7 +484,7 @@ const UnifiedContentGenerator: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
           <TabsTrigger value="generator" className="flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Generator</span>
@@ -413,8 +509,8 @@ const UnifiedContentGenerator: React.FC = () => {
               <CardDescription>Choose what you want to create</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card 
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
+                <Card
                   className={`cursor-pointer transition-all ${selectedType === 'content' ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => {
                     setSelectedType('content');
@@ -429,8 +525,8 @@ const UnifiedContentGenerator: React.FC = () => {
                     </p>
                   </CardContent>
                 </Card>
-                
-                <Card 
+
+                <Card
                   className={`cursor-pointer transition-all ${selectedType === 'course' ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => {
                     setSelectedType('course');
@@ -449,7 +545,11 @@ const UnifiedContentGenerator: React.FC = () => {
             </CardContent>
           </Card>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit((data) => {
+            console.log("Submit button clicked");
+            console.log("Current form data:", data);
+            onSubmit(data);
+          })} className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -457,7 +557,7 @@ const UnifiedContentGenerator: React.FC = () => {
                   <span>Basic Information</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -481,24 +581,18 @@ const UnifiedContentGenerator: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label>QAQF Level</Label>
-                  <Controller
-                    name="qaqf_level"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select QAQF level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {qaqfLevels?.map((level) => (
-                            <SelectItem key={level.id} value={level.level.toString()}>
-                              Level {level.level} - {level.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
+                  <Select onValueChange={(value) => form.setValue('qaqf_level', parseInt(value))} defaultValue={form.watch('qaqf_level')?.toString()}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select QAQF level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => (
+                        <SelectItem key={level} value={level.toString()}>
+                          Level {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -611,12 +705,76 @@ const UnifiedContentGenerator: React.FC = () => {
                   <span>Source Content</span>
                 </CardTitle>
                 <CardDescription>
-                  Choose how to provide source material for content generation
+                  Choose how to provide source material for content generation.
+                  <div className="mt-2">
+                    <strong>Uploaded PDFs:</strong>
+                    <ul className="space-y-2 mt-2">
+                      {materialsLoading && <li className="text-sm text-gray-400">Loading PDFs...</li>}
+                      {!materialsLoading && materials.length === 0 && (
+                        <li className="text-sm text-gray-400">No PDFs found.</li>
+                      )}
+                      {materials.map((pdf) => (
+                        <li
+                          key={pdf.id}
+                          draggable
+                          onDragStart={e => {
+                            e.dataTransfer.setData('application/pdf-id', String(pdf.id ?? ''));
+                            e.dataTransfer.setData('application/pdf-name', String(pdf.file_name ?? ''));
+                          }}
+                          className="flex items-center gap-2 cursor-move hover:bg-gray-50 p-2 rounded border"
+                          style={{
+                            border: selectedPDFs.includes(pdf.id) ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                            borderRadius: 6,
+                            background: selectedPDFs.includes(pdf.id) ? '#f0fdf4' : undefined,
+                          }}
+                        >
+                          {/* Checkbox selector */}
+                          <input
+                            type="checkbox"
+                            checked={selectedPDFs.includes(pdf.id)}
+                            onChange={e => {
+                              setSelectedPDFs(prev =>
+                                e.target.checked
+                                  ? [...prev, pdf.id]
+                                  : prev.filter(id => id !== pdf.id)
+                              );
+                            }}
+                            className="mr-2"
+                            style={{ width: 18, height: 18 }}
+                          />
+                          {/* Tick icon if selected */}
+                          {selectedPDFs.includes(pdf.id) && (
+                            <span className="text-green-600 mr-1">
+                              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                                <path stroke="#22c55e" strokeWidth="3" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          )}
+                          {/* PDF link */}
+                          <a
+                            href={`/uploads/documents/${pdf.file_name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline text-blue-600 flex-1"
+                          >
+                            {pdf.title ? pdf.title : pdf.file_name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    {selectedPDFs.length > 0 && (
+                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        <p className="text-sm text-green-700">
+                          <strong>{selectedPDFs.length}</strong> PDF{selectedPDFs.length > 1 ? 's' : ''} selected
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card 
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card
                     className={`cursor-pointer transition-all ${sourceType === 'manual' ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSourceType('manual')}
                   >
@@ -625,8 +783,8 @@ const UnifiedContentGenerator: React.FC = () => {
                       <p className="text-sm font-medium">Manual Input</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card 
+
+                  <Card
                     className={`cursor-pointer transition-all ${sourceType === 'pdf' ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSourceType('pdf')}
                   >
@@ -635,8 +793,8 @@ const UnifiedContentGenerator: React.FC = () => {
                       <p className="text-sm font-medium">PDF/Books</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card 
+
+                  <Card
                     className={`cursor-pointer transition-all ${sourceType === 'website' ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSourceType('website')}
                   >
@@ -645,8 +803,8 @@ const UnifiedContentGenerator: React.FC = () => {
                       <p className="text-sm font-medium">Website URL</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card 
+
+                  <Card
                     className={`cursor-pointer transition-all ${sourceType === 'scanned_doc' ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSourceType('scanned_doc')}
                   >
@@ -676,7 +834,11 @@ const UnifiedContentGenerator: React.FC = () => {
 
                 {sourceType === 'pdf' && (
                   <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <div
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+                      onDrop={handlePDFDrop}
+                      onDragOver={e => e.preventDefault()}
+                    >
                       <input
                         type="file"
                         multiple
@@ -692,9 +854,41 @@ const UnifiedContentGenerator: React.FC = () => {
                         <p className="text-sm text-gray-500">
                           Supports PDF, DOC, DOCX, TXT, EPUB files. Multiple files allowed.
                         </p>
+                        <div className="mt-2">
+                          <strong>Uploaded PDFs:</strong>
+                          {/* <ul>
+                            {materialsLoading && <li className="text-sm text-gray-400">Loading PDFs...</li>}
+                            {!materialsLoading && materials.length === 0 && (
+                              <li className="text-sm text-gray-400">No PDFs found.</li>
+                            )}
+                            {materials.map((pdf) => (
+                              <li
+                                key={pdf.id}
+                                draggable
+                                onDragStart={e => {
+                                  e.dataTransfer.setData('application/pdf-id', String(pdf.id ?? ''));
+                                  e.dataTransfer.setData('application/pdf-name', String(pdf.file_name ?? ''));
+                                }}
+                                className="cursor-move hover:underline text-blue-600"
+                              >
+                                <a
+                                  href={`/uploads/documents/${pdf.file_name}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline"
+                                >
+                                  {pdf.title ? pdf.title : pdf.file_name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul> */}
+                          <p className="text-xs text-gray-500 mt-2">
+                            Drag a PDF from the list above and drop it here to select it for content generation.
+                          </p>
+                        </div>
                       </label>
                     </div>
-                    
+
                     {uploadedFiles.length > 0 && (
                       <div className="space-y-2">
                         <Label>Uploaded Files:</Label>
@@ -803,11 +997,11 @@ const UnifiedContentGenerator: React.FC = () => {
                         </p>
                       </label>
                     </div>
-                    
+
                     {uploadedFiles.length > 0 && (
                       <div className="space-y-2">
                         <Label>Uploaded Images:</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                           {uploadedFiles.map((file, index) => (
                             <div key={index} className="relative">
                               <img
@@ -860,7 +1054,7 @@ const UnifiedContentGenerator: React.FC = () => {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <Label>QAQF Characteristics (Select applicable characteristics)</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
                     {qaqfCharacteristics?.map((characteristic) => (
                       <div key={characteristic.id} className="border rounded-lg p-3 space-y-2">
                         <div className="flex items-start space-x-2">
@@ -897,7 +1091,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
                 <div className="space-y-4">
                   <Label>Assessment Methods</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {assessmentMethods.map((method) => (
                       <div key={method} className="flex items-center space-x-2">
                         <Controller
@@ -928,21 +1122,24 @@ const UnifiedContentGenerator: React.FC = () => {
 
             <div className="flex justify-end">
               <Button
-                type="submit"
+                type="button"
                 disabled={isGenerating || generationMutation.isPending}
                 className="flex items-center space-x-2"
+                onClick={() => {
+                  const formData = form.getValues();
+                  console.log("Submit button clicked");
+                  console.log("Current form data:", formData);
+                  onSubmit(formData);
+                }}
               >
                 {isGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Generating...</span>
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <Lightbulb className="h-4 w-4" />
-                    <span>Generate {selectedType === 'content' ? 'Content' : 'Course'}</span>
-                  </>
+                  <Lightbulb className="h-4 w-4" />
                 )}
+                <span>
+                  {isGenerating ? 'Generating...' : `Generate ${selectedType === 'content' ? 'Content' : 'Course'}`}
+                </span>
               </Button>
             </div>
           </form>
@@ -959,7 +1156,7 @@ const UnifiedContentGenerator: React.FC = () => {
                 Review, edit, and approve all generated content with comprehensive workflow management
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className=''>
               {generatedItems.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -969,7 +1166,7 @@ const UnifiedContentGenerator: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Filter and Sort Controls */}
-                  <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-4 p-2 sm:p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="filter-status">Filter by Status:</Label>
                       <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -978,9 +1175,10 @@ const UnifiedContentGenerator: React.FC = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="reviewed">Reviewed</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="failed">Failed</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -998,62 +1196,56 @@ const UnifiedContentGenerator: React.FC = () => {
                       </Select>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="sort-by">Sort by:</Label>
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
+                      <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
+                      <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Select a course" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="newest">Newest First</SelectItem>
-                          <SelectItem value="oldest">Oldest First</SelectItem>
-                          <SelectItem value="title">Title A-Z</SelectItem>
-                          <SelectItem value="compliance">Compliance Score</SelectItem>
+                          {courses.map(course => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.title}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+
+
                   </div>
 
                   {/* Content Items */}
-                  <div className="space-y-4">
+                  <div>
                     {getFilteredAndSortedItems().map((item) => (
-                      <ProcessingCenterItem 
-                        key={item.id} 
-                        item={item} 
-                        onUpdate={(updatedItem) => {
-                          setGeneratedItems(prev => 
-                            prev.map(i => i.id === updatedItem.id ? updatedItem : i)
-                          );
+                      <ProcessingCenterItem
+                        key={item.id}
+                        item={item}
+                        onAction={(action, itemId) => {
+                          if (action === 'close') {
+                            setGeneratedItems(prev => prev.filter(i => i.id !== itemId));
+                          }
+                          // You can handle other actions here if needed
                         }}
-                        onDelete={(itemId) => {
-                          setGeneratedItems(prev => prev.filter(i => i.id !== itemId));
-                        }}
-                        onCreateLessonPlan={handleCreateLessonPlan}
                       />
                     ))}
                   </div>
 
                   {/* Summary Stats */}
                   {getFilteredAndSortedItems().length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-blue-600">{getFilteredAndSortedItems().length}</p>
                         <p className="text-sm text-gray-600">Items Shown</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'approved').length}
-                        </p>
-                        <p className="text-sm text-gray-600">Approved</p>
-                      </div>
-                      <div className="text-center">
                         <p className="text-2xl font-bold text-yellow-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'reviewed').length}
+                          {getFilteredAndSortedItems().filter(i => i.status === 'processing').length}
                         </p>
-                        <p className="text-sm text-gray-600">Under Review</p>
+                        <p className="text-sm text-gray-600">Processing</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-gray-600">
-                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + item.qaqf_compliance_score, 0) / getFilteredAndSortedItems().length)}%
+                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / getFilteredAndSortedItems().length)}%
                         </p>
                         <p className="text-sm text-gray-600">Avg. Compliance</p>
                       </div>
@@ -1075,7 +1267,7 @@ const UnifiedContentGenerator: React.FC = () => {
               <div className="text-center py-12">
                 <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  Your module library will display approved content here. 
+                  Your module library will display approved content here.
                   Save content from the Processing Center to build your library.
                 </p>
               </div>
@@ -1086,12 +1278,13 @@ const UnifiedContentGenerator: React.FC = () => {
 
       {/* Lesson Plan Template Modal */}
       {showLessonPlan && selectedContentForLesson && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-2xl md:max-w-4xl xl:max-w-6xl max-h-[90vh] overflow-y-auto">
+            {/* TODO: Replace 'lessonPlan' with the correct prop name if different */}
             <LessonPlanTemplate
-              generatedContent={selectedContentForLesson}
+              baseContent={selectedContentForLesson}
               onSave={handleSaveLessonPlan}
-              onClose={() => {
+              onCancel={() => {
                 setShowLessonPlan(false);
                 setSelectedContentForLesson(null);
               }}

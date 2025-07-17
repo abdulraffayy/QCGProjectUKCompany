@@ -595,7 +595,7 @@ const ContentGenerator: React.FC = () => {
                     Generating...
                   </>
                 ) : (
-                  "Generate Content"
+                  "Generate Conten"
                 )}
               </Button>
             </div>

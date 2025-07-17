@@ -13,7 +13,7 @@ const QAQFLevels: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {QAQFLevelCategories.map((category, index) => (
+        {Object.values(QAQFLevelCategories).map((category: { levels: number[]; name: string; color: string; description?: string }, index: number) => (
           <Card key={index} className="overflow-hidden qaqf-level">
             <div className={`h-1 bg-${category.color}`}></div>
             <CardContent className="p-4">

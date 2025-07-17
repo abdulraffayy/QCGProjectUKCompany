@@ -54,7 +54,8 @@ export interface UploadSourceResponse {
 // Generate academic content
 export async function generateAcademicContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
   try {
-    const response = await apiRequest("POST", "/api/generate/content", request);
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const response = await apiRequest("POST", baseUrl + "/api/generate/content", request);
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -88,7 +89,8 @@ export async function generateVideo(request: GenerateVideoRequest): Promise<Gene
 // Verify content against QAQF framework
 export async function verifyContent(content: string, qaqfLevel: number): Promise<VerificationResponse> {
   try {
-    const response = await apiRequest("POST", "/api/verify/content", {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const response = await apiRequest("POST", baseUrl + "/api/verify/content", {
       content,
       qaqfLevel
     });
@@ -108,7 +110,8 @@ export async function verifyContent(content: string, qaqfLevel: number): Promise
 // Check content against British standards
 export async function checkBritishStandards(content: string): Promise<BritishStandardsResponse> {
   try {
-    const response = await apiRequest("POST", "/api/check/british-standards", {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const response = await apiRequest("POST", baseUrl + "/api/check/british-standards", {
       content
     });
     
@@ -130,8 +133,8 @@ export async function uploadSource(file: File): Promise<UploadSourceResponse> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', file.type);
-    
-    const response = await fetch('/api/upload/source', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const response = await fetch(baseUrl + '/api/upload/source', {
       method: 'POST',
       body: formData,
     });

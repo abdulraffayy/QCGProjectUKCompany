@@ -16,15 +16,17 @@ import {
   AlertTriangle,
   Edit,
   Eye,
-  Download
+  Download,
+  X
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface ProcessingCenterItemProps {
   item: {
     id: string;
     title: string;
     type: string;
-    status: 'processing' | 'completed' | 'failed' | 'pending';
+    status: 'processing' | 'draft' | 'failed' | 'pending' | 'completed';
     progress?: number;
     createdAt: string;
     createdBy: string;
@@ -43,12 +45,13 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'processing':
         return <Clock className="h-4 w-4 text-blue-600 animate-pulse" />;
-      case 'completed':
+      case 'draft':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-600" />;
@@ -62,9 +65,9 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return '';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gray-100 text-gray-800'; // changed from green to gray
       case 'failed':
         return 'bg-red-100 text-red-800';
       case 'pending':
@@ -104,7 +107,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   };
 
   return (
-    <Card className="transition-all hover:shadow-md">
+    <Card className="transition-all hover:shadow-md ">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
@@ -113,7 +116,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               {getStatusIcon(item.status)}
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg truncate">{item.title}</CardTitle>
+              <CardTitle className="text-lg truncate ">{item.title}</CardTitle>
               <CardDescription className="mt-1">
                 {item.description && (
                   <span className="block mb-1">{item.description}</span>
@@ -136,14 +139,44 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getStatusColor(item.status)}>
-              {item.status}
+              {item.status !== 'completed' ? item.status : ''}
             </Badge>
+            <Select
+              value={filterStatus}
+              onValueChange={(value) => {
+                if (value === 'delete') {
+                  if (onAction) onAction('delete', item.id);
+                  setFilterStatus('all');
+                } else {
+                  setFilterStatus(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-32 border border-neutral-300 focus:ring-0 focus:border-neutral-300">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-1"
+              onClick={() => onAction && onAction('close', item.id)}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -205,30 +238,8 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             <div className="flex flex-wrap gap-2">
               {item.status === 'completed' && (
                 <>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleAction('view')}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleAction('download')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleAction('edit')}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                 
+                
                 </>
               )}
 
@@ -275,24 +286,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               )}
             </div>
 
-            {(item.status === 'completed' || item.status === 'failed') && (
-              <div>
-                <h4 className="font-medium mb-2">Feedback</h4>
-                <Textarea
-                  placeholder="Add feedback or notes about this item..."
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  className="mb-2"
-                />
-                <Button 
-                  size="sm" 
-                  onClick={() => handleAction('feedback')}
-                  disabled={!feedback.trim()}
-                >
-                  Save Feedback
-                </Button>
-              </div>
-            )}
+           
           </div>
         </CardContent>
       )}

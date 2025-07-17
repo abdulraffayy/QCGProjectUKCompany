@@ -1,75 +1,282 @@
 """
-FastAPI main application entry point for Educational Content Platform
-Migration from Node.js/TypeScript backend
+Ultra Simple Flask Backend for QAQF Educational Platform
+No external dependencies except Flask - easy for basic Python developers
 """
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import os
-from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+import sqlite3
+import hashlib
+import json
+import datetime
+from functools import wraps
+import base64
+import hmac
 
-from database import engine
-from models import Base
-from routes import content, dashboard, qaqf, videos, activities, ai_services, course_generator, qaqf_admin, content_extraction
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'simple-secret-key-2025'
 
-# Load environment variables
-load_dotenv()
+# Simple CORS handling
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
-# Create FastAPI app
-app = FastAPI(
-    title="Educational Content Platform API",
-    description="AI-powered academic content generation with QAQF framework compliance",
-    version="1.0.0"
-)
+# Handle preflight requests
+@app.route('/<path:path>', methods=['OPTIONS'])
+@app.route('/', methods=['OPTIONS'])
+def options_handler(path=None):
+    return '', 200
 
-# CORS middleware configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure based on your frontend URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+DATABASE = 'simple_qaqf.db'
 
-# Create database tables
-@app.on_event("startup")
-async def startup_event():
-    """Create database tables on startup"""
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully")
+def get_db():
+    """Get database connection"""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# Include API routes
-app.include_router(dashboard.router, prefix="/api", tags=["dashboard"])
-app.include_router(qaqf.router, prefix="/api/qaqf", tags=["qaqf"])
-app.include_router(content.router, prefix="/api/content", tags=["content"])
-app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
-app.include_router(activities.router, prefix="/api/activities", tags=["activities"])
-app.include_router(ai_services.router, prefix="/api", tags=["ai-services"])
-app.include_router(course_generator.router, prefix="/api", tags=["course-generator"])
-app.include_router(qaqf_admin.router, prefix="/api/qaqf", tags=["qaqf-admin"])
-app.include_router(content_extraction.router, prefix="/api", tags=["content-extraction"])
+def init_db():
+    """Initialize database"""
+    conn = get_db()
+    
+    # Users table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT NOT NULL,
+            role TEXT DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Study materials table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS study_materials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            type TEXT NOT NULL,
+            qaqf_level INTEGER NOT NULL,
+            module_code TEXT,
+            content TEXT,
+            characteristics TEXT NOT NULL,
+            verification_status TEXT DEFAULT 'pending',
+            created_by_user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Create demo users
+    admin_password = hashlib.sha256('admin123'.encode()).hexdigest()
+    user_password = hashlib.sha256('user123'.encode()).hexdigest()
+    
+    try:
+        conn.execute('''
+            INSERT INTO users (username, email, password_hash, name, role)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('admin', 'admin@example.com', admin_password, 'Administrator', 'admin'))
+        
+        conn.execute('''
+            INSERT INTO users (username, email, password_hash, name, role)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('user', 'user@example.com', user_password, 'Regular User', 'user'))
+        
+        print("Demo users created: admin/admin123 and user/user123")
+    except sqlite3.IntegrityError:
+        print("Demo users already exist")
+    
+    conn.commit()
+    conn.close()
 
-# Authentication and study materials routes
-from routes import auth, study_materials
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
-app.include_router(study_materials.router, prefix="/api", tags=["study-materials"])
+def create_simple_token(user_id, username):
+    """Create simple token"""
+    payload = f"{user_id}:{username}:{datetime.datetime.now().isoformat()}"
+    signature = hmac.new(
+        app.config['SECRET_KEY'].encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    token = base64.b64encode(f"{payload}:{signature}".encode()).decode()
+    return token
 
-# Health check endpoint
-@app.get("/api/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "message": "Educational Content Platform API is running"}
+def verify_simple_token(token):
+    """Verify simple token"""
+    try:
+        decoded = base64.b64decode(token.encode()).decode()
+        parts = decoded.rsplit(':', 1)
+        if len(parts) != 2:
+            return None
+        
+        payload, signature = parts
+        expected_signature = hmac.new(
+            app.config['SECRET_KEY'].encode(),
+            payload.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        if signature != expected_signature:
+            return None
+        
+        user_id, username, timestamp = payload.split(':', 2)
+        return int(user_id)
+    except:
+        return None
 
-# Root endpoint
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {"message": "Educational Content Platform API", "docs": "/docs"}
+def token_required(f):
+    """Simple token authentication"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        if token.startswith('Bearer '):
+            token = token[7:]
+        
+        user_id = verify_simple_token(token)
+        if not user_id:
+            return jsonify({'error': 'Token is invalid'}), 401
+        
+        return f(user_id, *args, **kwargs)
+    
+    return decorated
 
-if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 8000)),
-        reload=True
-    )
+# Routes
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok', 'message': 'Simple Flask backend running'})
+
+@app.route('/api/auth/login-json', methods=['POST'])
+def login():
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    conn = get_db()
+    user = conn.execute(
+        'SELECT * FROM users WHERE username = ?', 
+        (data['username'],)
+    ).fetchone()
+    conn.close()
+    
+    if not user:
+        return jsonify({'error': 'Invalid credentials'}), 401
+    
+    # Check password (simple hash)
+    password_hash = hashlib.sha256(data['password'].encode()).hexdigest()
+    if password_hash != user['password_hash']:
+        return jsonify({'error': 'Invalid credentials'}), 401
+    
+    # Create token
+    token = create_simple_token(user['id'], user['username'])
+    
+    return jsonify({
+        'access_token': token,
+        'user': {
+            'id': user['id'],
+            'username': user['username'],
+            'email': user['email'],
+            'name': user['name'],
+            'role': user['role'],
+            'is_active': True
+        }
+    })
+
+@app.route('/api/study-materials', methods=['GET'])
+@token_required
+def get_study_materials(current_user_id):
+    conn = get_db()
+    materials = conn.execute('''
+        SELECT sm.*, u.username as creator_name
+        FROM study_materials sm
+        LEFT JOIN users u ON sm.created_by_user_id = u.id
+        ORDER BY sm.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    result = []
+    for material in materials:
+        material_dict = dict(material)
+        # Parse characteristics JSON
+        try:
+            material_dict['characteristics'] = json.loads(material_dict['characteristics'])
+        except:
+            material_dict['characteristics'] = []
+        result.append(material_dict)
+    
+    return jsonify(result)
+
+@app.route('/api/study-materials', methods=['POST'])
+@token_required
+def create_study_material(current_user_id):
+    data = request.get_json()
+    
+    required_fields = ['title', 'description', 'type', 'qaqf_level', 'characteristics']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    characteristics_json = json.dumps(data['characteristics'])
+    
+    conn = get_db()
+    try:
+        cursor = conn.execute('''
+            INSERT INTO study_materials 
+            (title, description, type, qaqf_level, module_code, content, 
+             characteristics, created_by_user_id, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data['title'],
+            data['description'], 
+            data['type'],
+            data['qaqf_level'],
+            data.get('module_code'),
+            data.get('content'),
+            characteristics_json,
+            current_user_id,
+            'pending'
+        ))
+        
+        material_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Study material created successfully',
+            'id': material_id
+        }), 201
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/study-materials/<int:material_id>', methods=['DELETE'])
+@token_required
+def delete_study_material(current_user_id, material_id):
+    conn = get_db()
+    
+    material = conn.execute(
+        'SELECT * FROM study_materials WHERE id = ? AND created_by_user_id = ?',
+        (material_id, current_user_id)
+    ).fetchone()
+    
+    if not material:
+        conn.close()
+        return jsonify({'error': 'Study material not found or access denied'}), 404
+    
+    conn.execute('DELETE FROM study_materials WHERE id = ?', (material_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Study material deleted successfully'})
+
+if __name__ == '__main__':
+    init_db()
+    print("Starting Simple Flask Backend on http://localhost:8000")
+    print("Demo users: admin/admin123 and user/user123")
+    app.run(host='0.0.0.0', port=8000, debug=True)

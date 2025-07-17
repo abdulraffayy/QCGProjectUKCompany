@@ -146,7 +146,7 @@ const QAQFFramework: React.FC = () => {
               </div>
               
               {/* Middle level: Intermediate (4-6) */}
-              <div className="absolute bottom-18 left-6 right-6 h-16 bg-purple-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-purple-600 cursor-pointer">
+              <div className="absolute bottom-36 left-6 right-6 h-16 bg-purple-500 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-purple-600 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 4-6: Intermediate</span>
                   <div className="text-xs mt-1 opacity-80">Communication, Accountability & Digitalisation</div>
@@ -159,7 +159,7 @@ const QAQFFramework: React.FC = () => {
               </div>
               
               {/* Top level: Advanced (7-9) */}
-              <div className="absolute bottom-36 left-12 right-12 h-16 bg-violet-600 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-violet-700 cursor-pointer">
+              <div className="absolute bottom-18 left-12 right-12 h-16 bg-violet-600 bg-opacity-80 rounded-lg flex items-center justify-center text-white transition-all hover:bg-violet-700 cursor-pointer">
                 <div className="text-center">
                   <span className="text-sm font-medium">Levels 7-9: Advanced</span>
                   <div className="text-xs mt-1 opacity-80">Sustainability, Creativity & Innovative Skills</div>

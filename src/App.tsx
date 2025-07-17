@@ -5,7 +5,7 @@ import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
 import NotFound from "./pages/not-found";
 import Layout from "./components/layout/Layout";
-import Dashboard from "./pages/Dashboard";
+
 import UnifiedContentGenerator from "./pages/UnifiedContentGenerator";
 import VideoGenerator from "./pages/VideoGenerator";
 import MyContent from "./pages/MyContent";
@@ -23,6 +23,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Dashboard from "./pages/Dashboard";
 
 function AuthenticatedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -44,7 +45,10 @@ function AuthenticatedRoutes() {
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
-        <Route component={Login} />
+        <Route>{() => {
+          window.location.replace('/login');
+          return null;
+        }}</Route>
       </Switch>
     );
   }
@@ -52,7 +56,7 @@ function AuthenticatedRoutes() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
         <Route path="/content-generator" component={UnifiedContentGenerator} />
         <Route path="/ai-content-studio" component={UnifiedContentGenerator} />
         <Route path="/processing-center" component={UnifiedContentGenerator} />
@@ -68,12 +72,12 @@ function AuthenticatedRoutes() {
         <Route path="/assessment-in-progress" component={AssessmentInProgress} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/settings" component={Settings} />
+        
         <Route component={NotFound} />
       </Switch>
     </Layout>
   );
 }
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>

@@ -637,7 +637,7 @@ const ContentGenerator: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {QAQFLevels.map((level) => (
-                      <SelectItem key={level.id} value={level.id.toString()}>
+                      <SelectItem key={level.level} value={level.level.toString()}>
                         {level.name}: {level.description}
                       </SelectItem>
                     ))}
@@ -1041,7 +1041,7 @@ const ContentGenerator: React.FC = () => {
                     <h3 className="text-lg font-medium">{generatedContent.title}</h3>
                     <div className="flex flex-wrap gap-2 mt-1">
                       <Badge variant="outline" className="bg-blue-50 text-blue-600">
-                        QAQF Level {generatedContent.qaqfLevel}
+                        QAQF Level 22 {generatedContent.qaqfLevel}
                       </Badge>
                       <Badge variant="outline">
                         Module: {generatedContent.moduleCode}
