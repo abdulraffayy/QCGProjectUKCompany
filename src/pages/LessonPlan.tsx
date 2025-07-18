@@ -1501,7 +1501,9 @@ const LessonPlanPage: React.FC = () => {
                               </div>
                               <div><b>User ID:</b> {content.userid}</div>
                               <div><b>Course ID:</b> {content.courseid}</div>
-                              <div><b>Description:</b> {content.description}</div>
+                              <div>
+                                <b>Description:</b> {content.description.replace(/<[^>]+>/g, '')}
+                              </div>
                             </div>
                           </div>
                         )}

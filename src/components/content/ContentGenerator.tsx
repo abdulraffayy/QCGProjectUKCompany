@@ -13,6 +13,7 @@ import { Switch } from "../ui/switch";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../ui/dialog";
 import { apiRequest } from "../lib/queryClient";
+import JoditEditor from "jodit-react";
 
 const ContentGenerator: React.FC = () => {
   const { toast } = useToast();
@@ -668,11 +669,77 @@ const ContentGenerator: React.FC = () => {
               
               <div>
                 <Label className="block text-sm font-medium text-neutral-700 mb-1">Additional Instructions (Optional)</Label>
-                <Textarea
-                  placeholder="Enter any additional instructions or requirements"
+                <JoditEditor
                   value={additionalInstructions}
-                  onChange={(e) => setAdditionalInstructions(e.target.value)}
-                  className="min-h-24"
+                  config={{
+                    toolbar: true,
+                    spellcheck: true,
+                    language: "en",
+                    height: 200,
+                    theme: "default",
+                    buttons: [
+                      "source",
+                      "|",
+                      "bold",
+                      "strikethrough",
+                      "underline",
+                      "italic",
+                      "|",
+                      "ul",
+                      "ol",
+                      "|",
+                      "outdent",
+                      "indent",
+                      "|",
+                      "font",
+                      "fontsize",
+                      "brush",
+                      "paragraph",
+                      "|",
+                      "image",
+                      "link",
+                      "table",
+                      "|",
+                      "align",
+                      "undo",
+                      "redo",
+                      "|",
+                      "hr",
+                      "eraser",
+                      "copyformat",
+                      "|",
+                      "fullsize"
+                    ],
+                    colors: {
+                      greyscale: [
+                        "#000000",
+                        "#434343",
+                        "#666666",
+                        "#999999",
+                        "#b7b7b7",
+                        "#cccccc",
+                        "#d9d9d9",
+                        "#efefef",
+                        "#f3f3f3",
+                        "#ffffff"
+                      ],
+                      palette: [
+                        "#980000",
+                        "#ff0000",
+                        "#ff9900",
+                        "#ffff00",
+                        "#00ff00",
+                        "#00ffff",
+                        "#4a86e8",
+                        "#0000ff",
+                        "#9900ff",
+                        "#ff00ff"
+                      ]
+                    },
+                    placeholder: "Enter any additional instructions or requirements"
+                  }}
+                  onBlur={(newContent) => setAdditionalInstructions(newContent)}
+                  onChange={(newContent) => {}}
                 />
               </div>
               
@@ -840,11 +907,77 @@ const ContentGenerator: React.FC = () => {
                             }}
                           />
                         </div>
-                        <Textarea
-                          placeholder="Enter or paste primary source material content"
+                        <JoditEditor
                           value={primarySourceMaterial}
-                          onChange={(e) => setPrimarySourceMaterial(e.target.value)}
-                          className="min-h-24"
+                          config={{
+                            toolbar: true,
+                            spellcheck: true,
+                            language: "en",
+                            height: 150,
+                            theme: "default",
+                            buttons: [
+                              "source",
+                              "|",
+                              "bold",
+                              "strikethrough",
+                              "underline",
+                              "italic",
+                              "|",
+                              "ul",
+                              "ol",
+                              "|",
+                              "outdent",
+                              "indent",
+                              "|",
+                              "font",
+                              "fontsize",
+                              "brush",
+                              "paragraph",
+                              "|",
+                              "image",
+                              "link",
+                              "table",
+                              "|",
+                              "align",
+                              "undo",
+                              "redo",
+                              "|",
+                              "hr",
+                              "eraser",
+                              "copyformat",
+                              "|",
+                              "fullsize"
+                            ],
+                            colors: {
+                              greyscale: [
+                                "#000000",
+                                "#434343",
+                                "#666666",
+                                "#999999",
+                                "#b7b7b7",
+                                "#cccccc",
+                                "#d9d9d9",
+                                "#efefef",
+                                "#f3f3f3",
+                                "#ffffff"
+                              ],
+                              palette: [
+                                "#980000",
+                                "#ff0000",
+                                "#ff9900",
+                                "#ffff00",
+                                "#00ff00",
+                                "#00ffff",
+                                "#4a86e8",
+                                "#0000ff",
+                                "#9900ff",
+                                "#ff00ff"
+                              ]
+                            },
+                            placeholder: "Enter or paste primary source material content"
+                          }}
+                          onBlur={(newContent) => setPrimarySourceMaterial(newContent)}
+                          onChange={(newContent) => {}}
                         />
                       </div>
                       <div>
@@ -985,11 +1118,77 @@ const ContentGenerator: React.FC = () => {
                             }}
                           />
                         </div>
-                        <Textarea
-                          placeholder="Enter or paste secondary source material content"
+                        <JoditEditor
                           value={secondarySourceMaterial}
-                          onChange={(e) => setSecondarySourceMaterial(e.target.value)}
-                          className="min-h-24"
+                          config={{
+                            toolbar: true,
+                            spellcheck: true,
+                            language: "en",
+                            height: 150,
+                            theme: "default",
+                            buttons: [
+                              "source",
+                              "|",
+                              "bold",
+                              "strikethrough",
+                              "underline",
+                              "italic",
+                              "|",
+                              "ul",
+                              "ol",
+                              "|",
+                              "outdent",
+                              "indent",
+                              "|",
+                              "font",
+                              "fontsize",
+                              "brush",
+                              "paragraph",
+                              "|",
+                              "image",
+                              "link",
+                              "table",
+                              "|",
+                              "align",
+                              "undo",
+                              "redo",
+                              "|",
+                              "hr",
+                              "eraser",
+                              "copyformat",
+                              "|",
+                              "fullsize"
+                            ],
+                            colors: {
+                              greyscale: [
+                                "#000000",
+                                "#434343",
+                                "#666666",
+                                "#999999",
+                                "#b7b7b7",
+                                "#cccccc",
+                                "#d9d9d9",
+                                "#efefef",
+                                "#f3f3f3",
+                                "#ffffff"
+                              ],
+                              palette: [
+                                "#980000",
+                                "#ff0000",
+                                "#ff9900",
+                                "#ffff00",
+                                "#00ff00",
+                                "#00ffff",
+                                "#4a86e8",
+                                "#0000ff",
+                                "#9900ff",
+                                "#ff00ff"
+                              ]
+                            },
+                            placeholder: "Enter or paste secondary source material content"
+                          }}
+                          onBlur={(newContent) => setSecondarySourceMaterial(newContent)}
+                          onChange={(newContent) => {}}
                         />
                       </div>
                     </div>

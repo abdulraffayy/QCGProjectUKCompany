@@ -1,33 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Textarea } from '../ui/textarea';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Textarea } from "../ui/textarea";
+import JoditEditor from "jodit-react";
 import {
   Play,
   Pause,
-  FileText,
-  Video,
-  BookOpen,
-  Clock,
-  User,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Edit,
+  Clock,
+  FileText,
+  Video,
+  BookOpen,
+  Settings,
   Eye,
   Download,
-  X
-} from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Label } from '../ui/label';
+  X,
+  User,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Label } from "../ui/label";
 
 interface ProcessingCenterItemProps {
   item: {
     id: string;
     title: string;
     type: string;
-    status: 'processing' | 'draft' | 'failed' | 'pending' | 'completed';
+    status: "processing" | "draft" | "failed" | "pending" | "completed";
     progress?: number;
     createdAt: string;
     createdBy: string;
@@ -37,29 +50,29 @@ interface ProcessingCenterItemProps {
     content?: string;
     metadata?: any;
   };
-  lessons?: any[]; 
+  lessons?: any[];
   onAction?: (action: string, itemId: string) => void;
 }
 
 const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   item,
   lessons = [],
-  onAction
+  onAction,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [status, setStatus] = useState(item.status || 'pending');
+  const [feedback, setFeedback] = useState("");
+  const [status, setStatus] = useState(item.status || "pending");
   const [statusLoading, setStatusLoading] = useState(false);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'processing':
+      case "processing":
         return <Clock className="h-4 w-4 text-blue-600 animate-pulse" />;
-      case 'draft':
+      case "draft":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'failed':
+      case "failed":
         return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'pending':
+      case "pending":
         return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
       default:
         return <Clock className="h-4 w-4 text-gray-600" />;
@@ -68,26 +81,26 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'processing':
-        return '';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800'; 
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+      case "processing":
+        return "";
+      case "completed":
+        return "bg-gray-100 text-gray-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'video':
+      case "video":
         return <Video className="h-4 w-4" />;
-      case 'document':
+      case "document":
         return <FileText className="h-4 w-4" />;
-      case 'course':
+      case "course":
         return <BookOpen className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
@@ -101,12 +114,12 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -115,16 +128,37 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     setStatusLoading(true);
     try {
       const res = await fetch(`/api/lessons_status/${item.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error('Failed to update status');
-      setStatus(newStatus as 'processing' | 'draft' | 'failed' | 'pending' | 'completed');
+      if (!res.ok) throw new Error("Failed to update status");
+      setStatus(
+        newStatus as "processing" | "draft" | "failed" | "pending" | "completed"
+      );
+      // Notify parent component about status change
+      if (onAction) {
+        onAction("status_changed", item.id);
+      }
     } catch (err) {
-    
+      console.error("Failed to update status:", err);
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const handleDeleteLesson = async () => {
+    try {
+      // Replace `/api/lessons/${item.id}` with your actual delete endpoint if different
+      const res = await fetch(`/api/lessons/${item.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete lesson");
+      // Optionally, call a parent callback to remove the item from the list
+      if (onAction) onAction("deleted", item.id);
+    } catch (err) {
+      // Optionally show an error message
+      alert("Could not delete lesson");
     }
   };
 
@@ -135,7 +169,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           <div className="flex items-start gap-3 flex-1">
             <div className="flex items-center gap-2">
               {getTypeIcon(item.type)}
-
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-lg truncate ">{item.title}</CardTitle>
@@ -149,9 +182,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                     <Clock className="h-3 w-3" />
                     {formatDate(item.createdAt)}
                   </span>
-                  {item.qaqfLevel && (
-                    <span>Level {item.qaqfLevel}</span>
-                  )}
+                  {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
                 </div>
               </CardDescription>
             </div>
@@ -183,7 +214,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               variant="ghost"
               size="icon"
               className="ml-1"
-              onClick={() => onAction && onAction('close', item.id)}
+              onClick={handleDeleteLesson}
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -191,7 +222,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           </div>
         </div>
 
-        {status === 'processing' && item.progress !== undefined && (
+        {status === "processing" && item.progress !== undefined && (
           <div className="mt-3">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>Processing...</span>
@@ -217,41 +248,150 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           <div className="space-y-4">
             {item.content && (
               <div>
+                <div className="space-y-4">
+             
+            </div>
                 <h4 className="font-medium mb-2">Content Preview</h4>
+                
                 <div className="bg-white p-3 rounded-md max-h-40 overflow-y-auto">
                   <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1">
-                    <div><b>Title:</b> {item.title || (item.metadata && item.metadata.title) || 'N/A'}</div>
-                    <div><b>Type:</b> {item.type || (item.metadata && item.metadata.type) || 'N/A'}</div>
-                    <div><b>Duration:</b> {(item.metadata && item.metadata.duration) || 'N/A'}</div>
-                    <div><b>QAQF Level:</b> {typeof item.qaqfLevel === 'number' ? item.qaqfLevel : (item.metadata && item.metadata.qaqfLevel ? item.metadata.qaqfLevel : 'N/A')}</div>
-                    <div><b>User ID:</b> {(item.metadata && item.metadata.userid) || 'N/A'}</div>
-                    <div><b>Course ID:</b> {(item.metadata && item.metadata.courseid) || 'N/A'}</div>
-                    <div><b>Description:</b> {item.description || (item.metadata && item.metadata.description) || ''}</div>
+                  <div>
+                <Label htmlFor="feedback">Feedback</Label>
+                <JoditEditor
+                  value={feedback}
+                  config={{
+                    toolbar: true,
+                    spellcheck: true,
+                    language: "en",
+                    height: 300,
+                    theme: "default",
+                    buttons: [
+                      "source",
+                      "|",
+                      "bold",
+                      "strikethrough",
+                      "underline",
+                      "italic",
+                      "|",
+                      "ul",
+                      "ol",
+                      "|",
+                      "outdent",
+                      "indent",
+                      "|",
+                      "font",
+                      "fontsize",
+                      "brush",
+                      "paragraph",
+                      "|",
+                      "image",
+                      "link",
+                      "table",
+                      "|",
+                      "align",
+                      "undo",
+                      "redo",
+                      "|",
+                      "hr",
+                      "eraser",
+                      "copyformat",
+                      "|",
+                      "fullsize"
+                    ],
+                    colors: {
+                      greyscale: [
+                        "#000000",
+                        "#434343",
+                        "#666666",
+                        "#999999",
+                        "#b7b7b7",
+                        "#cccccc",
+                        "#d9d9d9",
+                        "#efefef",
+                        "#f3f3f3",
+                        "#ffffff"
+                      ],
+                      palette: [
+                        "#980000",
+                        "#ff0000",
+                        "#ff9900",
+                        "#ffff00",
+                        "#00ff00",
+                        "#00ffff",
+                        "#4a86e8",
+                        "#0000ff",
+                        "#9900ff",
+                        "#ff00ff"
+                      ]
+                    }
+                  }}
+                  onBlur={(newContent) => setFeedback(newContent)}
+                  onChange={(newContent) => {}}
+                />
+              </div>
+                    <div>
+                      <b>Title:</b>{" "}
+                      {item.title ||
+                        (item.metadata && item.metadata.title) ||
+                        "N/A"}
+                    </div>
+                    <div>
+                      <b>Type:</b>{" "}
+                      {item.type ||
+                        (item.metadata && item.metadata.type) ||
+                        "N/A"}
+                    </div>
+                    <div>
+                      <b>Duration:</b>{" "}
+                      {(item.metadata && item.metadata.duration) || "N/A"}
+                    </div>
+                    <div>
+                      <b>QAQF Level:</b>{" "}
+                      {typeof item.qaqfLevel === "number"
+                        ? item.qaqfLevel
+                        : typeof (item as any).qaqflevel === "number"
+                        ? (item as any).qaqflevel
+                        : "N/A"}
+                    </div>
+                    <div>
+                      <b>User ID:</b>{" "}
+                      {(item.metadata && item.metadata.userid) || "N/A"}
+                    </div>
+                    <div>
+                      <b>Course ID:</b>{" "}
+                      {(item.metadata && item.metadata.courseid) || "N/A"}
+                    </div>
+                    <div>
+                      <b>Description:</b>{" "}
+                      {(item.description
+                        ? item.description.replace(/<[^>]+>/g, "")
+                        : item.metadata && item.metadata.description) || ""}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
-          
+
+            
+
             <div className="flex flex-wrap gap-2">
-              {status === 'completed' && (
-                <></>
-              )}
-              {status === 'processing' && (
+              {status === "completed" && <></>}
+              {status === "processing" && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleAction('cancel')}
+                  onClick={() => handleAction("cancel")}
                 >
                   <Pause className="mr-2 h-4 w-4" />
                   Cancel
                 </Button>
               )}
-              {status === 'failed' && (
+              {status === "failed" && (
                 <>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleAction('retry')}
+                    onClick={() => handleAction("retry")}
                   >
                     <Play className="mr-2 h-4 w-4" />
                     Retry
@@ -259,18 +399,15 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleAction('details')}
+                    onClick={() => handleAction("details")}
                   >
                     <AlertTriangle className="mr-2 h-4 w-4" />
                     Error Details
                   </Button>
                 </>
               )}
-              {status === 'pending' && (
-                <Button
-                  size="sm"
-                  onClick={() => handleAction('update')}
-                >
+              {status === "pending" && (
+                <Button size="sm" onClick={() => handleAction("update")}>
                   Update
                 </Button>
               )}

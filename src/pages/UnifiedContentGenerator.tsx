@@ -174,6 +174,62 @@ const UnifiedContentGenerator: React.FC = () => {
     const saved = localStorage.getItem('generatedItems');
     if (saved) {
       setGeneratedItems(JSON.parse(saved));
+    } else {
+      // Add some sample data for testing
+      const sampleItems: GeneratedItem[] = [
+        {
+          id: '1',
+          type: 'content',
+          title: 'Sample Processing Content',
+          description: 'This is a sample content that is currently processing',
+          qaqfLevel: 1,
+          qaqfComplianceScore: 85,
+          content: 'Sample content for testing',
+          createdAt: new Date().toISOString(),
+          createdBy: 'User',
+          status: 'processing',
+          progress: 45,
+          estimatedTime: '2 minutes',
+        },
+        {
+          id: '2',
+          type: 'course',
+          title: 'Sample Completed Course',
+          description: 'This is a sample course that has been completed',
+          qaqfLevel: 2,
+          qaqfComplianceScore: 92,
+          content: 'Sample course content for testing',
+          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          createdBy: 'User',
+          status: 'completed',
+        },
+        {
+          id: '3',
+          type: 'content',
+          title: 'Sample Failed Content',
+          description: 'This is a sample content that failed to process',
+          qaqfLevel: 1,
+          qaqfComplianceScore: 0,
+          content: 'Sample failed content for testing',
+          createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+          createdBy: 'User',
+          status: 'failed',
+        },
+        {
+          id: '4',
+          type: 'course',
+          title: 'Sample Pending Course',
+          description: 'This is a sample course that is pending',
+          qaqfLevel: 3,
+          qaqfComplianceScore: 78,
+          content: 'Sample pending course content for testing',
+          createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+          createdBy: 'User',
+          status: 'pending',
+        },
+      ];
+      setGeneratedItems(sampleItems);
+      localStorage.setItem('generatedItems', JSON.stringify(sampleItems));
     }
   }, []);
 
@@ -1216,7 +1272,15 @@ const UnifiedContentGenerator: React.FC = () => {
 
                   {/* Content Items */}
                   <div>
-                    {selectedCourse && courseLessons.length > 0 && courseLessons.map((lesson) => (
+                    {selectedCourse && courseLessons.length > 0 && courseLessons
+                      .filter(lesson => {
+                        // Apply status filter
+                        if (filterStatus !== 'all') {
+                          return lesson.status === filterStatus;
+                        }
+                        return true;
+                      })
+                      .map((lesson) => (
                       <ProcessingCenterItem
                         key={lesson.id}
                         item={{
@@ -1234,10 +1298,62 @@ const UnifiedContentGenerator: React.FC = () => {
                           metadata: lesson,
                         }}
                         onAction={(action, itemId) => {
-                          // You can handle close, etc. here if needed
+                          if (action === 'deleted') {
+                            setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                          } else if (action === 'status_changed') {
+                            // Refresh the data or update the item status
+                            // For now, we'll just trigger a re-render
+                            setGeneratedItems(prev => [...prev]);
+                          }
                         }}
                       />
                     ))}
+
+                    {/* Render generatedItems when no course is selected */}
+                    {!selectedCourse && getFilteredAndSortedItems().map((item) => (
+                      <ProcessingCenterItem
+                        key={item.id}
+                        item={{
+                          id: item.id,
+                          title: item.title,
+                          type: item.type,
+                          status: item.status,
+                          createdAt: item.createdAt,
+                          createdBy: item.createdBy,
+                          description: item.description,
+                          qaqfLevel: item.qaqfLevel,
+                          progress: item.progress,
+                          estimatedTime: item.estimatedTime,
+                          content: item.content,
+                          metadata: item.metadata,
+                        }}
+                        onAction={(action, itemId) => {
+                          if (action === 'deleted') {
+                            setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                          } else if (action === 'status_changed') {
+                            // Refresh the data or update the item status
+                            // For now, we'll just trigger a re-render
+                            setGeneratedItems(prev => [...prev]);
+                          }
+                        }}
+                      />
+                    ))}
+
+                    {/* Show message when no items to display */}
+                    {((selectedCourse && courseLessons.filter(lesson => 
+                      filterStatus === 'all' ? true : lesson.status === filterStatus
+                    ).length === 0) || 
+                    (!selectedCourse && getFilteredAndSortedItems().length === 0)) && (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No items found</p>
+                        <p className="text-sm">
+                          {filterStatus !== 'all' 
+                            ? `No items with status "${filterStatus}" found.` 
+                            : 'No content to display.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Summary Stats */}
