@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
-import { 
-  Play, 
-  Pause, 
-  FileText, 
-  Video, 
-  BookOpen, 
-  Clock, 
-  User, 
-  CheckCircle, 
+import {
+  Play,
+  Pause,
+  FileText,
+  Video,
+  BookOpen,
+  Clock,
+  User,
+  CheckCircle,
   XCircle,
   AlertTriangle,
   Edit,
@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
 
 interface ProcessingCenterItemProps {
   item: {
@@ -36,16 +37,19 @@ interface ProcessingCenterItemProps {
     content?: string;
     metadata?: any;
   };
+  lessons?: any[]; 
   onAction?: (action: string, itemId: string) => void;
 }
 
 const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   item,
+  lessons = [],
   onAction
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [feedback, setFeedback] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [status, setStatus] = useState(item.status || 'pending');
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -67,7 +71,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       case 'processing':
         return '';
       case 'completed':
-        return 'bg-gray-100 text-gray-800'; // changed from green to gray
+        return 'bg-gray-100 text-gray-800'; 
       case 'failed':
         return 'bg-red-100 text-red-800';
       case 'pending':
@@ -106,6 +110,24 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     });
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === status) return;
+    setStatusLoading(true);
+    try {
+      const res = await fetch(`/api/lessons_status/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      setStatus(newStatus as 'processing' | 'draft' | 'failed' | 'pending' | 'completed');
+    } catch (err) {
+    
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   return (
     <Card className="transition-all hover:shadow-md ">
       <CardHeader className="pb-3">
@@ -113,14 +135,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           <div className="flex items-start gap-3 flex-1">
             <div className="flex items-center gap-2">
               {getTypeIcon(item.type)}
-              {getStatusIcon(item.status)}
+
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-lg truncate ">{item.title}</CardTitle>
               <CardDescription className="mt-1">
-                {item.description && (
-                  <span className="block mb-1">{item.description}</span>
-                )}
                 <div className="flex items-center gap-4 text-xs">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
@@ -138,28 +157,19 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className={getStatusColor(item.status)}>
-              {item.status !== 'completed' ? item.status : ''}
-            </Badge>
             <Select
-              value={filterStatus}
-              onValueChange={(value) => {
-                if (value === 'delete') {
-                  if (onAction) onAction('delete', item.id);
-                  setFilterStatus('all');
-                } else {
-                  setFilterStatus(value);
-                }
-              }}
+              value={status}
+              onValueChange={handleStatusChange}
+              disabled={statusLoading}
             >
               <SelectTrigger className="w-32 border border-neutral-300 focus:ring-0 focus:border-neutral-300">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -181,14 +191,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           </div>
         </div>
 
-        {item.status === 'processing' && item.progress !== undefined && (
+        {status === 'processing' && item.progress !== undefined && (
           <div className="mt-3">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>Processing...</span>
               <span>{Math.round(item.progress)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${item.progress}%` }}
               />
@@ -208,44 +218,27 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             {item.content && (
               <div>
                 <h4 className="font-medium mb-2">Content Preview</h4>
-                <div className="bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
-                  <pre className="text-sm whitespace-pre-wrap">
-                    {item.content.length > 500 
-                      ? `${item.content.substring(0, 500)}...`
-                      : item.content
-                    }
-                  </pre>
+                <div className="bg-white p-3 rounded-md max-h-40 overflow-y-auto">
+                  <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1">
+                    <div><b>Title:</b> {item.title || (item.metadata && item.metadata.title) || 'N/A'}</div>
+                    <div><b>Type:</b> {item.type || (item.metadata && item.metadata.type) || 'N/A'}</div>
+                    <div><b>Duration:</b> {(item.metadata && item.metadata.duration) || 'N/A'}</div>
+                    <div><b>QAQF Level:</b> {typeof item.qaqfLevel === 'number' ? item.qaqfLevel : (item.metadata && item.metadata.qaqfLevel ? item.metadata.qaqfLevel : 'N/A')}</div>
+                    <div><b>User ID:</b> {(item.metadata && item.metadata.userid) || 'N/A'}</div>
+                    <div><b>Course ID:</b> {(item.metadata && item.metadata.courseid) || 'N/A'}</div>
+                    <div><b>Description:</b> {item.description || (item.metadata && item.metadata.description) || ''}</div>
+                  </div>
                 </div>
               </div>
             )}
-
-            {item.metadata && (
-              <div>
-                <h4 className="font-medium mb-2">Metadata</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {Object.entries(item.metadata).map(([key, value]) => (
-                    <div key={key} className="flex justify-between">
-                      <span className="text-muted-foreground capitalize">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
-                      </span>
-                      <span>{String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
+          
             <div className="flex flex-wrap gap-2">
-              {item.status === 'completed' && (
-                <>
-                 
-                
-                </>
+              {status === 'completed' && (
+                <></>
               )}
-
-              {item.status === 'processing' && (
-                <Button 
-                  size="sm" 
+              {status === 'processing' && (
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => handleAction('cancel')}
                 >
@@ -253,19 +246,18 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                   Cancel
                 </Button>
               )}
-
-              {item.status === 'failed' && (
+              {status === 'failed' && (
                 <>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => handleAction('retry')}
                   >
                     <Play className="mr-2 h-4 w-4" />
                     Retry
                   </Button>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => handleAction('details')}
                   >
@@ -274,19 +266,15 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                   </Button>
                 </>
               )}
-
-              {item.status === 'pending' && (
-                <Button 
-                  size="sm" 
-                  onClick={() => handleAction('start')}
+              {status === 'pending' && (
+                <Button
+                  size="sm"
+                  onClick={() => handleAction('update')}
                 >
-                  <Play className="mr-2 h-4 w-4" />
-                  Start Processing
+                  Update
                 </Button>
               )}
             </div>
-
-           
           </div>
         </CardContent>
       )}

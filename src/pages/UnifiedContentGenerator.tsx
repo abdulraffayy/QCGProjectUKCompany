@@ -1216,15 +1216,25 @@ const UnifiedContentGenerator: React.FC = () => {
 
                   {/* Content Items */}
                   <div>
-                    {getFilteredAndSortedItems().map((item) => (
+                    {selectedCourse && courseLessons.length > 0 && courseLessons.map((lesson) => (
                       <ProcessingCenterItem
-                        key={item.id}
-                        item={item}
+                        key={lesson.id}
+                        item={{
+                          id: lesson.id,
+                          title: lesson.title,
+                          type: lesson.type || '',
+                          status: lesson.status || 'pending',
+                          createdAt: lesson.createddate || '',
+                          createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
+                          description: lesson.description || '',
+                          qaqfLevel: lesson.level || undefined,
+                          progress: undefined,
+                          estimatedTime: undefined,
+                          content: JSON.stringify(lesson, null, 2), // for Content Preview
+                          metadata: lesson,
+                        }}
                         onAction={(action, itemId) => {
-                          if (action === 'close') {
-                            setGeneratedItems(prev => prev.filter(i => i.id !== itemId));
-                          }
-                          // You can handle other actions here if needed
+                          // You can handle close, etc. here if needed
                         }}
                       />
                     ))}
