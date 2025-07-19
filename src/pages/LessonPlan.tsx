@@ -38,7 +38,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "../components/ui/dialog";
-import { Editor } from '@tinymce/tinymce-react';
+// import { Editor } from '@tinymce/tinymce-react';
 import JoditEditor from 'jodit-react';
 import { Skeleton } from '../components/ui/skeleton';
 
@@ -85,6 +85,12 @@ const LessonPlanPage: React.FC = () => {
     width: '100%',
   };
 
+  // Utility function to strip HTML tags from text
+  const stripHtml = (html: string) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
+
 
 
   // Define a type for Week
@@ -125,6 +131,7 @@ const LessonPlanPage: React.FC = () => {
   const [editModuleDialogDescription, setEditModuleDialogDescription] = useState("");
   const [dummyCourse, setDummyCourse] = useState<any>("")
   const [refreshWeeks, setRefreshWeeks] = useState<number>(0);
+  const [refreshModules, setRefreshModules] = useState<number>(0);
 
   // For intra-week drag and drop - REMOVED since we only allow left-to-right dragging
 
@@ -379,6 +386,13 @@ const LessonPlanPage: React.FC = () => {
     }
   }, [selectedCourse]);
 
+  // Refresh modules when refreshModules state changes
+  useEffect(() => {
+    if (selectedCourse && refreshModules > 0) {
+      fetchModulesFromAPI(selectedCourse);
+    }
+  }, [refreshModules, selectedCourse]);
+
   // Remove localStorage logic for modules and weeks since assignments are now backend-driven
 
   // Drag and drop handlers
@@ -503,6 +517,7 @@ const LessonPlanPage: React.FC = () => {
   };
   const handleEditModuleDialogSave = async () => {
     if (editModuleDialogWeekId !== null && editModuleDialogModuleId !== null) {
+      // Update local weeks state immediately for better UX
       setWeeks(weeks => {
         const currentWeeks = weeks || [];
         return currentWeeks.map(week => {
@@ -514,7 +529,7 @@ const LessonPlanPage: React.FC = () => {
                   ? {
                     ...mod,
                     title: editModuleDialogTitle,
-                    description: editModuleDialogDescription,
+                    description: stripHtml(editModuleDialogDescription), // Strip HTML tags
                     courseid: editModuleDialogCourseId,
                     userid: editModuleDialogUserId,
                     type: editModuleDialogType,
@@ -529,6 +544,7 @@ const LessonPlanPage: React.FC = () => {
           return week;
         });
       });
+      
       // Call the API to update the module in the backend
       await handleEditModuleApi(editModuleDialogModuleId);
     }
@@ -548,9 +564,10 @@ const LessonPlanPage: React.FC = () => {
   // Intra-week drag handlers - REMOVED since we only allow left-to-right dragging
 
   const handleAddModule = async (newModule: any) => {
-    // Prepare the module data with courseid
+    // Prepare the module data with courseid and stripped description
     const moduleWithCourseId = {
       ...newModule,
+      description: stripHtml(newModule.description), // Strip HTML tags
       courseid: selectedCourse,
     };
     try {
@@ -587,7 +604,7 @@ const LessonPlanPage: React.FC = () => {
     const updatedModule = {
       title: editModuleDialogTitle,
       script: editModuleDialogScript,
-      description: editModuleDialogDescription, // <-- ADD THIS
+      description: stripHtml(editModuleDialogDescription), // Strip HTML tags
       courseid: editModuleDialogCourseId,
       userid: editModuleDialogUserId,
       type: editModuleDialogType,
@@ -602,8 +619,66 @@ const LessonPlanPage: React.FC = () => {
         body: JSON.stringify(updatedModule),
       });
       if (!res.ok) throw new Error('Failed to update module');
-      // Optionally, refresh modules from API here
-      await fetchModulesFromAPI(selectedCourse);
+
+      // Fetch the updated module from the server to get the correct data structure
+      const updatedModuleRes = await fetch(`/api/lessons/${id}`);
+      if (updatedModuleRes.ok) {
+        const serverUpdatedModule = await updatedModuleRes.json();
+        console.log('Server returned updated module:', serverUpdatedModule);
+        
+        // Update the modules state with server data
+        setModules(prevModules => 
+          prevModules.map(module => 
+            module.id === id 
+              ? { ...module, ...serverUpdatedModule }
+              : module
+          )
+        );
+        
+        // Also update assignedModules state with server data
+        setAssignedModules(prev => {
+          const newAssigned = { ...prev };
+          Object.keys(newAssigned).forEach(weekIdStr => {
+            const weekId = parseInt(weekIdStr);
+            if (newAssigned[weekId]) {
+              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
+                mod.id === id
+                  ? { ...mod, ...serverUpdatedModule }
+                  : mod
+              );
+            }
+          });
+          return newAssigned;
+        });
+      } else {
+        // Fallback: update with payload if server fetch fails
+        setModules(prevModules => 
+          prevModules.map(module => 
+            module.id === id 
+              ? { ...module, ...updatedModule }
+              : module
+          )
+        );
+        
+        setAssignedModules(prev => {
+          const newAssigned = { ...prev };
+          Object.keys(newAssigned).forEach(weekIdStr => {
+            const weekId = parseInt(weekIdStr);
+            if (newAssigned[weekId]) {
+              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
+                mod.id === id
+                  ? { ...mod, ...updatedModule }
+                  : mod
+              );
+            }
+          });
+          return newAssigned;
+        });
+      }
+      
+      // Force a re-render to ensure UI updates
+      setRefreshModules(prev => prev + 1);
+      
       toast({ title: "Success", description: "Module updated!" });
     } catch (err) {
       toast({ title: "Error", description: "Could not update module", variant: "destructive" });
@@ -898,7 +973,7 @@ const LessonPlanPage: React.FC = () => {
         type: rightSideEditForm.type,
         duration: rightSideEditForm.duration,
         qaqfLevel: rightSideEditForm.qaqfLevel,
-        description: rightSideEditForm.description,
+        description: stripHtml(rightSideEditForm.description), // Strip HTML tags
         level: rightSideEditForm.level,             // include level
         courseid: rightSideEditForm.courseid,
         userid: rightSideEditForm.userid,
@@ -913,22 +988,65 @@ const LessonPlanPage: React.FC = () => {
 
       if (!res.ok) throw new Error('Failed to update module');
 
-      // Update the module in assignedModules state
-      setAssignedModules(prev => {
-        const newAssigned = { ...prev };
-        Object.keys(newAssigned).forEach(weekIdStr => {
-          const weekId = parseInt(weekIdStr);
-          if (newAssigned[weekId]) {
-            newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
-              mod.id === rightSideEditModule.id
-                ? { ...mod, ...payload }
-                : mod
-            );
-          }
+      // Fetch the updated module from the server to get the correct data structure
+      const updatedModuleRes = await fetch(`/api/lessons/${rightSideEditModule.id}`);
+      if (updatedModuleRes.ok) {
+        const updatedModule = await updatedModuleRes.json();
+        console.log('Server returned updated module:', updatedModule);
+        
+        // Update the module in assignedModules state with server data
+        setAssignedModules(prev => {
+          const newAssigned = { ...prev };
+          Object.keys(newAssigned).forEach(weekIdStr => {
+            const weekId = parseInt(weekIdStr);
+            if (newAssigned[weekId]) {
+              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
+                mod.id === rightSideEditModule.id
+                  ? { ...mod, ...updatedModule }
+                  : mod
+              );
+            }
+          });
+          return newAssigned;
         });
-        return newAssigned;
-      });
 
+        // Also update the main modules state with server data
+        setModules(prevModules => 
+          prevModules.map(module => 
+            module.id === rightSideEditModule.id 
+              ? { ...module, ...updatedModule }
+              : module
+          )
+        );
+      } else {
+        // Fallback: update with payload if server fetch fails
+        setAssignedModules(prev => {
+          const newAssigned = { ...prev };
+          Object.keys(newAssigned).forEach(weekIdStr => {
+            const weekId = parseInt(weekIdStr);
+            if (newAssigned[weekId]) {
+              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
+                mod.id === rightSideEditModule.id
+                  ? { ...mod, ...payload }
+                  : mod
+              );
+            }
+          });
+          return newAssigned;
+        });
+
+        setModules(prevModules => 
+          prevModules.map(module => 
+            module.id === rightSideEditModule.id 
+              ? { ...module, ...payload }
+              : module
+          )
+        );
+      }
+
+      // Force a re-render to ensure UI updates
+      setRefreshModules(prev => prev + 1);
+      
       toast({ title: "Success", description: "Module updated!" });
       setRightSideEditDialogOpen(false);
       setRightSideEditModule(null);
@@ -1127,12 +1245,12 @@ const LessonPlanPage: React.FC = () => {
     }
   }, [editModuleDialogOpen]);
 
-  const fetchWeekModules = async (weekId) => {
+  const fetchWeekModules = async (weekId: number) => {
     const res = await fetch(`/api/weeklessons/week/${weekId}`);
     const data = await res.json();
     setWeekModules(prev => ({
       ...prev,
-      [weekId]: data.map(item => item.module)
+      [weekId]: data.map((item: any) => item.module)
     })); ``
   };
 
@@ -1159,7 +1277,7 @@ const LessonPlanPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState(() => localStorage.getItem('lessonFilterStatus') || 'all');
 
   // When filter changes
-  const handleFilterChange = (status) => {
+  const handleFilterChange = (status: string) => {
     setFilterStatus(status);
     localStorage.setItem('lessonFilterStatus', status);
   };
@@ -1469,13 +1587,13 @@ const LessonPlanPage: React.FC = () => {
                             </Button>
                           </h6>
                           <span className="flex gap-1 items-center">
-                            {content.qaqfLevel && (
+                            {(content.qaqfLevel || content.level || content.qaqf_level) && (
                               <span className={
-                                content.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" :
-                                  content.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
+                                (content.qaqfLevel || content.level || content.qaqf_level) <= 3 ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" :
+                                  (content.qaqfLevel || content.level || content.qaqf_level) <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
                                     "bg-violet-100 text-violet-800 px-2 py-1 rounded"
                               }>
-                                QAQF {content.qaqfLevel}: {QAQF_LEVELS[content.qaqfLevel]}
+                                QAQF {content.qaqfLevel || content.level || content.qaqf_level}: {QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}
                               </span>
                             )}
                           </span>
@@ -1495,9 +1613,9 @@ const LessonPlanPage: React.FC = () => {
                               <div><b>Duration:</b> {content.duration}</div>
                               <div>
                                 <b>QAQF Level:</b>{" "}
-                                {content.qaqfLevel && QAQF_LEVELS[content.qaqfLevel]
-                                  ? `QAQF ${content.qaqfLevel}: ${QAQF_LEVELS[content.qaqfLevel]}`
-                                  : "N/A"}
+                                {(content.qaqfLevel || content.level || content.qaqf_level) && QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]
+                                  ? `QAQF ${content.qaqfLevel || content.level || content.qaqf_level}: ${QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}`
+                                  : `N/A (qaqfLevel: ${content.qaqfLevel}, level: ${content.level}, qaqf_level: ${content.qaqf_level})`}
                               </div>
                               <div><b>User ID:</b> {content.userid}</div>
                               <div><b>Course ID:</b> {content.courseid}</div>
@@ -2359,13 +2477,13 @@ function DraggableModule({ content, setSelectedModuleForView }: { content: any, 
       <div className="flex justify-between mb-1">
         <h6 className="font-medium">{content.title}</h6>
         <span className="flex gap-1 items-center">
-          {content.qaqfLevel && (
+          {(content.qaqfLevel || content.level || content.qaqf_level) && (
             <span className={
-              content.qaqfLevel <= 3 ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" :
-                content.qaqfLevel <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
+              (content.qaqfLevel || content.level || content.qaqf_level) <= 3 ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" :
+                (content.qaqfLevel || content.level || content.qaqf_level) <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
                   "bg-violet-100 text-violet-800 px-2 py-1 rounded"
             }>
-              QAQF {content.qaqfLevel}: {QAQF_LEVELS[content.qaqfLevel]}
+              QAQF {content.qaqfLevel || content.level || content.qaqf_level}: {QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}
             </span>
           )}
           {/* 👁️ Eye icon for view */}
@@ -2420,7 +2538,7 @@ function AssignedModule({ module, onEdit, onDelete, setSelectedModuleForView }: 
         <div className="flex-1">
           <div className="font-medium text-sm">{module.title}</div>
           <div className="text-neutral-500 text-xs">
-            {module.type} • {module.duration} • QAQF {module.qaqfLevel}: {QAQF_LEVELS[module.qaqfLevel]}
+            {module.type} • {module.duration} • QAQF {module.qaqfLevel || module.level || module.qaqf_level}: {QAQF_LEVELS[module.qaqfLevel || module.level || module.qaqf_level]}
           </div>
         </div>
         {/* Remove icon buttons from here */}

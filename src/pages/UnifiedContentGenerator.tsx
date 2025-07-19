@@ -252,21 +252,22 @@ const UnifiedContentGenerator: React.FC = () => {
     fetchCourses();
   }, []);
 
-  useEffect(() => {
+  const fetchLessons = async () => {
     if (!selectedCourse) {
       setCourseLessons([]);
       return;
     }
-    const fetchLessons = async () => {
-      try {
-        const res = await fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`);
-        if (!res.ok) throw new Error('Failed to fetch lessons');
-        const data = await res.json();
-        setCourseLessons(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setCourseLessons([]);
-      }
-    };
+    try {
+      const res = await fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`);
+      if (!res.ok) throw new Error('Failed to fetch lessons');
+      const data = await res.json();
+      setCourseLessons(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setCourseLessons([]);
+    }
+  };
+
+  useEffect(() => {
     fetchLessons();
   }, [selectedCourse]);
 
@@ -1297,13 +1298,16 @@ const UnifiedContentGenerator: React.FC = () => {
                           content: JSON.stringify(lesson, null, 2), // for Content Preview
                           metadata: lesson,
                         }}
-                        onAction={(action, itemId) => {
+                        onAction={async (action, itemId) => {
                           if (action === 'deleted') {
                             setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
                           } else if (action === 'status_changed') {
                             // Refresh the data or update the item status
                             // For now, we'll just trigger a re-render
                             setGeneratedItems(prev => [...prev]);
+                          } else if (action === 'updated') {
+                            // Refresh the lessons data when an item is updated
+                            await fetchLessons();
                           }
                         }}
                       />
@@ -1327,12 +1331,15 @@ const UnifiedContentGenerator: React.FC = () => {
                           content: item.content,
                           metadata: item.metadata,
                         }}
-                        onAction={(action, itemId) => {
+                        onAction={async (action, itemId) => {
                           if (action === 'deleted') {
                             setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
                           } else if (action === 'status_changed') {
                             // Refresh the data or update the item status
                             // For now, we'll just trigger a re-render
+                            setGeneratedItems(prev => [...prev]);
+                          } else if (action === 'updated') {
+                            // For generated items, refresh the list
                             setGeneratedItems(prev => [...prev]);
                           }
                         }}
@@ -1386,17 +1393,100 @@ const UnifiedContentGenerator: React.FC = () => {
         <TabsContent value="library" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Module Library</CardTitle>
-              <CardDescription>Access your approved and saved content</CardDescription>
+              <CardTitle className="flex items-center space-x-2">
+                <History className="h-5 w-5" />
+                <span>Module Library</span>
+              </CardTitle>
+              <CardDescription>Access your approved and completed content</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Your module library will display approved content here.
-                  Save content from the Processing Center to build your library.
-                </p>
-              </div>
+              {(() => {
+                // Get completed items from generated items
+                const completedGeneratedItems = generatedItems.filter(item => item.status === 'completed');
+                
+                // Get completed items from course lessons
+                const completedCourseLessons = courseLessons.filter(lesson => lesson.status === 'completed');
+                
+                // Combine all completed items
+                const allCompletedItems = [
+                  ...completedGeneratedItems.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    type: item.type,
+                    status: item.status,
+                    createdAt: item.createdAt,
+                    createdBy: item.createdBy,
+                    description: item.description,
+                    qaqfLevel: item.qaqfLevel,
+                    progress: item.progress,
+                    estimatedTime: item.estimatedTime,
+                    content: item.content,
+                    metadata: item.metadata,
+                  })),
+                  ...completedCourseLessons.map(lesson => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    type: lesson.type || '',
+                    status: lesson.status || 'completed',
+                    createdAt: lesson.createddate || '',
+                    createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
+                    description: lesson.description || '',
+                    qaqfLevel: lesson.level || undefined,
+                    progress: undefined,
+                    estimatedTime: undefined,
+                    content: JSON.stringify(lesson, null, 2),
+                    metadata: lesson,
+                  }))
+                ];
+
+                if (allCompletedItems.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium text-muted-foreground">No completed content yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        Complete items in the Processing Center to see them here in your Module Library.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <span className="font-medium">Completed Items ({allCompletedItems.length})</span>
+                      </div>
+                      
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {allCompletedItems.map((item) => (
+                        <ProcessingCenterItem
+                          key={item.id}
+                          item={item}
+                          onAction={async (action, itemId) => {
+                            if (action === 'deleted') {
+                              // Remove from both lists
+                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                              setCourseLessons(prev => prev.filter(lesson => lesson.id !== itemId));
+                            } else if (action === 'status_changed') {
+                              // Refresh the data
+                              setGeneratedItems(prev => [...prev]);
+                              await fetchLessons();
+                            } else if (action === 'updated') {
+                              // Refresh both lists
+                              setGeneratedItems(prev => [...prev]);
+                              await fetchLessons();
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
