@@ -7,8 +7,11 @@ import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Separator } from '../components/ui/separator';
 import { Label } from '../components/ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogPortal, AlertDialogOverlay } from '../components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../components/ui/dialog';
 import MarkingCriteria from '../components/assessment/MarkingCriteria';
 import MarkingCriteriaModule from '../components/assessment/MarkingCriteriaModule';
+import JoditEditor from 'jodit-react';
 
 const AssessmentInProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("assessments");
@@ -18,6 +21,44 @@ const AssessmentInProgressPage: React.FC = () => {
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [courseAssessments, setCourseAssessments] = useState<any[]>([]);
+  
+  // State for assessment components
+  const [selectedContentType, setSelectedContentType] = useState<string>('assessment');
+  const [selectedSubject, setSelectedSubject] = useState<string>('General');
+  const [selectedQaqfLevel, setSelectedQaqfLevel] = useState<number>(3);
+
+  // State for delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<any>(null);
+
+  // State for Add Lesson dialog
+  const [addLessonDialogOpen, setAddLessonDialogOpen] = useState(false);
+  const [newLessonForm, setNewLessonForm] = useState({
+    title: "",
+    type: "lecture",
+    duration: "",
+    qaqfLevel: 1,
+    description: "",
+    courseid: "",
+    userid: "",
+  });
+
+  // State for Edit Lesson dialog
+  const [editLessonDialogOpen, setEditLessonDialogOpen] = useState(false);
+  const [editLessonForm, setEditLessonForm] = useState({
+    id: null as number | null,
+    title: "",
+    type: "lecture",
+    duration: "",
+    qaqfLevel: 1,
+    description: "",
+    courseid: "",
+    userid: "",
+  });
+
+  // State for Preview dialog
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewAssessment, setPreviewAssessment] = useState<any>(null);
 
   // Fetch courses on component mount
   useEffect(() => {
@@ -49,6 +90,130 @@ const AssessmentInProgressPage: React.FC = () => {
       console.error('Failed to fetch course assessments:', err);
       setCourseAssessments([]);
     }
+  };
+
+  // Delete assessment function
+  const handleDeleteAssessment = async (assessmentId: number) => {
+    try {
+      const response = await fetch(`/api/lessons/${assessmentId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete assessment');
+      
+      // Refresh the assessments list
+      await fetchCourseAssessments();
+      
+      // Close the dialog
+      setDeleteDialogOpen(false);
+      setAssessmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  // Open delete confirmation dialog
+  const openDeleteDialog = (assessment: any) => {
+    setAssessmentToDelete(assessment);
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle adding new lesson
+  const handleAddLesson = async () => {
+    try {
+      const payload = {
+        ...newLessonForm,
+        courseid: selectedCourse,
+        userid: "1", // You might want to get this from user context
+      };
+
+      const response = await fetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Failed to add lesson');
+
+      // Refresh the assessments list
+      await fetchCourseAssessments();
+      
+      // Reset form and close dialog
+      setNewLessonForm({
+        title: "",
+        type: "lecture",
+        duration: "",
+        qaqfLevel: 1,
+        description: "",
+        courseid: "",
+        userid: "",
+      });
+      setAddLessonDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding lesson:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  // Handle editing lesson
+  const handleEditLesson = async () => {
+    if (!editLessonForm.id) return;
+    
+    try {
+      const payload = {
+        ...editLessonForm,
+        courseid: selectedCourse,
+        userid: "1", // You might want to get this from user context
+      };
+
+      const response = await fetch(`/api/lessons/${editLessonForm.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Failed to update lesson');
+
+      // Refresh the assessments list
+      await fetchCourseAssessments();
+      
+      // Reset form and close dialog
+      setEditLessonForm({
+        id: null,
+        title: "",
+        type: "lecture",
+        duration: "",
+        qaqfLevel: 1,
+        description: "",
+        courseid: "",
+        userid: "",
+      });
+      setEditLessonDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating lesson:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  // Open edit dialog
+  const openEditDialog = (assessment: any) => {
+    setEditLessonForm({
+      id: assessment.id,
+      title: assessment.title || "",
+      type: assessment.type || "lecture",
+      duration: assessment.duration || "",
+      qaqfLevel: assessment.qaqfLevel || assessment.level || 1,
+      description: assessment.description || "",
+      courseid: assessment.courseid || "",
+      userid: assessment.userid || "",
+    });
+    setEditLessonDialogOpen(true);
+  };
+
+  // Open preview dialog
+  const openPreviewDialog = (assessment: any) => {
+    setPreviewAssessment(assessment);
+    setPreviewDialogOpen(true);
   };
 
   useEffect(() => {
@@ -95,6 +260,46 @@ const AssessmentInProgressPage: React.FC = () => {
       progress: 90,
       deadline: "June 8, 2025",
       questionsCount: 5,
+      status: "pending_approval"
+    },
+    {
+      id: 5,
+      title: "Basic Anatomy Quiz",
+      type: "quiz",
+      qaqfLevel: 1,
+      progress: 95,
+      deadline: "June 5, 2025",
+      questionsCount: 10,
+      status: "in_review"
+    },
+    {
+      id: 6,
+      title: "Advanced Surgical Techniques",
+      type: "practical",
+      qaqfLevel: 8,
+      progress: 30,
+      deadline: "June 25, 2025",
+      questionsCount: 12,
+      status: "draft"
+    },
+    {
+      id: 7,
+      title: "Medical Research Thesis",
+      type: "assignment",
+      qaqfLevel: 9,
+      progress: 20,
+      deadline: "July 1, 2025",
+      questionsCount: 1,
+      status: "draft"
+    },
+    {
+      id: 8,
+      title: "Intermediate Pharmacology",
+      type: "exam",
+      qaqfLevel: 2,
+      progress: 75,
+      deadline: "June 12, 2025",
+      questionsCount: 25,
       status: "pending_approval"
     }
   ];
@@ -230,9 +435,9 @@ const AssessmentInProgressPage: React.FC = () => {
                     </span>
                   )}
                 </h3>
-                <Button>
+                <Button onClick={() => setAddLessonDialogOpen(true)}>
                   <span className="material-icons text-sm mr-2">add</span>
-                  Add Assessment
+                  Add Lesson
                 </Button>
               </div>
               
@@ -289,17 +494,46 @@ const AssessmentInProgressPage: React.FC = () => {
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between pt-0">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(assessment)}>
                           <span className="material-icons text-sm mr-1">edit</span>
                           Continue
                         </Button>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openPreviewDialog(assessment)}>
                             <span className="material-icons text-sm">preview</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600">
-                            <span className="material-icons text-sm">delete</span>
-                          </Button>
+                          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 text-red-600"
+                                onClick={() => openDeleteDialog(assessment)}
+                              >
+                                <span className="material-icons text-sm">delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogPortal>
+                              <AlertDialogOverlay className="bg-transparent" />
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this assessment? ID: {assessmentToDelete?.id}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>No</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteAssessment(assessmentToDelete?.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Yes
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialogPortal>
+                          </AlertDialog>
                         </div>
                       </CardFooter>
                     </Card>
@@ -375,13 +609,235 @@ const AssessmentInProgressPage: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="marking-criteria">
-          <MarkingCriteria />
+          <MarkingCriteria 
+            contentType={selectedContentType}
+            subject={selectedSubject}
+            qaqfLevel={selectedQaqfLevel}
+          />
         </TabsContent>
         
         <TabsContent value="quality-assurance">
-          <MarkingCriteriaModule />
+          <MarkingCriteriaModule 
+            contentType={selectedContentType}
+            subject={selectedSubject}
+            qaqfLevel={selectedQaqfLevel}
+          />
         </TabsContent>
       </Tabs>
+
+      {/* Add Lesson Dialog */}
+      <Dialog open={addLessonDialogOpen} onOpenChange={setAddLessonDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Lesson</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {/* Type input */}
+            <select
+              className="border rounded px-2 py-1 w-full"
+              value={newLessonForm.type}
+              onChange={e => setNewLessonForm(f => ({ ...f, type: e.target.value }))}
+            >
+              <option value="lecture">Lecture</option>
+              <option value="practical">Practical</option>
+              <option value="seminar">Seminar</option>
+              <option value="activity">Activity</option>
+              <option value="case_study">Case Study</option>
+            </select>
+
+            {/* Title input */}
+            <input
+              className="border rounded px-2 py-1 w-full"
+              value={newLessonForm.title}
+              onChange={e => setNewLessonForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Title"
+              autoFocus
+            />
+            
+            <div className="flex gap-2">
+              <input
+                className="border rounded px-2 py-1 flex-1"
+                value={newLessonForm.duration}
+                onChange={e => setNewLessonForm(f => ({ ...f, duration: e.target.value }))}
+                placeholder="Duration (e.g. 60 min)"
+              />
+              <select
+                className="border rounded px-2 py-1 flex-1"
+                value={newLessonForm.qaqfLevel}
+                onChange={e => setNewLessonForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Description textarea */}
+            <textarea
+              className="border rounded px-2 py-1 w-full"
+              value={newLessonForm.description}
+              onChange={e => setNewLessonForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Description"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleAddLesson}>Add</Button>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Lesson Dialog */}
+      <Dialog open={editLessonDialogOpen} onOpenChange={setEditLessonDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Lesson</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {/* Type input */}
+            <select
+              className="border rounded px-2 py-1 w-full"
+              value={editLessonForm.type}
+              onChange={e => setEditLessonForm(f => ({ ...f, type: e.target.value }))}
+            >
+              <option value="lecture">Assessment Type</option>
+              <option value="practical">Quiz</option>
+              <option value="seminar">Exam</option>
+              <option value="activity">Assignment</option>
+              <option value="case_study">Practical</option>
+            </select>
+            {/* Title input */}
+            <input
+              className="border rounded px-2 py-1 w-full"
+              value={editLessonForm.title}
+              onChange={e => setEditLessonForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Title"
+            />
+            <div className="flex gap-2">
+              <input
+                className="border rounded px-2 py-1 flex-1"
+                value={editLessonForm.duration}
+                onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))}
+                placeholder="Duration (e.g. 60 min)"
+              />
+              <select
+                className="border rounded px-2 py-1 flex-1"
+                value={editLessonForm.qaqfLevel}
+                onChange={e => setEditLessonForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                ))}
+              </select>
+            </div>
+
+            <JoditEditor
+              value={editLessonForm.description}
+              config={{ readonly: false, height: 250, width: '100%' }}
+              tabIndex={1}
+              onBlur={newContent => setEditLessonForm(f => ({ ...f, description: newContent }))}
+              onChange={() => { }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleEditLesson}>Save</Button>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assessment Preview</DialogTitle>
+          </DialogHeader>
+          {previewAssessment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">{previewAssessment.title}</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="capitalize">{previewAssessment.type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">QAQF Level:</span>
+                      <span>Level {previewAssessment.qaqfLevel || previewAssessment.level}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Progress:</span>
+                      <span>{previewAssessment.progress || 0}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <Badge 
+                        className={
+                          previewAssessment.status === 'draft' ? "bg-amber-100 text-amber-800" : 
+                          previewAssessment.status === 'in_review' ? "bg-blue-100 text-blue-800" : 
+                          "bg-purple-100 text-purple-800"
+                        }
+                      >
+                        {previewAssessment.status === 'draft' ? "Draft" : 
+                         previewAssessment.status === 'in_review' ? "In Review" : 
+                         "Pending Approval"}
+                      </Badge>
+                    </div>
+                    {previewAssessment.deadline && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Deadline:</span>
+                        <span>{previewAssessment.deadline}</span>
+                      </div>
+                    )}
+                    {previewAssessment.questionsCount && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Questions:</span>
+                        <span>{previewAssessment.questionsCount}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Progress</h4>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                    <div 
+                      className={`h-2.5 rounded-full ${
+                        (previewAssessment.progress || 0) < 40 ? "bg-amber-500" : 
+                        (previewAssessment.progress || 0) < 80 ? "bg-blue-500" : 
+                        "bg-green-500"
+                      }`} 
+                      style={{ width: `${previewAssessment.progress || 0}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {previewAssessment.progress || 0}% complete
+                  </p>
+                </div>
+              </div>
+              
+              {previewAssessment.description && (
+                <div>
+                  <h4 className="font-semibold mb-2">Description</h4>
+                  <div className="bg-gray-50 p-3 rounded border">
+                    <p className="text-sm">{previewAssessment.description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

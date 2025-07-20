@@ -1919,7 +1919,7 @@ const LessonPlanPage: React.FC = () => {
       <Dialog open={editModuleDialogOpen} onOpenChange={setEditModuleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Module</DialogTitle>
+            <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {/* Course ID input */}
@@ -2002,7 +2002,7 @@ const LessonPlanPage: React.FC = () => {
       <Dialog open={addModuleDialogOpen} onOpenChange={setAddModuleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add License</DialogTitle>
+            <DialogTitle>Add Lesson</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {/* Type input */}
