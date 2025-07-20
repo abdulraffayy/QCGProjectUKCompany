@@ -1481,7 +1481,7 @@ const LessonPlanPage: React.FC = () => {
                 value={selectedCourse}
                 onValueChange={(courseId) => setSelectedCourse(courseId)}
               >
-                <SelectTrigger className="w-[250px]">
+                <SelectTrigger className="w-[250px]  focus:ring-0 focus:ring-offset-0">
                   <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>

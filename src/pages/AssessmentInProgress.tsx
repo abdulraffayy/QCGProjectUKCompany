@@ -161,9 +161,13 @@ const AssessmentInProgressPage: React.FC = () => {
     
     try {
       const payload = {
-        ...editLessonForm,
         courseid: selectedCourse,
+        title: editLessonForm.title,
+        level: editLessonForm.qaqfLevel, // Convert qaqfLevel to level for API
+        description: editLessonForm.description,
         userid: "1", // You might want to get this from user context
+        duration: editLessonForm.duration,
+        type: editLessonForm.type,
       };
 
       const response = await fetch(`/api/lessons/${editLessonForm.id}`, {
@@ -382,7 +386,7 @@ const AssessmentInProgressPage: React.FC = () => {
                 </div>  
                 <div className="flex flex-wrap gap-3"> 
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                       <SelectValue placeholder="Select a course" />
                     </SelectTrigger>
                     <SelectContent>
@@ -510,8 +514,8 @@ const AssessmentInProgressPage: React.FC = () => {
                                 className="h-8 w-8 p-0 text-red-600"
                                 onClick={() => openDeleteDialog(assessment)}
                               >
-                                <span className="material-icons text-sm">delete</span>
-                              </Button>
+                            <span className="material-icons text-sm">delete</span>
+                          </Button>
                             </AlertDialogTrigger>
                             <AlertDialogPortal>
                               <AlertDialogOverlay className="bg-transparent" />
@@ -638,11 +642,11 @@ const AssessmentInProgressPage: React.FC = () => {
               value={newLessonForm.type}
               onChange={e => setNewLessonForm(f => ({ ...f, type: e.target.value }))}
             >
-              <option value="lecture">Lecture</option>
+              <option value="lecture">Assessment Type</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
               <option value="practical">Practical</option>
-              <option value="seminar">Seminar</option>
-              <option value="activity">Activity</option>
-              <option value="case_study">Case Study</option>
             </select>
 
             {/* Title input */}
@@ -703,11 +707,11 @@ const AssessmentInProgressPage: React.FC = () => {
               value={editLessonForm.type}
               onChange={e => setEditLessonForm(f => ({ ...f, type: e.target.value }))}
             >
-              <option value="lecture">Assessment Type</option>
-              <option value="practical">Quiz</option>
-              <option value="seminar">Exam</option>
-              <option value="activity">Assignment</option>
-              <option value="case_study">Practical</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="practical">Practical</option>
+              <option value="case_study">Case Study</option>
             </select>
             {/* Title input */}
             <input
@@ -825,16 +829,16 @@ const AssessmentInProgressPage: React.FC = () => {
                 <div>
                   <h4 className="font-semibold mb-2">Description</h4>
                   <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-sm">{previewAssessment.description}</p>
+                    <div 
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{ __html: previewAssessment.description }}
+                    />
                   </div>
                 </div>
               )}
             </div>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

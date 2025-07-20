@@ -1255,7 +1255,7 @@ const UnifiedContentGenerator: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
                       <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                           <SelectValue placeholder="Select a course" />
                         </SelectTrigger>
                         <SelectContent>
