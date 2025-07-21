@@ -399,7 +399,7 @@ const AssessmentInProgressPage: React.FC = () => {
                   </Select>
                 
                   <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                       <SelectValue placeholder="Assessment Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -412,7 +412,7 @@ const AssessmentInProgressPage: React.FC = () => {
                   </Select>
                   
                   <Select value={filterLevel} onValueChange={setFilterLevel}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                       <SelectValue placeholder="QAQF Level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -506,38 +506,9 @@ const AssessmentInProgressPage: React.FC = () => {
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openPreviewDialog(assessment)}>
                             <span className="material-icons text-sm">preview</span>
                           </Button>
-                          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 text-red-600"
-                                onClick={() => openDeleteDialog(assessment)}
-                              >
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => openDeleteDialog(assessment)}>
                             <span className="material-icons text-sm">delete</span>
                           </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogPortal>
-                              <AlertDialogOverlay className="bg-transparent" />
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this assessment? ID: {assessmentToDelete?.id}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>No</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteAssessment(assessmentToDelete?.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Yes
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialogPortal>
-                          </AlertDialog>
                         </div>
                       </CardFooter>
                     </Card>
@@ -839,6 +810,29 @@ const AssessmentInProgressPage: React.FC = () => {
             </div>
           )}
           <DialogFooter>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Assessment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this assessment? ID: {assessmentToDelete?.id}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => handleDeleteAssessment(assessmentToDelete?.id)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes
+            </Button>
+            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>
+              No
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
