@@ -2273,7 +2273,7 @@ const LessonPlanPage: React.FC = () => {
 
       {/* Right Side Module Edit Dialog */}
       <Dialog open={rightSideEditDialogOpen} onOpenChange={setRightSideEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[980px] w-full">
           <DialogHeader>
             <DialogTitle>Edit Module</DialogTitle>
           </DialogHeader>

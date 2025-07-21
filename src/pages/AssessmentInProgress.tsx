@@ -667,7 +667,7 @@ const AssessmentInProgressPage: React.FC = () => {
 
       {/* Edit Lesson Dialog */}
       <Dialog open={editLessonDialogOpen} onOpenChange={setEditLessonDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[990px] w-full">
           <DialogHeader>
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
@@ -711,7 +711,7 @@ const AssessmentInProgressPage: React.FC = () => {
 
             <JoditEditor
               value={editLessonForm.description}
-              config={{ readonly: false, height: 250, width: '100%' }}
+              config={{ readonly: false, height: 600, width: '100%' }}
               tabIndex={1}
               onBlur={newContent => setEditLessonForm(f => ({ ...f, description: newContent }))}
               onChange={() => { }}

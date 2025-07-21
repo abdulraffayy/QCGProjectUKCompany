@@ -376,7 +376,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                 <div className="bg-white p-3 rounded-md max-h-40 overflow-y-auto">
                   <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1">
                     {isEditing ? (
-                      <div className="space-y-4">
+                      <div className="space-y-4 h-[900px]">
                         {/* Jodit Editor at the top */}
                         <div className="border rounded-md overflow-hidden">
                           <div className="bg-blue-50 px-3 py-2 border-b">
