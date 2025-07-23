@@ -81,6 +81,31 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [isDeleted, setIsDeleted] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Add state for card height (for resizing)
+  const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const isResizing = React.useRef(false);
+
+  // Mouse event handlers for resizing (vertical only)
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      if (isResizing.current && cardRef.current) {
+        const rect = cardRef.current.getBoundingClientRect();
+        const newHeight = e.clientY - rect.top;
+        if (newHeight > 100) setCardHeight(newHeight); // minimum height
+      }
+    }
+    function handleMouseUp() {
+      isResizing.current = false;
+    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "processing":
@@ -262,351 +287,330 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   }
 
   return (
-    <Card className="transition-all hover:shadow-md ">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="flex items-center gap-2">
-              {getTypeIcon(item.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg truncate ">{item.title}</CardTitle>
-              <CardDescription className="mt-1">
-                <div className="flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    {item.createdBy}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatDate(item.createdAt)}
-                  </span>
-                  {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
-                </div>
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select
-              value={status}
-              onValueChange={handleStatusChange}
-              disabled={statusLoading}
-            >
-              <SelectTrigger className="w-32 border border-neutral-300 focus:ring-0 focus:border-neutral-300">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-1"
-              onClick={handleDeleteLesson}
-              disabled={deleteLoading || isDeleted}
-              aria-label="Close"
-            >
-              {deleteLoading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-              ) : (
-                <X className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {status === "processing" && item.progress !== undefined && (
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Processing...</span>
-              <span>{Math.round(item.progress)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${item.progress}%` }}
-              />
-            </div>
-            {item.estimatedTime && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Estimated time remaining: {item.estimatedTime}
-              </p>
-            )}
-          </div>
-        )}
-      </CardHeader>
-
-      {isExpanded && (
-        <CardContent className="pt-0 border-t">
-          <div className="space-y-4">
-            {item.content && (
-              <div>
-                <div className="space-y-4">
-             
-            </div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Content Preview</h4>
-                  <div className="flex gap-2">
-                    {!isEditing ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="bg-white p-3 rounded-md max-h-40 overflow-y-auto">
-                  <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1">
-                    {isEditing ? (
-                      <div className="space-y-4 h-[900px]">
-                        {/* Jodit Editor at the top */}
-                        <div className="border rounded-md overflow-hidden">
-                          <div className="bg-blue-50 px-3 py-2 border-b">
-                            <Label className="text-sm font-medium text-blue-800">Content Editor</Label>
-                          </div>
-                          <JoditEditor
-                            value={editableData.description}
-                            config={{
-                              toolbar: true,
-                              spellcheck: true,
-                              language: "en",
-                              height: 150,
-                              theme: "default",
-                              buttons: [
-                                "source",
-                                "|",
-                                "bold",
-                                "strikethrough",
-                                "underline",
-                                "italic",
-                                "|",
-                                "ul",
-                                "ol",
-                                "|",
-                                "outdent",
-                                "indent",
-                                "|",
-                                "font",
-                                "fontsize",
-                                "brush",
-                                "paragraph",
-                                "|",
-                                "image",
-                                "link",
-                                "table",
-                                "|",
-                                "align",
-                                "undo",
-                                "redo",
-                                "|",
-                                "hr",
-                                "eraser",
-                                "copyformat",
-                                "|",
-                                "fullsize"
-                              ],
-                              colors: {
-                                greyscale: [
-                                  "#000000",
-                                  "#434343",
-                                  "#666666",
-                                  "#999999",
-                                  "#b7b7b7",
-                                  "#cccccc",
-                                  "#d9d9d9",
-                                  "#efefef",
-                                  "#f3f3f3",
-                                  "#ffffff"
-                                ],
-                                palette: [
-                                  "#980000",
-                                  "#ff0000",
-                                  "#ff9900",
-                                  "#ffff00",
-                                  "#00ff00",
-                                  "#00ffff",
-                                  "#4a86e8",
-                                  "#0000ff",
-                                  "#9900ff",
-                                  "#ff00ff"
-                                ]
-                              }
-                            }}
-                            onBlur={(newContent) => setEditableData(prev => ({ ...prev, description: newContent }))}
-                            onChange={(newContent) => {}}
-                          />
-                        </div>
-
-                        {/* Form fields in a grid layout */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="title" className="text-sm font-medium text-gray-700">Title</Label>
-                            <Input
-                              id="title"
-                              value={editableData.title}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, title: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="type" className="text-sm font-medium text-gray-700">Type</Label>
-                            <Input
-                              id="type"
-                              value={editableData.type}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, type: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration</Label>
-                            <Input
-                              id="duration"
-                              value={editableData.duration}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, duration: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="qaqfLevel" className="text-sm font-medium text-gray-700">QAQF Level</Label>
-                            <Input
-                              id="qaqfLevel"
-                              value={editableData.qaqfLevel}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, qaqfLevel: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="userid" className="text-sm font-medium text-gray-700">User ID</Label>
-                            <Input
-                              id="userid"
-                              value={editableData.userid}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, userid: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="courseid" className="text-sm font-medium text-gray-700">Course ID</Label>
-                            <Input
-                              id="courseid"
-                              value={editableData.courseid}
-                              onChange={(e) => setEditableData(prev => ({ ...prev, courseid: e.target.value }))}
-                              className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex justify-end gap-2 pt-2 border-t">
-                         
-                          <Button
-                            size="sm"
-                            onClick={handleSaveChanges}
-                            disabled={saveLoading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            {saveLoading ? "Updating..." : "Update"}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <b>Title:</b>{" "}
-                          {item.title ||
-                            (item.metadata && item.metadata.title) ||
-                            "N/A"}
-                        </div>
-                        <div>
-                          <b>Type:</b>{" "}
-                          {item.type ||
-                            (item.metadata && item.metadata.type) ||
-                            "N/A"}
-                        </div>
-                        <div>
-                          <b>Duration:</b>{" "}
-                          {(item.metadata && item.metadata.duration) || "N/A"}
-                        </div>
-                        <div>
-                          <b>QAQF Level:</b>{" "}
-                          {typeof item.qaqfLevel === "number"
-                            ? item.qaqfLevel
-                            : typeof (item as any).qaqflevel === "number"
-                            ? (item as any).qaqflevel
-                            : "N/A"}
-                        </div>
-                        <div>
-                          <b>User ID:</b>{" "}
-                          {(item.metadata && item.metadata.userid) || "N/A"}
-                        </div>
-                        <div>
-                          <b>Course ID:</b>{" "}
-                          {(item.metadata && item.metadata.courseid) || "N/A"}
-                        </div>
-                        <div>
-                          <b>Description:</b>
-                          <div 
-                            className="mt-2 p-3 bg-white border rounded-md"
-                            dangerouslySetInnerHTML={{ 
-                              __html: item.description || (item.metadata && item.metadata.description) || "" 
-                            }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+    <div
+      className="relative group"
+      style={{ minHeight: cardHeight || undefined, width: '100%' }}
+      ref={cardRef}
+    >
+      <Card
+        className="transition-all hover:shadow-md w-full"
+        style={{ minHeight: cardHeight, height: cardHeight, width: '100%' }}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="flex items-center gap-2">
+                {getTypeIcon(item.type)}
               </div>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {status === "completed" && <></>}
-              {status === "processing" && (
-                <></>
-              )}
-              {status === "failed" && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAction("retry")}
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    Retry
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAction("details")}
-                  >
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    Error Details
-                  </Button>
-                </>
-              )}
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-lg truncate ">{item.title}</CardTitle>
+                <CardDescription className="mt-1">
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {item.createdBy}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDate(item.createdAt)}
+                    </span>
+                    {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
+                  </div>
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-1"
+                onClick={handleDeleteLesson}
+                disabled={deleteLoading || isDeleted}
+                aria-label="Close"
+              >
+                {deleteLoading ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
-        </CardContent>
-      )}
-    </Card>
+
+          {status === "processing" && item.progress !== undefined && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Processing...</span>
+                <span>{Math.round(item.progress)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${item.progress}%` }}
+                />
+              </div>
+              {item.estimatedTime && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Estimated time remaining: {item.estimatedTime}
+                </p>
+              )}
+            </div>
+          )}
+        </CardHeader>
+
+        {isExpanded && (
+          <CardContent className="pt-0 border-t ">
+            <div className="space-y-4">
+              {item.content && (
+                <div>
+                  <div className="space-y-4">
+             
+                </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">Content Preview</h4>
+                    <div className="flex gap-2">
+                      {!isEditing ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <></>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-md" style={{ overflow: 'visible', maxHeight: 'none' }}>
+                    <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1" style={{ overflow: 'visible', maxHeight: 'none' }}>
+                      {isEditing ? (
+                        <div className="space-y-4 h-[900px]">
+                          {/* Jodit Editor at the top */}
+                          <div className="border rounded-md overflow-hidden">
+                            <div className="bg-blue-50 px-3 py-2 border-b">
+                              <Label className="text-sm font-medium text-blue-800">Content Editor</Label>
+                            </div>
+                            <JoditEditor
+                              value={editableData.description}
+                              config={{
+                                toolbar: true,
+                                spellcheck: true,
+                                language: "en",
+                                height: 150,
+                                theme: "default",
+                                buttons: [
+                                  "source",
+                                  "|",
+                                  "bold",
+                                  "strikethrough",
+                                  "underline",
+                                  "italic",
+                                  "|",
+                                  "ul",
+                                  "ol",
+                                  "|",
+                                  "outdent",
+                                  "indent",
+                                  "|",
+                                  "font",
+                                  "fontsize",
+                                  "brush",
+                                  "paragraph",
+                                  "|",
+                                  "image",
+                                  "link",
+                                  "table",
+                                  "|",
+                                  "align",
+                                  "undo",
+                                  "redo",
+                                  "|",
+                                  "hr",
+                                  "eraser",
+                                  "copyformat",
+                                  "|",
+                                  "fullsize"
+                                ],
+                                colors: {
+                                  greyscale: [
+                                    "#000000",
+                                    "#434343",
+                                    "#666666",
+                                    "#999999",
+                                    "#b7b7b7",
+                                    "#cccccc",
+                                    "#d9d9d9",
+                                    "#efefef",
+                                    "#f3f3f3",
+                                    "#ffffff"
+                                  ],
+                                  palette: [
+                                    "#980000",
+                                    "#ff0000",
+                                    "#ff9900",
+                                    "#ffff00",
+                                    "#00ff00",
+                                    "#00ffff",
+                                    "#4a86e8",
+                                    "#0000ff",
+                                    "#9900ff",
+                                    "#ff00ff"
+                                  ]
+                                }
+                              }}
+                              onBlur={(newContent) => setEditableData(prev => ({ ...prev, description: newContent }))}
+                              onChange={(newContent) => {}}
+                            />
+                          </div>
+
+                          {/* Form fields in a grid layout */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="title" className="text-sm font-medium text-gray-700">Title</Label>
+                              <Input
+                                id="title"
+                                value={editableData.title}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, title: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="type" className="text-sm font-medium text-gray-700">Type</Label>
+                              <Input
+                                id="type"
+                                value={editableData.type}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, type: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration</Label>
+                              <Input
+                                id="duration"
+                                value={editableData.duration}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, duration: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="qaqfLevel" className="text-sm font-medium text-gray-700">QAQF Level</Label>
+                              <Input
+                                id="qaqfLevel"
+                                value={editableData.qaqfLevel}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, qaqfLevel: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="userid" className="text-sm font-medium text-gray-700">User ID</Label>
+                              <Input
+                                id="userid"
+                                value={editableData.userid}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, userid: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="courseid" className="text-sm font-medium text-gray-700">Course ID</Label>
+                              <Input
+                                id="courseid"
+                                value={editableData.courseid}
+                                onChange={(e) => setEditableData(prev => ({ ...prev, courseid: e.target.value }))}
+                                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                           
+                            <Button
+                              size="sm"
+                              onClick={handleSaveChanges}
+                              disabled={saveLoading}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              {saveLoading ? "Updating..." : "Update"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <b>Title:</b>{" "}
+                            {item.title ||
+                              (item.metadata && item.metadata.title) ||
+                              "N/A"}
+                          </div>
+                          <div>
+                            <b>Type:</b>{" "}
+                            {item.type ||
+                              (item.metadata && item.metadata.type) ||
+                              "N/A"}
+                          </div>
+                          <div>
+                            <b>Duration:</b>{" "}
+                            {(item.metadata && item.metadata.duration) || "N/A"}
+                          </div>
+                          <div>
+                            <b>QAQF Level:</b>{" "}
+                            {typeof item.qaqfLevel === "number"
+                              ? item.qaqfLevel
+                              : typeof (item as any).qaqflevel === "number"
+                              ? (item as any).qaqflevel
+                              : "N/A"}
+                          </div>
+                          <div>
+                            <b>User ID:</b>{" "}
+                            {(item.metadata && item.metadata.userid) || "N/A"}
+                          </div>
+                          <div>
+                            <b>Course ID:</b>{" "}
+                            {(item.metadata && item.metadata.courseid) || "N/A"}
+                          </div>
+                          <div>
+                            <b>Description:</b>
+                            <div 
+                              className="mt-2 p-3 bg-white border rounded-md"
+                              dangerouslySetInnerHTML={{ 
+                                __html: item.description || (item.metadata && item.metadata.description) || "" 
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+            </div>
+          </CardContent>
+        )}
+      </Card>
+      {/* Resize handle visually on the border, not inside the card */}
+      <div
+        className="absolute left-0 bottom-0 w-full h-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-ns-resize z-20"
+        onMouseDown={e => {
+          e.preventDefault();
+          isResizing.current = true;
+        }}
+      >
+        <div className="w-8 h-1 rounded bg-gray-400" />
+      </div>
+    </div>
   );
 };
 

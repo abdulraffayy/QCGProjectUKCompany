@@ -9,69 +9,161 @@ import { useToast } from "../hooks/use-toast";
 import EnhancedVerificationPanel from "../components/verification/EnhancedVerificationPanel";
 import BritishStandardsVerifier from "../components/verification/BritishStandardsVerifier";
 import CourseWorkflowView from "../components/content/CourseWorkflowView";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const VerificationPage: React.FC = () => {
   const { toast } = useToast();
-  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+  const [selectedContent, setSelectedContent] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Get content data for verification
-  const { data: contents = [], isLoading: isLoadingContents } = useQuery<Content[]>({
-    queryKey: ['/api/content'],
-  });
-  
-  // Filter contents by verification status "pending"
-  const pendingContents = contents.filter(
-    content => content.verification_status === 'pending'
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [isLoadingLessons, setIsLoadingLessons] = useState(false);
+  // Use only React state for statusCache (no localStorage)
+  const [statusCache, setStatusCache] = useState<{ [lessonId: number]: string }>({});
+  const [statusValue, setStatusValue] = useState('pending');
+
+  // QAQF_LEVELS for lesson detail card
+  const QAQF_LEVELS: { [key: number]: string } = {
+    1: 'Entry',
+    2: 'Basic',
+    3: 'Foundation',
+    4: 'Intermediate',
+    5: 'Advanced',
+    6: 'Specialist',
+    7: 'Professional',
+    8: 'Expert',
+    9: 'Master',
+  };
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        if (!res.ok) throw new Error('Failed to fetch courses');
+        const data = await res.json();
+        setCourses(Array.isArray(data) ? data : []);
+      } catch (err) {
+        // Optionally show a toast
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Set statusValue to the lesson's status (if available) whenever a new lesson is selected
+  React.useEffect(() => {
+    if (selectedContent && selectedContent.status) {
+      setStatusValue(selectedContent.status);
+    } else {
+      setStatusValue('pending');
+    }
+  }, [selectedContent]);
+
+  // When a lesson is selected, set the dropdown to its cached status (or 'pending')
+  React.useEffect(() => {
+    if (selectedContent && selectedContent.id) {
+      setStatusValue(statusCache[selectedContent.id] || 'pending');
+    } else {
+      setStatusValue('pending');
+    }
+  }, [selectedContent, statusCache]);
+
+  // When lessons are loaded for a course, set all their statuses to the backend value (or 'pending' if missing)
+  React.useEffect(() => {
+    if (lessons && lessons.length > 0) {
+      setStatusCache(() => {
+        const updated: { [lessonId: number]: string } = {};
+        lessons.forEach((lesson: any) => {
+          updated[lesson.id] = lesson.status || 'pending';
+        });
+        return updated;
+      });
+    }
+  }, [lessons]);
+
+  // Fetch lessons/licenses for the selected course
+  React.useEffect(() => {
+    if (!selectedCourse) {
+      setLessons([]);
+      return;
+    }
+    setIsLoadingLessons(true);
+    fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`)
+      .then(res => res.json())
+      .then(data => {
+        setLessons(Array.isArray(data) ? data : []);
+        setIsLoadingLessons(false);
+      })
+      .catch(() => {
+        setLessons([]);
+        setIsLoadingLessons(false);
+      });
+  }, [selectedCourse]);
+
+  // Filter lessons by search term
+  const filteredLessons = lessons.filter(lesson =>
+    (lesson.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lesson.description && lesson.description.toLowerCase().includes(searchTerm.toLowerCase())))
   );
-  
-  // Filter contents based on search term
-  const filteredContents = pendingContents.filter(content => 
-    content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (content.description && content.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-  
+
   // Handle verification completion
   const handleVerificationComplete = (status: string, feedback: string) => {
     if (!selectedContent) return;
-    
     toast({
       title: "Verification Complete",
       description: `Content "${selectedContent.title}" has been marked as ${status}.`
     });
-    
     // In a real implementation, you would update the content status in the database
     console.log(`Content ${selectedContent.id} verification status updated to ${status}`);
     console.log('Feedback:', feedback);
   };
-  
+
   // Handle British standards compliance check completion
   const handleComplianceChecked = (isCompliant: boolean, issues: string[]) => {
     if (!selectedContent) return;
-    
     toast({
       title: isCompliant ? "Standards Compliance Verified" : "Standards Compliance Issues Found",
-      description: isCompliant 
+      description: isCompliant
         ? "The content meets British standards requirements."
         : `The content has ${issues.length} British standards compliance issues.`,
       variant: isCompliant ? "default" : "destructive"
     });
-    
     // In a real implementation, you would update the content compliance status
     console.log(`Content ${selectedContent.id} compliance status: ${isCompliant ? 'compliant' : 'non-compliant'}`);
     console.log('Issues:', issues);
   };
-  
+
+  // Update status and cache on change
+  async function updateLessonStatus(lessonId: number, status: string) {
+    try {
+      const res = await fetch(`/api/lessons_status/${lessonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      setStatusCache(prev => ({ ...prev, [lessonId]: status }));
+      setStatusValue(status); // Ensure UI updates immediately
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update lesson status.',
+        variant: 'destructive',
+      });
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold text-neutral-800">Content Verification</h2>
           <p className="text-neutral-600 mt-1">
             Verify content against QAQF and British standards
           </p>
         </div>
-        
+
         <div className="flex items-center">
           <Input
             placeholder="Search content..."
@@ -81,53 +173,77 @@ const VerificationPage: React.FC = () => {
           />
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Content Selection Panel */}
         <div className="lg:col-span-1">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle className="text-lg">
-                Pending Content
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">
+                  Pending Content
+                </CardTitle>
+                <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                  <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
+                    <SelectValue placeholder="Select a course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map(course => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
-            
             <CardContent>
-              {isLoadingContents ? (
+              {!selectedCourse ? (
+                <div className="text-center py-8 border rounded-md">
+                  <span className="material-icons text-4xl text-neutral-300">inventory_2</span>
+                  <p className="mt-2 text-neutral-500">Select a course to view its licenses/lessons</p>
+                </div>
+              ) : isLoadingLessons ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                 </div>
-              ) : filteredContents.length === 0 ? (
+              ) : filteredLessons.length === 0 ? (
                 <div className="text-center py-8 border rounded-md">
                   <span className="material-icons text-4xl text-neutral-300">inventory_2</span>
-                  <p className="mt-2 text-neutral-500">No pending content available for verification</p>
+                  <p className="mt-2 text-neutral-500">No licenses/lessons found for this course</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                  {filteredContents.map(content => (
-                    <div 
-                      key={content.id}
+                  {filteredLessons.map(lesson => (
+                    <div
+                      key={lesson.id}
                       className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                        selectedContent?.id === content.id 
-                          ? 'bg-primary text-primary-foreground' 
+                        selectedContent?.id === lesson.id
+                          ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-neutral-50'
                       }`}
-                      onClick={() => setSelectedContent(content)}
+                      onClick={() => setSelectedContent(lesson)}
                     >
-                      <h3 className={`font-medium ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-800'}`}>
-                        {content.title}
-                      </h3>
-                      <p className={`text-sm mt-1 ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>
-                        {content.type.replace('_', ' ')}
-                      </p>
+                      <div className="flex justify-between items-center">
+                        <h3 className={`font-medium ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-800'}`}>{lesson.title}</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 ml-1"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setSelectedContent(lesson);
+                          }}
+                          title="View details"
+                        >
+                          <span className="material-icons text-base">visibility</span>
+                        </Button>
+                      </div>
+                      <p className={`text-sm mt-1 ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{lesson.type ? lesson.type.replace('_', ' ') : ''}</p>
                       <div className="flex items-center mt-2">
-                        <span className={`text-xs ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>
-                          QAQF Level {content.qaqf_level}
-                        </span>
-                        <span className="mx-2 text-neutral-300">•</span>
-                        <span className={`text-xs ${selectedContent?.id === content.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>
-                          {new Date(content.created_at).toLocaleDateString()}
-                        </span>
+                        <span className={`text-xs ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{lesson.level ? `QAQF Level ${lesson.level}` : ''}</span>
+                        {lesson.createddate && <><span className="mx-2 text-neutral-300">•</span>
+                        <span className={`text-xs ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{new Date(lesson.createddate).toLocaleDateString()}</span></>}
                       </div>
                     </div>
                   ))}
@@ -136,8 +252,7 @@ const VerificationPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
-        {/* Verification Panels */}
+        {/* Lesson Detail Card Panel */}
         <div className="lg:col-span-2">
           {selectedContent ? (
             <Tabs defaultValue="content">
@@ -148,10 +263,98 @@ const VerificationPage: React.FC = () => {
               </TabsList>
               
               <TabsContent value="content" className="mt-6">
-                <CourseWorkflowView 
-                  contentId={selectedContent.id}
-                  showWorkflowButtons={false}
-                />
+                {selectedContent ? (
+                  <div className="bg-neutral-50 border rounded shadow p-4 animate-slideDown relative w-full">
+                    <div className="flex flex-col items-start mb-2">
+                      <div><b>Title:</b> {selectedContent.title}</div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div><b>Type:</b> {selectedContent.type}</div>
+                      <div><b>Duration:</b> {selectedContent.duration}</div>
+                      <div>
+                        <b>QAQF Level:</b>{" "}
+                        {(selectedContent.qaqfLevel || selectedContent.level || selectedContent.qaqf_level) && QAQF_LEVELS[selectedContent.qaqfLevel || selectedContent.level || selectedContent.qaqf_level]
+                          ? `QAQF ${selectedContent.qaqfLevel || selectedContent.level || selectedContent.qaqf_level}: ${QAQF_LEVELS[selectedContent.qaqfLevel || selectedContent.level || selectedContent.qaqf_level]}`
+                          : `N/A (qaqfLevel: ${selectedContent.qaqfLevel}, level: ${selectedContent.level}, qaqf_level: ${selectedContent.qaqf_level})`}
+                      </div>
+                      <div><b>User ID:</b> {selectedContent.userid}</div>
+                      <div><b>Course ID:</b> {selectedContent.courseid}</div>
+                      <div>
+                        <b>Description:</b>
+                        <div
+                          className="mt-2 p-3 bg-white border rounded-md"
+                          dangerouslySetInnerHTML={{
+                            __html: selectedContent.description || (selectedContent.metadata && selectedContent.metadata.description) || ''
+                          }}
+                        />
+                      </div>
+                      {/* Action Row: Button and Dropdowns */}
+                      <div className="flex flex-wrap items-center justify-end gap-4 mt-8">
+                        <Button variant="outline">British Standard</Button>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">QAQF Level</span>
+                          <Select>
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="1–3" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="2">2</SelectItem>
+                              <SelectItem value="3">3</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Status</span>
+                          <Select
+                            value={statusValue}
+                            onValueChange={(value) => {
+                              if (selectedContent?.id) {
+                                updateLessonStatus(selectedContent.id, value);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="verified">Verified</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="unverified">Unverified</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Score</span>
+                          <Select>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Select score metric" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="clarity">Clarity (1 - 4)</SelectItem>
+                              <SelectItem value="completeness">Completeness (1 - 4)</SelectItem>
+                              <SelectItem value="accuracy">Accuracy (1 - 4)</SelectItem>
+                              <SelectItem value="engagement">Engagement (1 - 4)</SelectItem>
+                              <SelectItem value="qaqf_alignment">QAQF Alignment (1 - 4)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    <style>{`
+                      @keyframes slideDown {
+                        from { opacity: 0; transform: translateY(-10px);}
+                        to { opacity: 1; transform: translateY(0);}
+                      }
+                      .animate-slideDown {
+                        animation: slideDown 0.2s ease;
+                      }
+                    `}</style>
+                  </div>
+                ) : (
+                  <div className="text-center text-neutral-400">No lesson selected.</div>
+                )}
               </TabsContent>
               
               <TabsContent value="qaqf" className="mt-6">

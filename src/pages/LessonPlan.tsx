@@ -1620,8 +1620,14 @@ const LessonPlanPage: React.FC = () => {
                               <div><b>User ID:</b> {content.userid}</div>
                               <div><b>Course ID:</b> {content.courseid}</div>
                               <div>
-                                <b>Description:</b> {content.description.replace(/<[^>]+>/g, '')}
-                              </div>
+                            <b>Description:</b>
+                            <div 
+                              className="mt-2 p-3 bg-white border rounded-md"
+                              dangerouslySetInnerHTML={{ 
+                                __html: content.description || (content.metadata && content.metadata.description) || "" 
+                              }}
+                            />
+                          </div>
                             </div>
                           </div>
                         )}
@@ -1981,13 +1987,15 @@ const LessonPlanPage: React.FC = () => {
               placeholder="Desciption"
               rows={3}
             />
-            <JoditEditor
-              value={editModuleDialogDescription}
-              config={{ readonly: false, height: 250, width: '100%' }}
-              tabIndex={1}
-              onBlur={newContent => setEditModuleDialogDescription(newContent)}
-              onChange={() => { }}
-            />
+            <div className="overflow-auto" style={{ maxHeight: 250 }}>
+              <JoditEditor
+                value={editModuleDialogDescription}
+                config={{ readonly: false, height: 250, width: '100%' }}
+                tabIndex={1}
+                onBlur={newContent => setEditModuleDialogDescription(newContent)}
+                onChange={() => { }}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditModuleDialogSave}>Save</Button>
@@ -2045,14 +2053,16 @@ const LessonPlanPage: React.FC = () => {
               </select>
             </div>
             {/* Replace textarea with JoditEditor for Script */}
-            <JoditEditor
-              ref={editor}
-              value={newModuleDescription}
-              config={{ readonly: false, height: 250, width: '100%' }}
-              tabIndex={1}
-              onBlur={newContent => setNewModuleDescription(newContent)}
-              onChange={() => { }}
-            />
+            <div className="overflow-auto" style={{ maxHeight: 250 }}>
+              <JoditEditor
+                ref={editor}
+                value={newModuleDescription}
+                config={{ readonly: false, height: 250, width: '100%' }}
+                tabIndex={1}
+                onBlur={newContent => setNewModuleDescription(newContent)}
+                onChange={() => { }}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => handleAddModule({
@@ -2273,7 +2283,7 @@ const LessonPlanPage: React.FC = () => {
 
       {/* Right Side Module Edit Dialog */}
       <Dialog open={rightSideEditDialogOpen} onOpenChange={setRightSideEditDialogOpen}>
-        <DialogContent className="max-w-[980px] w-full">
+      <DialogContent className="max-w-3xl mx-auto w-full">
           <DialogHeader>
             <DialogTitle>Edit Module</DialogTitle>
           </DialogHeader>
@@ -2313,13 +2323,15 @@ const LessonPlanPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            <JoditEditor
-              value={rightSideEditForm.description}
-              config={{ readonly: false, height: 250, width: '100%' }}
-              tabIndex={1}
-              onBlur={newContent => setRightSideEditForm(f => ({ ...f, description: newContent }))}
-              onChange={() => { }}
-            />
+            <div className="overflow-auto" style={{ maxHeight: 400 }}>
+              <JoditEditor
+                value={rightSideEditForm.description}
+                config={{ readonly: false, height: 400, width: '100%' }}
+                tabIndex={1}
+                onBlur={newContent => setRightSideEditForm(f => ({ ...f, description: newContent }))}
+                onChange={() => { }}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleSaveRightSideModuleEdit}>Save</Button>

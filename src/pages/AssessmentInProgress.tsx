@@ -60,6 +60,10 @@ const AssessmentInProgressPage: React.FC = () => {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewAssessment, setPreviewAssessment] = useState<any>(null);
 
+  // State for AI Generate inputs
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiReference, setAiReference] = useState("");
+
   // Fetch courses on component mount
   useEffect(() => {
     const fetchCourses = async () => {
@@ -345,6 +349,51 @@ const AssessmentInProgressPage: React.FC = () => {
     return assessments;
   };
 
+  const handleAIGenerate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+
+      // You need to collect these values from your form or state
+      const generation_type = editLessonForm.type || "quiz";
+      const material = aiReference || ""; // or another field if you have it
+      const qaqf_level = String(editLessonForm.qaqfLevel || "1");
+      const subject = editLessonForm.title || ""; // or another field if you have it
+      const userquery = aiQuery || "";
+
+      const response = await fetch('/api/ai/assessment-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          generation_type,
+          material,
+          qaqf_level,
+          subject,
+          userquery,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate content');
+      const data = await response.json();
+
+      // The backend returns { generated_content: [ ... ], status: "success" }
+      if (data.generated_content && data.generated_content.length > 0) {
+        setEditLessonForm(f => ({ ...f, description: data.generated_content[0] }));
+      } else {
+        setEditLessonForm(f => ({ ...f, description: "No content generated." }));
+      }
+    } catch (error) {
+      console.error('AI Generate error:', error);
+      setEditLessonForm(f => ({ ...f, description: "AI generation failed." }));
+    }
+  };
+
   return (
     <div className="container max-w-screen-xl mx-auto py-6 px-4">
       <div className="flex flex-col gap-2 mb-6">
@@ -439,10 +488,7 @@ const AssessmentInProgressPage: React.FC = () => {
                     </span>
                   )}
                 </h3>
-                <Button onClick={() => setAddLessonDialogOpen(true)}>
-                  <span className="material-icons text-sm mr-2">add</span>
-                  Add Lesson
-                </Button>
+                {/* Removed Add Lesson Button */}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -452,17 +498,20 @@ const AssessmentInProgressPage: React.FC = () => {
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-base">{assessment.title}</CardTitle>
-                          <Badge 
-                            className={
-                              assessment.status === 'draft' ? "bg-amber-100 text-amber-800" : 
-                              assessment.status === 'in_review' ? "bg-blue-100 text-blue-800" : 
-                              "bg-purple-100 text-purple-800"
-                            }
-                          >
-                            {assessment.status === 'draft' ? "Draft" : 
-                             assessment.status === 'in_review' ? "In Review" : 
-                             "Pending Approval"}
-                          </Badge>
+                          {/* Place the course dropdown here */}
+                          <Select
+                
+              >
+                <SelectTrigger className="w-32 border border-neutral-300 focus:ring-0 focus:border-neutral-300">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
                         </div>
                         <CardDescription className="flex items-center gap-1">
                           <span className="capitalize">{assessment.type}</span>
@@ -506,9 +555,7 @@ const AssessmentInProgressPage: React.FC = () => {
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openPreviewDialog(assessment)}>
                             <span className="material-icons text-sm">preview</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => openDeleteDialog(assessment)}>
-                            <span className="material-icons text-sm">delete</span>
-                          </Button>
+                          {/* Removed Delete Button */}
                         </div>
                       </CardFooter>
                     </Card>
@@ -600,81 +647,18 @@ const AssessmentInProgressPage: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Add Lesson Dialog */}
-      <Dialog open={addLessonDialogOpen} onOpenChange={setAddLessonDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Lesson</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {/* Type input */}
-            <select
-              className="border rounded px-2 py-1 w-full"
-              value={newLessonForm.type}
-              onChange={e => setNewLessonForm(f => ({ ...f, type: e.target.value }))}
-            >
-              <option value="lecture">Assessment Type</option>
-              <option value="quiz">Quiz</option>
-              <option value="exam">Exam</option>
-              <option value="assignment">Assignment</option>
-              <option value="practical">Practical</option>
-            </select>
-
-            {/* Title input */}
-            <input
-              className="border rounded px-2 py-1 w-full"
-              value={newLessonForm.title}
-              onChange={e => setNewLessonForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="Title"
-              autoFocus
-            />
-            
-            <div className="flex gap-2">
-              <input
-                className="border rounded px-2 py-1 flex-1"
-                value={newLessonForm.duration}
-                onChange={e => setNewLessonForm(f => ({ ...f, duration: e.target.value }))}
-                placeholder="Duration (e.g. 60 min)"
-              />
-              <select
-                className="border rounded px-2 py-1 flex-1"
-                value={newLessonForm.qaqfLevel}
-                onChange={e => setNewLessonForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Description textarea */}
-            <textarea
-              className="border rounded px-2 py-1 w-full"
-              value={newLessonForm.description}
-              onChange={e => setNewLessonForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Description"
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAddLesson}>Add</Button>
-            <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Removed Add Lesson Dialog */}
 
       {/* Edit Lesson Dialog */}
       <Dialog open={editLessonDialogOpen} onOpenChange={setEditLessonDialogOpen}>
-        <DialogContent className="max-w-[990px] w-full">
+        <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {/* Type input */}
             <select
-              className="border rounded px-2 py-1 w-full"
+              className="border rounded px-2 py-1 w-full h-10"
               value={editLessonForm.type}
               onChange={e => setEditLessonForm(f => ({ ...f, type: e.target.value }))}
             >
@@ -686,20 +670,20 @@ const AssessmentInProgressPage: React.FC = () => {
             </select>
             {/* Title input */}
             <input
-              className="border rounded px-2 py-1 w-full"
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-0 focus:border-gray-300"
               value={editLessonForm.title}
               onChange={e => setEditLessonForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Title"
             />
             <div className="flex gap-2">
               <input
-                className="border rounded px-2 py-1 flex-1"
+                className="border rounded px-2 py-1 flex-1 focus:outline-none focus:ring-0 focus:border-gray-300"
                 value={editLessonForm.duration}
                 onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))}
                 placeholder="Duration (e.g. 60 min)"
               />
               <select
-                className="border rounded px-2 py-1 flex-1"
+                className="border rounded px-2 py-1 flex-1 focus:outline-none focus:ring-0 focus:border-gray-300"
                 value={editLessonForm.qaqfLevel}
                 onChange={e => setEditLessonForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
               >
@@ -708,7 +692,19 @@ const AssessmentInProgressPage: React.FC = () => {
                 ))}
               </select>
             </div>
-
+            {/* New AI Query and Reference Inputs */}
+            <input
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-0 focus:border-gray-300"
+              placeholder="Ask your query"
+              value={aiQuery}
+              onChange={e => setAiQuery(e.target.value)}
+            />
+            <input
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-0 focus:border-gray-200"
+              placeholder="AI reference study material"
+              value={aiReference}
+              onChange={e => setAiReference(e.target.value)}
+            />
             <JoditEditor
               value={editLessonForm.description}
               config={{ readonly: false, height: 600, width: '100%' }}
@@ -719,6 +715,7 @@ const AssessmentInProgressPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditLesson}>Save</Button>
+            <Button variant="default" onClick={handleAIGenerate}>AI Generate</Button>
             <DialogClose asChild>
               <Button variant="ghost">Cancel</Button>
             </DialogClose>
@@ -814,28 +811,7 @@ const AssessmentInProgressPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Assessment</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this assessment? ID: {assessmentToDelete?.id}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => handleDeleteAssessment(assessmentToDelete?.id)}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Yes
-            </Button>
-            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>
-              No
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Removed Delete Confirmation Dialog */}
     </div>
   );
 };

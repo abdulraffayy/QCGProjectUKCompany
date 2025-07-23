@@ -710,6 +710,72 @@ def update_weeklessonorders():
     db.commit()
     return jsonify({'success': True})
 
+
+
+
+# ai assessment-content
+
+@app.route('/api/ai/assessment-content', methods=['POST'])
+@token_required
+def assessment_content_ollama(current_user_id):
+    data = request.get_json()
+    try:
+        contenttype = data.get('generation_type', 'quiz').lower()
+        material = data.get('material', 'nomaterial').lower()
+        qaqf_level = data.get('qaqf_level', '1').lower()
+        subject = data.get('subject', '').lower()
+        userquery = data.get('userquery').lower()
+        if material == "nomaterial":
+            prompt = f"""Create a comprehensive {contenttype} for related to {subject} at QAQF Level {qaqf_level}. 
+            Format professionally with proper headings and structure. 
+            Ensure the content is engaging and suitable for learning purposes.
+            User query: {userquery}"""
+        else:
+            prompt = f"""Create a comprehensive {contenttype} for {subject} at QAQF Level {qaqf_level} based on the provided material: {material}. 
+            Format professionally with proper headings and structure. 
+            Ensure the content is engaging and suitable for learning purposes.
+            User query: {userquery}"""
+        print(prompt)
+        # Try Ollama API first
+        finn ="** Race Story Quiz: QAQF Level 2*\n\nInstructions:* Read each question carefully and choose the correct answer.\n\n*1. What prompted a hare to make fun of a tortoise?\na) The tortoise's appearance\nb) The tortoise's slow speed\nc) The tortoise's goal\nd) The tortoise's behavior\n\nAnswer: b) The tortoise's slow speed\n\n2. How did the tortoise respond to the hare's mocking laugh?\na) He ran away\nb) He apologized\nc) He replied that he gets there sooner than expected\nd) He ignored him\n\nAnswer: c) He replied that he gets there sooner than expected\n\n3. Who agreed to act as the judge for the race between the hare and the tortoise?\na) The fox\nb) The hare\nc) The tortoise\nd) An animal from the forest\n\nAnswer: a) The fox\n\n4. What did the hare do while waiting for the tortoise to catch up during the race?\na) He kept running\nb) He cheered the tortoise on\nc) He took a nap beside the course\nd) He rested at the finish line\n\nAnswer: c) He took a nap beside the course\n\n5. What moral lesson can be learned from this story?*\na) That speed is everything in life\nb) That it's always better to run fast than steady\nc) That the race is not always to the swift, but rather to those who persevere and stay focused\nd) That animals should never compete with each other\n\nAnswer: c) That the race is not always to the swift, but rather to those who persevere and stay focused",
+        return jsonify({
+            'generated_content': finn,
+            'status': 'success'
+        })
+        return
+        ollama_response = requests.post('http://localhost:11434/api/generate', 
+            json={
+                'model': 'llama3.2',
+                'prompt': prompt,
+                'stream': False
+            }, 
+            timeout=3000
+        )
+        
+        if ollama_response.status_code == 200:
+            generated_content = ollama_response.json().get('response', '')
+        else:
+            raise Exception("Ollama API not available")
+            
+        finn = generated_content.strip()
+        print(finn)
+        # if contenttype == "content":
+        #     db = get_db()
+        #     cur = db.cursor()
+        #     cur.execute('''
+        #         INSERT INTO generatedlesson (courseid, title, level, description, userid, duration, type)
+        #         VALUES (?, ?, ?, ?, ?, ?,?)
+        #     ''', (4, title, qaqf_level, finn , current_user_id, 20, content_type))
+        #     db.commit()
+        return jsonify({
+            'generated_content': finn,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Content generation failed: {str(e)}'}), 500
+
+
 # FILE UPLOAD AND TEXT EXTRACTION
 @app.route('/api/content/extract-text', methods=['POST'])
 @token_required

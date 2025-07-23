@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { CheckCircle, XCircle, AlertTriangle, Eye, MessageSquare } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface Content {
   id: number;
@@ -33,6 +34,89 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
   const [feedback, setFeedback] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [isLoadingLessons, setIsLoadingLessons] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusCache, setStatusCache] = useState<{ [lessonId: number]: string }>({});
+  const [statusValue, setStatusValue] = useState('pending');
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        if (!res.ok) throw new Error('Failed to fetch courses');
+        const data = await res.json();
+        setCourses(Array.isArray(data) ? data : []);
+      } catch (err) {
+        // Optionally show a toast
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  React.useEffect(() => {
+    if (!selectedCourse) {
+      setLessons([]);
+      return;
+    }
+    setIsLoadingLessons(true);
+    fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`)
+      .then(res => res.json())
+      .then(data => {
+        setLessons(Array.isArray(data) ? data : []);
+        setIsLoadingLessons(false);
+      })
+      .catch(() => {
+        setLessons([]);
+        setIsLoadingLessons(false);
+      });
+  }, [selectedCourse]);
+
+  // When lessons are loaded, set their statuses in the cache
+  React.useEffect(() => {
+    if (lessons && lessons.length > 0) {
+      setStatusCache(() => {
+        const updated: { [lessonId: number]: string } = {};
+        lessons.forEach((lesson: any) => {
+          updated[lesson.id] = (lesson as any).status || 'pending';
+        });
+        return updated;
+      });
+    }
+  }, [lessons]);
+
+  // When a lesson is selected, set the dropdown to its cached status (or 'pending')
+  React.useEffect(() => {
+    if (selectedContent && selectedContent.id) {
+      setStatusValue(statusCache[selectedContent.id] || 'pending');
+    } else {
+      setStatusValue('pending');
+    }
+  }, [selectedContent, statusCache]);
+
+  // Update status and cache on change
+  async function updateLessonStatus(lessonId: number, status: string) {
+    try {
+      const res = await fetch(`/api/lessons_status/${lessonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      setStatusCache(prev => ({ ...prev, [lessonId]: status }));
+      setStatusValue(status); // Ensure UI updates immediately
+    } catch (err) {
+      console.error(err);
+      // Optionally show a toast
+    }
+  }
+
+  const filteredLessons = lessons.filter(lesson =>
+    (lesson.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lesson.description && lesson.description.toLowerCase().includes(searchTerm.toLowerCase())))
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -82,8 +166,75 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
             <CardDescription>
               Review and moderate submitted content
             </CardDescription>
+            <div className="flex items-center justify-between mt-4">
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
+                  <SelectValue placeholder="Select a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* License/Lesson List - no scrollbar, no max-h */}
+            {!selectedCourse ? (
+              <div className="text-center py-8 border rounded-md">
+                <span className="material-icons text-4xl text-neutral-300">inventory_2</span>
+                <p className="mt-2 text-neutral-500">Select a course to view its licenses/lessons</p>
+              </div>
+            ) : isLoadingLessons ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredLessons.length === 0 ? (
+              <div className="text-center py-8 border rounded-md">
+                <span className="material-icons text-4xl text-neutral-300">inventory_2</span>
+                <p className="mt-2 text-neutral-500">No licenses/lessons found for this course</p>
+              </div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {filteredLessons.map(lesson => (
+                  <div
+                    key={lesson.id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedContent?.id === lesson.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-neutral-50'
+                    }`}
+                    onClick={() => setSelectedContent(lesson)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h3 className={`font-medium ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-800'}`}>{lesson.title}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 ml-1"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedContent(lesson);
+                        }}
+                        title="View details"
+                      >
+                        <span className="material-icons text-base">visibility</span>
+                      </Button>
+                    </div>
+                    <p className={`text-sm mt-1 ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{lesson.type ? lesson.type.replace('_', ' ') : ''}</p>
+                    <div className="flex items-center mt-2">
+                      <span className={`text-xs ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{lesson.level ? `QAQF Level ${lesson.level}` : ''}</span>
+                      {lesson.createddate && <><span className="mx-2 text-neutral-300">•</span>
+                      <span className={`text-xs ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{new Date(lesson.createddate).toLocaleDateString()}</span></>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Existing content queue list below */}
             <div className="space-y-3">
               {contents.map((content) => (
                 <div
@@ -128,12 +279,6 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                 </div>
               ))}
               
-              {contents.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageSquare className="mx-auto h-8 w-8 mb-2" />
-                  <p>No content pending review</p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -148,99 +293,87 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
           </CardHeader>
           <CardContent>
             {selectedContent ? (
-              <Tabs defaultValue="content" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="content">Content</TabsTrigger>
-                  <TabsTrigger value="actions">Actions</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="content" className="space-y-4">
+              <div className="bg-neutral-50 border rounded shadow p-4 animate-slideDown relative w-full">
+                <div className="flex flex-col items-start mb-2">
+                  <div><b>ID:</b> {selectedContent.id}</div>
+                  <div><b>Title:</b> {selectedContent.title}</div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div><b>Type:</b> {selectedContent.type || 'N/A'}</div>
+                  <div><b>QAQF Level:</b> {selectedContent.qaqf_level ? `QAQF ${selectedContent.qaqf_level}` : 'N/A'}</div>
                   <div>
-                    <h3 className="font-medium mb-2">{selectedContent.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {selectedContent.description}
-                    </p>
-                    
-                    <div className="bg-gray-50 p-3 rounded-md max-h-60 overflow-y-auto">
-                      <pre className="text-sm whitespace-pre-wrap">
-                        {selectedContent.content}
-                      </pre>
+                    <b>Description:</b>
+                    <div
+                      className="mt-2 p-3 bg-white border rounded-md"
+                      dangerouslySetInnerHTML={{
+                        __html: selectedContent.description || ''
+                      }}
+                    />
                     </div>
-                    
-                    <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                      <span>Type: {selectedContent.type}</span>
-                      <span>Level: {selectedContent.qaqf_level}</span>
-                      <span>Status: {selectedContent.verification_status}</span>
                     </div>
+                {/* Action Row: Button and Dropdowns */}
+                <div className="flex flex-wrap items-center justify-end gap-4 mt-8">
+                  <Button variant="outline">British Standard</Button>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">QAQF Level</span>
+                    <Select>
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="1–3" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="actions" className="space-y-4">
-                  <div className="space-y-4">
-                    {selectedContent.verification_status === 'pending' && (
-                      <>
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={() => handleApprove(selectedContent)}
-                            className="flex-1"
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Approve
-                          </Button>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Status</span>
+                    <Select
+                      value={statusValue}
+                      onValueChange={(value) => {
+                        if (selectedContent?.id) {
+                          updateLessonStatus(selectedContent.id, value);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="verified">Verified</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="unverified">Unverified</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
                         </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            Request Changes (Optional)
-                          </label>
-                          <Textarea
-                            placeholder="Provide feedback for improvements..."
-                            value={feedback}
-                            onChange={(e) => setFeedback(e.target.value)}
-                            className="mb-2"
-                          />
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleRequestChanges(selectedContent)}
-                            disabled={!feedback.trim()}
-                            className="w-full"
-                          >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Request Changes
-                          </Button>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            Reject Content
-                          </label>
-                          <Textarea
-                            placeholder="Reason for rejection..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="mb-2"
-                          />
-                          <Button 
-                            variant="destructive" 
-                            onClick={() => handleReject(selectedContent)}
-                            disabled={!rejectionReason.trim()}
-                            className="w-full"
-                          >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Reject
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                    
-                    {selectedContent.verification_status !== 'pending' && (
-                      <div className="text-center py-4 text-muted-foreground">
-                        Content has already been {selectedContent.verification_status}
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Score</span>
+                    <Select>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Select score metric" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="clarity">Clarity (1 - 4)</SelectItem>
+                        <SelectItem value="completeness">Completeness (1 - 4)</SelectItem>
+                        <SelectItem value="accuracy">Accuracy (1 - 4)</SelectItem>
+                        <SelectItem value="engagement">Engagement (1 - 4)</SelectItem>
+                        <SelectItem value="qaqf_alignment">QAQF Alignment (1 - 4)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+                <style>{`
+                  @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px);}
+                    to { opacity: 1; transform: translateY(0);}
+                  }
+                  .animate-slideDown {
+                    animation: slideDown 0.2s ease;
+                  }
+                `}</style>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <Eye className="mx-auto h-8 w-8 mb-2" />

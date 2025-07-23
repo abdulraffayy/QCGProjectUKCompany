@@ -486,7 +486,11 @@ const UnifiedContentGenerator: React.FC = () => {
     { value: 'academic_paper', label: 'Academic Paper' },
     { value: 'assessment', label: 'Assessment' },
     { value: 'lecture', label: 'Lecture Notes' },
-    { value: 'study_guide', label: 'Study Guide' }
+    { value: 'study_guide', label: 'Study Guide' },
+    { value: 'quiz', label: 'Quiz' },
+    { value: 'exam', label: 'Exam' },
+    { value: 'assignment', label: 'Assignment' },
+    { value: 'practical', label: 'Practical' },
   ];
 
   const assessmentMethods = [
@@ -1227,7 +1231,7 @@ const UnifiedContentGenerator: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="filter-status">Filter by Status:</Label>
                       <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-32 focus:ring-0 focus:ring-offset-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
