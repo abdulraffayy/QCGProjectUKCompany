@@ -6,6 +6,8 @@ import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { CheckCircle, XCircle, AlertTriangle, Eye, MessageSquare } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 interface Content {
   id: number;
@@ -349,19 +351,95 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                     </Select>
                         </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">Score</span>
-                    <Select>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Select score metric" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="clarity">Clarity (1 - 4)</SelectItem>
-                        <SelectItem value="completeness">Completeness (1 - 4)</SelectItem>
-                        <SelectItem value="accuracy">Accuracy (1 - 4)</SelectItem>
-                        <SelectItem value="engagement">Engagement (1 - 4)</SelectItem>
-                        <SelectItem value="qaqf_alignment">QAQF Alignment (1 - 4)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  
+                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-8">
+                     {/* Row 1: Clarity & Completeness */}
+                     <div>
+                       <span className="font-bold text-lg">Clarity</span>
+                       <RadioGroup className="flex flex-col gap-2 mt-2" name="clarity-score">
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="4" id="clarity-4" />
+                           <Label htmlFor="clarity-4">4/4 - Exceptionally clear and well-structured</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="3" id="clarity-3" />
+                           <Label htmlFor="clarity-3">3/4 - Clear and well-organized</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="2" id="clarity-2" />
+                           <Label htmlFor="clarity-2">2/4 - Generally clear with some areas for improvement</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="1" id="clarity-1" />
+                           <Label htmlFor="clarity-1">1/4 - Unclear or poorly structured</Label>
+                         </div>
+                       </RadioGroup>
+                     </div>
+                     <div>
+                       <span className="font-bold text-lg">Completeness</span>
+                       <RadioGroup className="flex flex-col gap-2 mt-2" name="completeness-score">
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="4" id="completeness-4" />
+                           <Label htmlFor="completeness-4">4/4 - Comprehensive and thorough coverage</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="3" id="completeness-3" />
+                           <Label htmlFor="completeness-3">3/4 - Good coverage of main topics</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="2" id="completeness-2" />
+                           <Label htmlFor="completeness-2">2/4 - Basic coverage with gaps</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="1" id="completeness-1" />
+                           <Label htmlFor="completeness-1">1/4 - Incomplete or insufficient coverage</Label>
+                         </div>
+                       </RadioGroup>
+                     </div>
+                     {/* Row 2: Accuracy & QAQF Alignment */}
+                     <div>
+                       <span className="font-bold text-lg">Accuracy</span>
+                       <RadioGroup className="flex flex-col gap-2 mt-2" name="accuracy-score">
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="4" id="accuracy-4" />
+                           <Label htmlFor="accuracy-4">4/4 - Completely accurate and up-to-date</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="3" id="accuracy-3" />
+                           <Label htmlFor="accuracy-3">3/4 - Mostly accurate with minor issues</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="2" id="accuracy-2" />
+                           <Label htmlFor="accuracy-2">2/4 - Generally accurate but some concerns</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="1" id="accuracy-1" />
+                           <Label htmlFor="accuracy-1">1/4 - Significant accuracy issues</Label>
+                         </div>
+                       </RadioGroup>
+                     </div>
+                     <div>
+                       <span className="font-bold text-lg">QAQF Alignment</span>
+                       <RadioGroup className="flex flex-col gap-2 mt-2" name="alignment-score">
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="4" id="alignment-4" />
+                           <Label htmlFor="alignment-4">4/4 - Perfect alignment with QAQF level</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="3" id="alignment-3" />
+                           <Label htmlFor="alignment-3">3/4 - Good alignment with minor gaps</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="2" id="alignment-2" />
+                           <Label htmlFor="alignment-2">2/4 - Partial alignment with concerns</Label>
+                         </div>
+                         <div className="flex items-center space-x-2">
+                           <RadioGroupItem value="1" id="alignment-1" />
+                           <Label htmlFor="alignment-1">1/4 - Poor alignment with QAQF level</Label>
+                         </div>
+                       </RadioGroup>
+                     </div>
+                   </div>
                   </div>
                 </div>
                 <style>{`
