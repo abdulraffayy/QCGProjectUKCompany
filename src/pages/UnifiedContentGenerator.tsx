@@ -525,6 +525,11 @@ const UnifiedContentGenerator: React.FC = () => {
     setShowLessonPlan(true);
   };
 
+  const handleApplyCourse = () => {
+    // TODO: Implement what should happen when Apply is clicked
+    console.log("Applied course:", selectedCourse);
+  };
+
   if (levelsLoading || characteristicsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -629,6 +634,27 @@ const UnifiedContentGenerator: React.FC = () => {
                   {form.formState.errors.title && (
                     <p className="text-sm text-red-600">{form.formState.errors.title.message}</p>
                   )}
+                </div>
+                {/* Select a course dropdown from LessonPlan.tsx */}
+                <div className="space-y-2">
+                  <Label htmlFor="course_select">Select a course</Label>
+                  <Select
+                    value={selectedCourse}
+                    onValueChange={setSelectedCourse}
+                  >
+                    <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="Select a course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.length === 0 ? (
+                        <div className="px-3 py-2 text-neutral-400 text-sm">No courses yet</div>
+                      ) : (
+                        courses.map((course, idx) => (
+                          <SelectItem key={idx} value={String(course.id)}>{course.title}</SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -1264,7 +1290,7 @@ const UnifiedContentGenerator: React.FC = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {courses.map(course => (
-                            <SelectItem key={course.id} value={course.id}>
+                            <SelectItem key={course.id} value={String(course.id)}>
                               {course.title}
                             </SelectItem>
                           ))}
