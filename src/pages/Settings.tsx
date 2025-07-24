@@ -83,31 +83,7 @@ const SettingsPage: React.FC = () => {
                   <h3 className="font-medium text-lg">{user?.name || ''}</h3>
                   <p className="text-neutral-500 text-sm">{user?.role || ''}</p>
                 </div>
-                
                 <Separator />
-                
-                <div className="space-y-1">
-                  <h4 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Settings</h4>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <span className="material-icons mr-2 text-sm">person</span>
-                    Profile
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <span className="material-icons mr-2 text-sm">notifications</span>
-                    Notifications
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <span className="material-icons mr-2 text-sm">vpn_key</span>
-                    API Access
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <span className="material-icons mr-2 text-sm">brush</span>
-                    Appearance
-                  </Button>
-                </div>
-                
-                <Separator />
-                
                 <Button variant="outline" className="w-full" onClick={logout}>
                   <span className="material-icons mr-2 text-sm">logout</span>
                   Logout
@@ -122,8 +98,6 @@ const SettingsPage: React.FC = () => {
             <TabsList className="mb-4">
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="api">API Access</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile">
@@ -224,110 +198,6 @@ const SettingsPage: React.FC = () => {
                   </div>
                   
                   <Button>Save Preferences</Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="api">
-              <Card>
-                <CardHeader>
-                  <CardTitle>API Access</CardTitle>
-                  <CardDescription>Manage your API keys and access to the QAQF platform</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="api-key">Your API Key</Label>
-                    <div className="flex">
-                      <Input 
-                        id="api-key" 
-                        value={apiKey} 
-                        readOnly 
-                        className="flex-1 font-mono bg-neutral-50"
-                      />
-                      <Button variant="outline" className="ml-2" onClick={handleRegenerateApiKey}>
-                        Regenerate
-                      </Button>
-                    </div>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      Keep your API key secure. Do not share it publicly.
-                    </p>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">API Access Permissions</h4>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="content-access" className="flex-1">Content Generation API</Label>
-                        <Switch id="content-access" checked={true} />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="verification-access" className="flex-1">Verification API</Label>
-                        <Switch id="verification-access" checked={true} />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="assessment-access" className="flex-1">Assessment API</Label>
-                        <Switch id="assessment-access" checked={true} />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="appearance">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Appearance Settings</CardTitle>
-                  <CardDescription>Customize how the QAQF platform looks</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Theme</h4>
-                    <RadioGroup value={theme} onValueChange={setTheme}>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="light" id="light" />
-                        <Label htmlFor="light">Light</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dark" id="dark" />
-                        <Label htmlFor="dark">Dark</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="system" id="system" />
-                        <Label htmlFor="system">System</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Display Options</h4>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="compact-view" className="flex-1">Compact View</Label>
-                        <Switch id="compact-view" />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="high-contrast" className="flex-1">High Contrast</Label>
-                        <Switch id="high-contrast" />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="animations" className="flex-1">Animations</Label>
-                        <Switch id="animations" checked={true} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button>Save Appearance Settings</Button>
                 </CardContent>
               </Card>
             </TabsContent>
