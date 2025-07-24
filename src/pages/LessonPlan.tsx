@@ -1457,6 +1457,94 @@ const LessonPlanPage: React.FC = () => {
   const [deleteWeekLessonDialogOpen, setDeleteWeekLessonDialogOpen] = useState(false);
   const [deleteWeekLessonData, setDeleteWeekLessonData] = useState<{ weekId: number, weekLessonId: number } | null>(null);
 
+  // Add state for AI query and reference for right side edit dialog
+  const [rightSideAiQuery, setRightSideAiQuery] = useState("");
+  const [rightSideAiReference, setRightSideAiReference] = useState("");
+
+  // Add AI Generate handler for right side edit dialog
+  const handleRightSideAIGenerate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+      const generation_type = rightSideEditForm.type || "quiz";
+      const material = rightSideAiReference || "";
+      const qaqf_level = String(rightSideEditForm.qaqfLevel || "1");
+      const subject = rightSideEditForm.title || "";
+      const userquery = rightSideAiQuery || "";
+      const response = await fetch('/api/ai/assessment-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          generation_type,
+          material,
+          qaqf_level,
+          subject,
+          userquery,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to generate content');
+      const data = await response.json();
+      if (data.generated_content && data.generated_content.length > 0) {
+        setRightSideEditForm(f => ({ ...f, description: data.generated_content[0] }));
+      } else {
+        setRightSideEditForm(f => ({ ...f, description: "No content generated." }));
+      }
+    } catch (error) {
+      console.error('AI Generate error:', error);
+      setRightSideEditForm(f => ({ ...f, description: "AI generation failed." }));
+    }
+  };
+
+  // Add state for AI query and reference for Add Lesson dialog
+  const [newModuleAiQuery, setNewModuleAiQuery] = useState("");
+  const [newModuleAiReference, setNewModuleAiReference] = useState("");
+
+  // Add AI Generate handler for Add Lesson dialog
+  const handleAddModuleAIGenerate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+      const generation_type = newModuleType || "quiz";
+      const material = newModuleAiReference || "";
+      const qaqf_level = String(newModuleQAQF || "1");
+      const subject = newModuleTitle || "";
+      const userquery = newModuleAiQuery || "";
+      const response = await fetch('/api/ai/assessment-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          generation_type,
+          material,
+          qaqf_level,
+          subject,
+          userquery,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to generate content');
+      const data = await response.json();
+      if (data.generated_content && data.generated_content.length > 0) {
+        setNewModuleDescription(data.generated_content[0]);
+      } else {
+        setNewModuleDescription("No content generated.");
+      }
+    } catch (error) {
+      console.error('AI Generate error:', error);
+      setNewModuleDescription("AI generation failed.");
+    }
+  };
+
   return (
     <div className="container max-w-screen-xl mx-auto py-6 px-4">
       <div className="space-y-6">
@@ -2008,11 +2096,12 @@ const LessonPlanPage: React.FC = () => {
 
       {/* Add Module Dialog */}
       <Dialog open={addModuleDialogOpen} onOpenChange={setAddModuleDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
             <DialogTitle>Add Lesson</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          {/* Remove extra gap below heading by reducing margin/padding */}
+          <div className="space-y-3 mt-0">
             {/* Type input */}
             <select
               className="border rounded px-2 py-1 w-full"
@@ -2025,8 +2114,6 @@ const LessonPlanPage: React.FC = () => {
               <option value="activity">Activity</option>
               <option value="case_study">Case Study</option>
             </select>
-
-            {/* باقی inputs جیسا کہ پہلے تھے */}
             {/* title */}
             <input
               className="border rounded px-2 py-1 w-full"
@@ -2052,12 +2139,25 @@ const LessonPlanPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            {/* Replace textarea with JoditEditor for Script */}
-            <div className="overflow-auto" style={{ maxHeight: 250 }}>
+            {/* AI Query and Reference Inputs */}
+            <input
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Ask your Query"
+              value={newModuleAiQuery}
+              onChange={e => setNewModuleAiQuery(e.target.value)}
+            />
+            <input
+              className="border rounded px-2 py-1 w-full"
+              placeholder="AI reference study material"
+              value={newModuleAiReference}
+              onChange={e => setNewModuleAiReference(e.target.value)}
+            />
+            {/* JoditEditor for Description, with increased height */}
+            <div className="overflow-auto" style={{ maxHeight: 400 }}>
               <JoditEditor
                 ref={editor}
                 value={newModuleDescription}
-                config={{ readonly: false, height: 250, width: '100%' }}
+                config={{ readonly: false, height: 350, width: '100%' }}
                 tabIndex={1}
                 onBlur={newContent => setNewModuleDescription(newContent)}
                 onChange={() => { }}
@@ -2065,6 +2165,7 @@ const LessonPlanPage: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
+            <Button variant="default" onClick={handleAddModuleAIGenerate}>AI Generate</Button>
             <Button variant="outline" onClick={() => handleAddModule({
               title: newModuleTitle,
               type: newModuleType,
@@ -2283,7 +2384,7 @@ const LessonPlanPage: React.FC = () => {
 
       {/* Right Side Module Edit Dialog */}
       <Dialog open={rightSideEditDialogOpen} onOpenChange={setRightSideEditDialogOpen}>
-      <DialogContent className="max-w-3xl mx-auto w-full">
+      <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
             <DialogTitle>Edit Module</DialogTitle>
           </DialogHeader>
@@ -2323,6 +2424,19 @@ const LessonPlanPage: React.FC = () => {
                 ))}
               </select>
             </div>
+            {/* AI Query and Reference Inputs */}
+            <input
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Ask your query"
+              value={rightSideAiQuery}
+              onChange={e => setRightSideAiQuery(e.target.value)}
+            />
+            <input
+              className="border rounded px-2 py-1 w-full"
+              placeholder="AI reference study material"
+              value={rightSideAiReference}
+              onChange={e => setRightSideAiReference(e.target.value)}
+            />
             <div className="overflow-auto" style={{ maxHeight: 400 }}>
               <JoditEditor
                 value={rightSideEditForm.description}
@@ -2335,6 +2449,7 @@ const LessonPlanPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleSaveRightSideModuleEdit}>Save</Button>
+            <Button variant="default" onClick={handleRightSideAIGenerate}>AI Generate</Button>
             <DialogClose asChild>
               <Button variant="ghost">Cancel</Button>
             </DialogClose>
