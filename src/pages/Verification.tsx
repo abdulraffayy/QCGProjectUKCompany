@@ -24,6 +24,13 @@ const VerificationPage: React.FC = () => {
   // Use only React state for statusCache (no localStorage)
   const [statusCache, setStatusCache] = useState<{ [lessonId: number]: string }>({});
   const [statusValue, setStatusValue] = useState('pending');
+  // Add these states at the top inside VerificationPage component
+  const [clarityScore, setClarityScore] = useState(0);
+  const [completenessScore, setCompletenessScore] = useState(0);
+  const [accuracyScore, setAccuracyScore] = useState(0);
+  const [alignmentScore, setAlignmentScore] = useState(0);
+
+  const getProgressPercent = (score: number) => (score / 4) * 100;
 
   // QAQF_LEVELS for lesson detail card
   const QAQF_LEVELS: { [key: number]: string } = {
@@ -333,7 +340,12 @@ const VerificationPage: React.FC = () => {
                         {/* Row 1: Clarity & Completeness */}
                         <div>
                           <span className="font-bold text-lg">Clarity</span>
-                          <RadioGroup className="flex flex-col gap-2 mt-2" name="clarity-score">
+                          <RadioGroup
+                            className="flex flex-col gap-2 mt-2"
+                            name="clarity-score"
+                            value={clarityScore ? clarityScore.toString() : ''}
+                            onValueChange={val => setClarityScore(Number(val))}
+                          >
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="4" id="clarity-4" />
                               <Label htmlFor="clarity-4">4/4 - Exceptionally clear and well-structured</Label>
@@ -351,10 +363,16 @@ const VerificationPage: React.FC = () => {
                               <Label htmlFor="clarity-1">1/4 - Unclear or poorly structured</Label>
                             </div>
                           </RadioGroup>
+                          
                         </div>
                         <div>
                           <span className="font-bold text-lg">Completeness</span>
-                          <RadioGroup className="flex flex-col gap-2 mt-2" name="completeness-score">
+                          <RadioGroup
+                            className="flex flex-col gap-2 mt-2"
+                            name="completeness-score"
+                            value={completenessScore ? completenessScore.toString() : ''}
+                            onValueChange={val => setCompletenessScore(Number(val))}
+                          >
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="4" id="completeness-4" />
                               <Label htmlFor="completeness-4">4/4 - Comprehensive and thorough coverage</Label>
@@ -372,11 +390,17 @@ const VerificationPage: React.FC = () => {
                               <Label htmlFor="completeness-1">1/4 - Incomplete or insufficient coverage</Label>
                             </div>
                           </RadioGroup>
+                          
                         </div>
                         {/* Row 2: Accuracy & QAQF Alignment */}
                         <div>
                           <span className="font-bold text-lg">Accuracy</span>
-                          <RadioGroup className="flex flex-col gap-2 mt-2" name="accuracy-score">
+                          <RadioGroup
+                            className="flex flex-col gap-2 mt-2"
+                            name="accuracy-score"
+                            value={accuracyScore ? accuracyScore.toString() : ''}
+                            onValueChange={val => setAccuracyScore(Number(val))}
+                          >
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="4" id="accuracy-4" />
                               <Label htmlFor="accuracy-4">4/4 - Completely accurate and up-to-date</Label>
@@ -394,10 +418,16 @@ const VerificationPage: React.FC = () => {
                               <Label htmlFor="accuracy-1">1/4 - Significant accuracy issues</Label>
                             </div>
                           </RadioGroup>
+                          
                         </div>
                         <div>
                           <span className="font-bold text-lg">QAQF Alignment</span>
-                          <RadioGroup className="flex flex-col gap-2 mt-2" name="alignment-score">
+                          <RadioGroup
+                            className="flex flex-col gap-2 mt-2"
+                            name="alignment-score"
+                            value={alignmentScore ? alignmentScore.toString() : ''}
+                            onValueChange={val => setAlignmentScore(Number(val))}
+                          >
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="4" id="alignment-4" />
                               <Label htmlFor="alignment-4">4/4 - Perfect alignment with QAQF level</Label>
@@ -415,6 +445,57 @@ const VerificationPage: React.FC = () => {
                               <Label htmlFor="alignment-1">1/4 - Poor alignment with QAQF level</Label>
                             </div>
                           </RadioGroup>
+                          
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <span className="font-bold text-lg">Clarity</span>
+                        <div className="w-[1030px] flex flex-col mt-2">
+                            <div className="flex-1 h-2 bg-gray-100 rounded relative">
+                              <div
+                                className="h-2 bg-blue-500 rounded transition-all duration-300"
+                                style={{ width: `${getProgressPercent(clarityScore)}%` }}
+                              />
+                            </div>
+                            <span className="ml-2 min-w-[40px] text-right text-sm font-semibold text-blue-700">
+                              {getProgressPercent(clarityScore)}%
+                            </span>
+                          </div>
+                          <div className="w-[1030px] flex flex-col gap-2 mt-2">
+                            <span className="font-bold text-lg">Completeness</span>
+                            <div className="flex-1 h-2 bg-green-500/10 rounded relative">
+                              <div
+                                className="h-2 bg-green-500 rounded transition-all duration-300"
+                                style={{ width: `${getProgressPercent(completenessScore)}%` }}
+                              />
+                            </div>
+                            <span className="ml-2 min-w-[40px] text-right text-sm font-semibold text-green-700">
+                              {getProgressPercent(completenessScore)}%
+                            </span>
+                          </div>
+                          <div className="w-[1030px] flex flex-col mt-2">
+                            <span className="font-bold text-lg">Accuracy</span>
+                            <div className="flex-1 h-2 bg-yellow-500/10 rounded relative">
+                              <div
+                                className="h-2 bg-yellow-500 rounded transition-all duration-300"
+                                style={{ width: `${getProgressPercent(accuracyScore)}%` }}
+                              />
+                            </div>
+                            <span className="ml-2 min-w-[40px] text-right text-sm font-semibold text-yellow-700">
+                              {getProgressPercent(accuracyScore)}%
+                            </span>
+                          </div>
+                          <div className="w-[1030px] flex flex-col mt-2">
+                            <span className="font-bold text-lg">QAQF Alignment</span>
+                            <div className="flex-1 h-2 bg-purple-500/10 rounded relative">
+                              <div
+                                className="h-2 bg-purple-500 rounded transition-all duration-300"
+                                style={{ width: `${getProgressPercent(alignmentScore)}%` }}
+                              />
+                            </div>
+                            <span className="ml-2 min-w-[40px] text-right text-sm font-semibold text-purple-700">
+                              {getProgressPercent(alignmentScore)}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
