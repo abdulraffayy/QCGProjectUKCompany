@@ -90,6 +90,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  // Add state for AI generation
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiReference, setAiReference] = useState("");
+  const [aiGenerateLoading, setAiGenerateLoading] = useState(false);
+
   // Add state for card height (for resizing)
   const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -284,6 +289,48 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     setIsEditDialogOpen(false);
   };
 
+  const handleAiGenerate = async () => {
+    setAiGenerateLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+      const generation_type = editableData.type || "quiz";
+      const material = aiReference || "";
+      const qaqf_level = String(editableData.qaqfLevel || "1");
+      const subject = editableData.title || "";
+      const userquery = aiQuery || "";
+      const response = await fetch('/api/ai/assessment-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          generation_type,
+          material,
+          qaqf_level,
+          subject,
+          userquery,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to generate content');
+      const data = await response.json();
+      if (data.generated_content && data.generated_content.length > 0) {
+        setEditableData(prev => ({ ...prev, description: data.generated_content[0] }));
+      } else {
+        setEditableData(prev => ({ ...prev, description: "No content generated." }));
+      }
+    } catch (error) {
+      console.error('AI Generate error:', error);
+      setEditableData(prev => ({ ...prev, description: "AI generation failed." }));
+    } finally {
+      setAiGenerateLoading(false);
+    }
+  };
+
   // useEffect to handle deletion state
   useEffect(() => {
     if (isDeleted) {
@@ -460,6 +507,81 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto p-6">
+          <div className="border rounded-md w-full mb-6">
+             
+              <div className="p-4 space-y-3">
+              
+               
+                <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title" className="text-sm font-medium text-gray-700">Title</Label>
+                <Input
+                  id="title"
+                  value={editableData.title}
+                  onChange={(e) => setEditableData(prev => ({ ...prev, title: e.target.value }))}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="type" className="text-sm font-medium text-gray-700">Type</Label>
+                <select
+                  id="type"
+                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 w-full focus:border-blue-500 focus:ring-blue-500"
+                  value={editableData.type}
+                  onChange={(e) => setEditableData(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="lecture">Lecture</option>
+                  <option value="practical">Practical</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="activity">Activity</option>
+                  <option value="case_study">Case Study</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration</Label>
+                <Input
+                  id="duration"
+                  value={editableData.duration}
+                  onChange={(e) => setEditableData(prev => ({ ...prev, duration: e.target.value }))}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="qaqfLevel" className="text-sm font-medium text-gray-700">QAQF Level</Label>
+                <select
+                  id="qaqfLevel"
+                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 w-full focus:border-blue-500 focus:ring-blue-500"
+                  value={editableData.qaqfLevel}
+                  onChange={(e) => setEditableData(prev => ({ ...prev, qaqfLevel: e.target.value }))}
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                    <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                  ))}
+                </select>
+              </div>    
+              <div>
+                  <Label htmlFor="aiQuery" className="text-sm font-medium text-gray-700">Ask your query (Optional)</Label>
+                  <Input
+                    id="aiQuery"
+                    value={aiQuery}
+                    onChange={(e) => setAiQuery(e.target.value)}
+                    placeholder="Ask your query"
+                    className="mt-1 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                <div>   
+                  <Label htmlFor="aiReference" className="text-sm font-medium text-gray-700">AI reference study material (Optional)</Label>
+                  <Input
+                    id="aiReference"
+                    value={aiReference}
+                    onChange={(e) => setAiReference(e.target.value)}
+                    placeholder="AI reference study material"
+                    className="mt-1 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div> 
+            </div>
+              </div>
+            </div>
             {/* Content Editor full width above the grid */}
             <div className="border rounded-md w-full mb-6">
               <div className="bg-blue-50 px-3 py-2 border-b">
@@ -540,63 +662,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                 onChange={() => {}}
               />
             </div>
-            {/* Form fields in a grid layout */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700">Title</Label>
-                <Input
-                  id="title"
-                  value={editableData.title}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, title: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <Label htmlFor="type" className="text-sm font-medium text-gray-700">Type</Label>
-                <Input
-                  id="type"
-                  value={editableData.type}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, type: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration</Label>
-                <Input
-                  id="duration"
-                  value={editableData.duration}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, duration: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <Label htmlFor="qaqfLevel" className="text-sm font-medium text-gray-700">QAQF Level</Label>
-                <Input
-                  id="qaqfLevel"
-                  value={editableData.qaqfLevel}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, qaqfLevel: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <Label htmlFor="userid" className="text-sm font-medium text-gray-700">User ID</Label>
-                <Input
-                  id="userid"
-                  value={editableData.userid}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, userid: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <Label htmlFor="courseid" className="text-sm font-medium text-gray-700">Course ID</Label>
-                <Input
-                  id="courseid"
-                  value={editableData.courseid}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, courseid: e.target.value }))}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-            </div>
           </div>
           <DialogFooter className="p-6 flex justify-end gap-2">
             
@@ -609,6 +674,20 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               <Save className="h-4 w-4 mr-2" />
               {saveLoading ? "Updating..." : "Update"}
             </Button>
+            <div className="flex justify-end">
+                  <Button
+                    onClick={handleAiGenerate}
+                    disabled={aiGenerateLoading}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {aiGenerateLoading ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    ) : (
+                      <Settings className="h-4 w-4 mr-2" />
+                    )}
+                    {aiGenerateLoading ? "Generating..." : "AI Generate"}
+                  </Button>
+                </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

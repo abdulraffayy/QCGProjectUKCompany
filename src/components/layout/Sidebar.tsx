@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   open: boolean;
@@ -8,6 +9,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const isVerifier = user?.role === 'verification';
+  const isModerator = user?.role === 'moderation';
 
   const isActiveRoute = (path: string) => {
     return location === path;
@@ -58,55 +62,62 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Content
         </div>
-        
-        <Link href="/content-generator" className={navItemClass("/content-generator")}>
-          <span className="material-icons mr-3 text-inherit">auto_awesome</span>
-          AI Content Studio
-        </Link>
-        
-        <Link href="/my-content" className={navItemClass("/my-content")}>
-          <span className="material-icons mr-3 text-inherit">history_edu</span>
-          Module Library
-        </Link>
-        
-        <Link href="/lesson-plan" className={navItemClass("/lesson-plan")}>
-          <span className="material-icons mr-3 text-inherit">event_note</span>
-          Lesson Plan
-        </Link>
-        
-        <Link href="/study-material" className={navItemClass("/study-material")}>
-          <span className="material-icons mr-3 text-inherit">book</span>
-          Study Material
-        </Link>
-        
-        <Link href="/video-generator" className={navItemClass("/video-generator")}>
-          <span className="material-icons mr-3 text-inherit">video_library</span>
-          Video Generator
-        </Link>
+        {!isVerifier && (
+          <>
+            <Link href="/content-generator" className={navItemClass("/content-generator")}> 
+              <span className="material-icons mr-3 text-inherit">auto_awesome</span>
+              AI Content Studio
+            </Link>
+            <Link href="/my-content" className={navItemClass("/my-content")}> 
+              <span className="material-icons mr-3 text-inherit">history_edu</span>
+              Module Library
+            </Link>
+            <Link href="/lesson-plan" className={navItemClass("/lesson-plan")}> 
+              <span className="material-icons mr-3 text-inherit">event_note</span>
+              Lesson Plan
+            </Link>
+            <Link href="/study-material" className={navItemClass("/study-material")}> 
+              <span className="material-icons mr-3 text-inherit">book</span>
+              Study Material
+            </Link>
+            <Link href="/video-generator" className={navItemClass("/video-generator")}> 
+              <span className="material-icons mr-3 text-inherit">video_library</span>
+              Video Generator
+            </Link>
+          </>
+        )}
+        {/* If verifier, skip these links above */}
         
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Quality Assurance
         </div>
         
-        <Link href="/verification" className={navItemClass("/verification")}>
-          <span className="material-icons mr-3 text-inherit">verified</span>
-          Verification
-        </Link>
+        {!isModerator && (
+          <Link href="/verification" className={navItemClass("/verification")}>
+            <span className="material-icons mr-3 text-inherit">verified</span>
+            Verification
+          </Link>
+        )}
         
-        <Link href="/moderation" className={navItemClass("/moderation")}>
-          <span className="material-icons mr-3 text-inherit">gavel</span>
-          Moderation
-        </Link>
+        {!isVerifier && (
+          <Link href="/moderation" className={navItemClass("/moderation")}>
+            <span className="material-icons mr-3 text-inherit">gavel</span>
+            Moderation
+          </Link>
+        )}
+        
         
         <Link href="/assessment" className={navItemClass("/assessment")}>
           <span className="material-icons mr-3 text-inherit">school</span>
           Assessment
         </Link>
         
-        <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}>
-          <span className="material-icons mr-3 text-inherit">assignment_late</span>
-          Assessment in Progress
-        </Link>
+        {!isVerifier && (
+          <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}> 
+            <span className="material-icons mr-3 text-inherit">assignment_late</span>
+            Assessment in Progress
+          </Link>
+        )}
 
         <Link href="/analytics" className={navItemClass("/analytics")}>
           <span className="material-icons mr-3 text-inherit">analytics</span>

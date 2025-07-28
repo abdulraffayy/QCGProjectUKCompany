@@ -18,7 +18,7 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  role: z.enum(["user", "admin"]).default("user"),
+  role: z.enum(["user", "admin", "verification", "moderation"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -46,7 +46,7 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      const response = await fetch("http://localhost:8000/api/auth/signup", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -149,13 +149,15 @@ export default function Signup() {
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={(value) => setValue("role", value as "user" | "admin")}>
+              <Select onValueChange={(value) => setValue("role", value as "user" | "admin" | "verification" | "moderation")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="verification">Verification</SelectItem>
+                  <SelectItem value="moderation">Moderation</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (

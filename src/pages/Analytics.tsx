@@ -7,17 +7,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import QAQFAnalytics from "../components/analytics/QAQFAnalytics";
 import BatchProcessingPanel from "../components/content/BatchProcessingPanel";
 import { useToast } from "../hooks/use-toast";
-import { Content } from '../../shared/schema';
+
+interface Lesson {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  level: number;
+  status: 'pending' | 'verified' | 'rejected' | 'processing' | 'completed';
+  createddate: string;
+  userid: string;
+  courseid: string;
+  duration?: string;
+}
 
 const AnalyticsPage: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateRange, setDateRange] = useState("all-time");
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   
-  // Get content data
-  const { data: contents = [], isLoading: isLoadingContents, refetch } = useQuery<Content[]>({
-    queryKey: ['/api/content'],
+  // Get lessons data
+  const { data: lessons = [], isLoading: isLoadingLessons, refetch } = useQuery<Lesson[]>({
+    queryKey: ['/api/lessons'],
   });
+  
+  // Fetch courses on component mount
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        if (!res.ok) throw new Error('Failed to fetch courses');
+        const data = await res.json();
+        setCourses(Array.isArray(data) ? data : []);
+      } catch (err) {
+        // Optionally show a toast
+      }
+    };
+    fetchCourses();
+  }, []);
   
   // Handle content update (e.g., after batch processing)
   const handleContentUpdate = () => {
@@ -38,9 +67,20 @@ const AnalyticsPage: React.FC = () => {
     { value: "this-year", label: "This Year" }
   ];
   
-  // Filter content by date range
-  const getFilteredContents = (): Content[] => {
-    if (dateRange === "all-time") return contents;
+  // Filter content by date range and course
+  const getFilteredContents = (): Lesson[] => {
+    let filteredLessons = lessons;
+    
+    // Filter by selected course
+    if (selectedCourse) {
+      filteredLessons = lessons.filter(lesson => lesson.courseid === selectedCourse);
+    } else {
+      // If no course selected, return empty array (show zero)
+      return [];
+    }
+    
+    // Filter by date range
+    if (dateRange === "all-time") return filteredLessons;
     
     const now = new Date();
     const filterDate = new Date();
@@ -62,11 +102,11 @@ const AnalyticsPage: React.FC = () => {
         filterDate.setFullYear(now.getFullYear(), 0, 1);
         break;
       default:
-        return contents;
+        return filteredLessons;
     }
     
-    return contents.filter(content => 
-      new Date(content.createdAt) >= filterDate
+    return filteredLessons.filter(lesson => 
+      new Date(lesson.createddate) >= filterDate
     );
   };
 
@@ -75,10 +115,10 @@ const AnalyticsPage: React.FC = () => {
     const filteredData = getFilteredContents();
     return {
       totalContent: filteredData.length,
-      verifiedContent: filteredData.filter(c => c.verificationStatus === 'verified').length,
-      pendingContent: filteredData.filter(c => c.verificationStatus === 'pending').length,
-      contentByLevel: filteredData.reduce((acc, content) => {
-        acc[content.qaqfLevel] = (acc[content.qaqfLevel] || 0) + 1;
+      verifiedContent: filteredData.filter(c => c.status === 'verified').length,
+      pendingContent: filteredData.filter(c => c.status === 'pending').length,
+      contentByLevel: filteredData.reduce((acc, lesson) => {
+        acc[lesson.level] = (acc[lesson.level] || 0) + 1;
         return acc;
       }, {} as Record<number, number>)
     };
@@ -86,7 +126,7 @@ const AnalyticsPage: React.FC = () => {
 
   const metrics = calculateMetrics();
 
-  if (isLoadingContents) {
+  if (isLoadingLessons) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -106,6 +146,18 @@ const AnalyticsPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
         <div className="flex items-center gap-4">
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+            <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Select a course" />
+            </SelectTrigger>
+            <SelectContent>
+              {courses.map(course => (
+                <SelectItem key={course.id} value={course.id}>
+                  {course.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Select date range" />
@@ -215,10 +267,7 @@ const AnalyticsPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="batch-processing">
-          <BatchProcessingPanel 
-            contents={getFilteredContents()} 
-            onContentUpdate={handleContentUpdate} 
-          />
+          <BatchProcessingPanel />
         </TabsContent>
       </Tabs>
     </div>
