@@ -599,7 +599,7 @@ const UnifiedContentGenerator: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6">
+    <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6 h-screen overflow-hidden">
       <div className="flex items-center space-x-3 mb-6">
         <GraduationCap className="h-8 w-8 text-primary" />
         <div>

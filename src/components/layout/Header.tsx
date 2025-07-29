@@ -78,10 +78,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" asChild>
+  <Link to="/login" className="flex items-center">
+    <LogOut className="mr-2 h-4 w-4" />
+    Log out
+  </Link>
+</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

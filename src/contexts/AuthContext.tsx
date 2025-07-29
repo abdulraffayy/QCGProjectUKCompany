@@ -26,23 +26,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Load user and token from localStorage on app start
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-
-    if (storedToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setToken(storedToken);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user data:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+  // Function to validate token with backend
+  const validateToken = async (storedToken: string) => {
+    try {
+      const response = await fetch('/api/auth/validate-token', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.user;
       }
+      return null;
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      return null;
     }
-    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      // Load user and token from localStorage on app start
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+
+      if (storedToken && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          
+          // Validate token with backend
+          const validatedUser = await validateToken(storedToken);
+          
+          if (validatedUser) {
+            // Token is valid, set the user and token
+            setToken(storedToken);
+            setUser(validatedUser);
+          } else {
+            // Token is invalid, clear stored data
+            console.log('Stored token is invalid, clearing auth data');
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+          }
+        } catch (error) {
+          console.error("Failed to parse stored user data:", error);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = (newToken: string, newUser: User) => {

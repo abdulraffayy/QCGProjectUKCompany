@@ -42,38 +42,41 @@ function AuthenticatedRoutes() {
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="/" component={() => <Redirect to="/login" />} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
-        <Route>{() => <Redirect to="/login" />}</Route>
+        <Route path="/" component={() => <Redirect to="/login" />} />
       </Switch>
     );
   }
-
   return (
-    <Layout>
-      <Switch>
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/content-generator" component={UnifiedContentGenerator} />
-        <Route path="/ai-content-studio" component={UnifiedContentGenerator} />
-        <Route path="/processing-center" component={UnifiedContentGenerator} />
-        <Route path="/video-generator" component={VideoGenerator} />
-        <Route path="/my-content" component={MyContent} />
-        <Route path="/lesson-plan" component={LessonPlan} />
-        <Route path="/study-material" component={StudyMaterial} />
-        <Route path="/qaqf-framework" component={QAQFFramework} />
-        <Route path="/qaqf-admin" component={QAQFAdmin} />
-        <Route path="/verification" component={Verification} />
-        <Route path="/moderation" component={Moderation} />
-        <Route path="/assessment" component={Assessment} />
-        <Route path="/assessment-in-progress" component={AssessmentInProgress} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/settings" component={Settings} />
-        
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Layout>
+        <Switch>
+          <Route path="/" component={() => <Redirect to="/dashboard" />} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/content-generator" component={UnifiedContentGenerator} />
+          <Route path="/ai-content-studio" component={UnifiedContentGenerator} />
+          <Route path="/processing-center" component={UnifiedContentGenerator} />
+          <Route path="/video-generator" component={VideoGenerator} />
+          <Route path="/my-content" component={MyContent} />
+          <Route path="/lesson-plan" component={LessonPlan} />
+          <Route path="/study-material" component={StudyMaterial} />
+          <Route path="/qaqf-framework" component={QAQFFramework} />
+          <Route path="/qaqf-admin" component={QAQFAdmin} />
+          <Route path="/verification" component={Verification} />
+          <Route path="/moderation" component={Moderation} />
+          <Route path="/assessment" component={Assessment} />
+          <Route path="/assessment-in-progress" component={AssessmentInProgress} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/settings" component={Settings} />
+          <Route component={NotFound} />
+        </Switch>
+      </Layout>
+    </Switch>
   );
 }
 function App() {
