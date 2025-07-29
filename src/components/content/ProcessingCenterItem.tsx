@@ -50,7 +50,7 @@ interface ProcessingCenterItemProps {
     id: string;
     title: string;
     type: string;
-    status: "processing" | "draft" | "failed" | "pending" | "completed";
+    status: "verified" | "unverified" | "rejected";
     progress?: number;
     createdAt: string;
     createdBy: string;
@@ -59,6 +59,7 @@ interface ProcessingCenterItemProps {
     estimatedTime?: string;
     content?: string;
     metadata?: any;
+    verificationStatus?: "verified" | "unverified" | "rejected"; // Add verification status
   };
   lessons?: any[];
   onAction?: (action: string, itemId: string) => void;
@@ -95,6 +96,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [aiReference, setAiReference] = useState("");
   const [aiGenerateLoading, setAiGenerateLoading] = useState(false);
 
+  // Check localStorage on mount to see if AI Generate should be disabled for this item
+  useEffect(() => {
+    const isDisabled = localStorage.getItem(`processingCenterAiGenerateDisabled_${item.id}`) === 'true';
+    if (isDisabled) {
+      setAiGenerateLoading(true); // This will keep the button disabled
+    }
+  }, [item.id]);
+
   // Add state for card height (for resizing)
   const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -122,14 +131,12 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "processing":
-        return <Clock className="h-4 w-4 text-blue-600 animate-pulse" />;
-      case "draft":
+      case "verified":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "failed":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case "pending":
+      case "unverified":
         return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <Clock className="h-4 w-4 text-gray-600" />;
     }
@@ -137,16 +144,60 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "processing":
-        return "";
-      case "completed":
-        return "bg-gray-100 text-gray-800";
-      case "failed":
-        return "bg-red-100 text-red-800";
-      case "pending":
+      case "verified":
+        return "bg-green-100 text-green-800";
+      case "unverified":
         return "bg-yellow-100 text-yellow-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Add verification status functions
+  const getVerificationStatusIcon = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case "unverified":
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      case "pending":
+        return <Clock className="h-4 w-4 text-blue-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getVerificationStatusColor = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "unverified":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "pending":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getVerificationStatusText = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return "Verified";
+      case "rejected":
+        return "Rejected";
+      case "unverified":
+        return "Unverified";
+      case "pending":
+        return "Pending";
+      default:
+        return "Pending";
     }
   };
 
@@ -190,7 +241,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       });
       if (!res.ok) throw new Error("Failed to update status");
       setStatus(
-        newStatus as "processing" | "draft" | "failed" | "pending" | "completed"
+        newStatus as "verified" | "unverified" | "rejected"
       );
       // Notify parent component about status change
       if (onAction) {
@@ -290,18 +341,28 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   };
 
   const handleAiGenerate = async () => {
+    // Prevent multiple simultaneous calls - this check happens immediately
+    if (aiGenerateLoading) {
+      return;
+    }
+    
+    // Set loading state immediately to disable button
     setAiGenerateLoading(true);
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         alert('User token is missing!');
+        setAiGenerateLoading(false);
         return;
       }
+      
       const generation_type = editableData.type || "quiz";
       const material = aiReference || "";
       const qaqf_level = String(editableData.qaqfLevel || "1");
       const subject = editableData.title || "";
       const userquery = aiQuery || "";
+      
       const response = await fetch('/api/ai/assessment-content', {
         method: 'POST',
         headers: {
@@ -316,19 +377,27 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           userquery,
         }),
       });
-      if (!response.ok) throw new Error('Failed to generate content');
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate content');
+      }
+      
       const data = await response.json();
+      
       if (data.generated_content && data.generated_content.length > 0) {
         setEditableData(prev => ({ ...prev, description: data.generated_content[0] }));
+        // Permanently disable the button after successful generation
+        localStorage.setItem(`processingCenterAiGenerateDisabled_${item.id}`, 'true');
       } else {
         setEditableData(prev => ({ ...prev, description: "No content generated." }));
       }
     } catch (error) {
       console.error('AI Generate error:', error);
       setEditableData(prev => ({ ...prev, description: "AI generation failed." }));
-    } finally {
+      // Re-enable button only on error
       setAiGenerateLoading(false);
     }
+    // Don't set aiGenerateLoading to false on success - keep it disabled permanently
   };
 
   // useEffect to handle deletion state
@@ -373,12 +442,19 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       {formatDate(item.createdAt)}
                     </span>
                     {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
+                    {/* Add verification status badge */}
+                
                   </div>
                 </CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">
-             
+            {item.verificationStatus && (
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getVerificationStatusColor(item.verificationStatus)}`}>
+                        {getVerificationStatusIcon(item.verificationStatus)}
+                        <span>{getVerificationStatusText(item.verificationStatus)}</span>
+                      </div>
+                    )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -403,7 +479,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             </div>
           </div>
 
-          {status === "processing" && item.progress !== undefined && (
+          {status === "unverified" && item.progress !== undefined && (
             <div className="mt-3">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Processing...</span>
@@ -477,6 +553,18 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       <div>
                         <b>Course ID:</b>{" "}
                         {(item.metadata && item.metadata.courseid) || "N/A"}
+                      </div>
+                      {/* Add verification status display */}
+                      <div>
+                        <b>Verification Status:</b>{" "}
+                        {item.verificationStatus ? (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getVerificationStatusColor(item.verificationStatus)}`}>
+                            {getVerificationStatusIcon(item.verificationStatus)}
+                            {getVerificationStatusText(item.verificationStatus)}
+                          </span>
+                        ) : (
+                          "Not verified"
+                        )}
                       </div>
                       <div>
                         <b>Description:</b>

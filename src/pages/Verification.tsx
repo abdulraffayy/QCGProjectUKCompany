@@ -301,16 +301,15 @@ const VerificationPage: React.FC = () => {
                         <Button variant="outline">British Standard</Button>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">QAQF Level</span>
-                          <Select>
-                            <SelectTrigger className="w-28">
-                              <SelectValue placeholder="1–3" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1">1</SelectItem>
-                              <SelectItem value="2">2</SelectItem>
-                              <SelectItem value="3">3</SelectItem>
-                            </SelectContent>
-                          </Select>
+                           <select
+                className="border rounded px-2 py-1 flex-1"
+                value={selectedContent.qaqfLevel}
+                onChange={e => (selectedContent.qaqfLevel = Number(e.target.value))}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                ))}
+              </select>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Status</span>

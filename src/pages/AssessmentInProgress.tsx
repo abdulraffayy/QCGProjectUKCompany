@@ -63,6 +63,7 @@ const AssessmentInProgressPage: React.FC = () => {
   // State for AI Generate inputs
   const [aiQuery, setAiQuery] = useState("");
   const [aiReference, setAiReference] = useState("");
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
 
   // Fetch courses on component mount
   useEffect(() => {
@@ -350,6 +351,9 @@ const AssessmentInProgressPage: React.FC = () => {
   };
 
   const handleAIGenerate = async () => {
+    setIsAIGenerating(true);
+    // Set loading message in editor
+    setEditLessonForm(f => ({ ...f, description: "Generating content..." }));
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -391,6 +395,8 @@ const AssessmentInProgressPage: React.FC = () => {
     } catch (error) {
       console.error('AI Generate error:', error);
       setEditLessonForm(f => ({ ...f, description: "AI generation failed." }));
+    } finally {
+      setIsAIGenerating(false);
     }
   };
 
@@ -715,7 +721,9 @@ const AssessmentInProgressPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditLesson}>Save</Button>
-            <Button variant="default" onClick={handleAIGenerate}>AI Generate</Button>
+            <Button variant="default" onClick={handleAIGenerate} disabled={isAIGenerating}>
+              {isAIGenerating ? "Generating..." : "AI Generate"}
+            </Button>
             <DialogClose asChild>
               <Button variant="ghost">Cancel</Button>
             </DialogClose>

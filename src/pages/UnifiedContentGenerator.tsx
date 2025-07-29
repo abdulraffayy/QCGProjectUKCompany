@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import {
   Loader2, BookOpen, FileText, Users, Target, CheckCircle,
   GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
-  Upload, Link, FileImage, Globe, Scan, Eye
+  Upload, Link, FileImage, Globe, Scan, Eye, User, Clock, X, XCircle, AlertTriangle
 } from 'lucide-react';
 import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
 import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
@@ -80,7 +80,7 @@ interface GeneratedItem {
   content?: string;
   createdAt: string;
   createdBy: string;
-  status: 'processing' | 'completed' | 'failed' | 'pending';
+  status: 'verified' | 'unverified' | 'rejected';
   progress?: number;
   estimatedTime?: string;
   metadata?: any;
@@ -107,6 +107,7 @@ const UnifiedContentGenerator: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
   const [openLessonId, setOpenLessonId] = useState<string | number | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Fetch QAQF data dynamically
   const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
@@ -180,52 +181,52 @@ const UnifiedContentGenerator: React.FC = () => {
         {
           id: '1',
           type: 'content',
-          title: 'Sample Processing Content',
-          description: 'This is a sample content that is currently processing',
+          title: 'Sample Unverified Content',
+          description: 'This is a sample content that is currently unverified',
           qaqfLevel: 1,
           qaqfComplianceScore: 85,
           content: 'Sample content for testing',
           createdAt: new Date().toISOString(),
           createdBy: 'User',
-          status: 'processing',
+          status: 'unverified',
           progress: 45,
           estimatedTime: '2 minutes',
         },
         {
           id: '2',
           type: 'course',
-          title: 'Sample Completed Course',
-          description: 'This is a sample course that has been completed',
+          title: 'Sample Verified Course',
+          description: 'This is a sample course that has been verified',
           qaqfLevel: 2,
           qaqfComplianceScore: 92,
           content: 'Sample course content for testing',
           createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
           createdBy: 'User',
-          status: 'completed',
+          status: 'verified',
         },
         {
           id: '3',
           type: 'content',
-          title: 'Sample Failed Content',
-          description: 'This is a sample content that failed to process',
+          title: 'Sample Rejected Content',
+          description: 'This is a sample content that was rejected',
           qaqfLevel: 1,
           qaqfComplianceScore: 0,
-          content: 'Sample failed content for testing',
+          content: 'Sample rejected content for testing',
           createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
           createdBy: 'User',
-          status: 'failed',
+          status: 'rejected',
         },
         {
           id: '4',
           type: 'course',
-          title: 'Sample Pending Course',
-          description: 'This is a sample course that is pending',
+          title: 'Sample Unverified Course',
+          description: 'This is a sample course that is unverified',
           qaqfLevel: 3,
           qaqfComplianceScore: 78,
-          content: 'Sample pending course content for testing',
+          content: 'Sample unverified course content for testing',
           createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
           createdBy: 'User',
-          status: 'pending',
+          status: 'unverified',
         },
       ];
       setGeneratedItems(sampleItems);
@@ -393,7 +394,7 @@ const UnifiedContentGenerator: React.FC = () => {
       content: typeof lessonPlanData === 'string' ? lessonPlanData : JSON.stringify(lessonPlanData),
       createdAt: new Date().toISOString(),
       createdBy: 'User',
-      status: 'completed',
+      status: 'unverified',
     };
     setGeneratedItems(prev => [lessonPlanItem, ...prev]);
     setShowLessonPlan(false);
@@ -440,7 +441,7 @@ const UnifiedContentGenerator: React.FC = () => {
           : (data.generated_content || data.content || JSON.stringify(data)),
         createdAt: new Date().toISOString(),
         createdBy: 'User',
-        status: 'completed',
+        status: 'unverified',
       };
       setGeneratedItems(prev => [newItem, ...prev]);
       setActiveTab('processing');
@@ -509,7 +510,7 @@ const UnifiedContentGenerator: React.FC = () => {
   const approveItem = (id: string) => {
     setGeneratedItems(prev =>
       prev.map(item =>
-        item.id === id ? { ...item, status: 'completed' } : item
+        item.id === id ? { ...item, status: 'verified' } : item
       )
     );
     toast({ title: "Content approved and ready for deployment" });
@@ -528,6 +529,64 @@ const UnifiedContentGenerator: React.FC = () => {
   const handleApplyCourse = () => {
     // TODO: Implement what should happen when Apply is clicked
     console.log("Applied course:", selectedCourse);
+  };
+
+  // Helper functions for verification status
+  const getVerificationStatusIcon = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case "unverified":
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      case "pending":
+        return <Clock className="h-4 w-4 text-blue-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getVerificationStatusColor = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "unverified":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "pending":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getVerificationStatusText = (verificationStatus: string) => {
+    switch (verificationStatus) {
+      case "verified":
+        return "Verified";
+      case "rejected":
+        return "Rejected";
+      case "unverified":
+        return "Unverified";
+      case "pending":
+        return "Pending";
+      default:
+        return "Pending";
+    }
+  };
+
+  const toggleExpanded = (itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
 
   if (levelsLoading || characteristicsLoading) {
@@ -1262,10 +1321,9 @@ const UnifiedContentGenerator: React.FC = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="failed">Failed</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="verified">Verified</SelectItem>
+                          <SelectItem value="unverified">Unverified</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1327,6 +1385,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           estimatedTime: undefined,
                           content: JSON.stringify(lesson, null, 2), // for Content Preview
                           metadata: lesson,
+                          verificationStatus: lesson.status || 'pending', // Add verification status
                         }}
                         onAction={async (action, itemId) => {
                           if (action === 'deleted') {
@@ -1360,6 +1419,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           estimatedTime: item.estimatedTime,
                           content: item.content,
                           metadata: item.metadata,
+                          verificationStatus: item.status || 'pending', // Add verification status
                         }}
                         onAction={async (action, itemId) => {
                           if (action === 'deleted') {
@@ -1402,9 +1462,9 @@ const UnifiedContentGenerator: React.FC = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-yellow-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'processing').length}
+                          {getFilteredAndSortedItems().filter(i => i.status === 'unverified').length}
                         </p>
-                        <p className="text-sm text-gray-600">Processing</p>
+                        <p className="text-sm text-gray-600">Unverified</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-gray-600">
@@ -1432,10 +1492,10 @@ const UnifiedContentGenerator: React.FC = () => {
             <CardContent>
               {(() => {
                 // Get completed items from generated items
-                const completedGeneratedItems = generatedItems.filter(item => item.status === 'completed');
+                const completedGeneratedItems = generatedItems.filter(item => item.status === 'verified');
                 
                 // Get completed items from course lessons
-                const completedCourseLessons = courseLessons.filter(lesson => lesson.status === 'completed');
+                const completedCourseLessons = courseLessons.filter(lesson => lesson.status === 'verified');
                 
                 // Combine all completed items
                 const allCompletedItems = [
@@ -1493,25 +1553,131 @@ const UnifiedContentGenerator: React.FC = () => {
                     
                     <div className="space-y-4">
                       {allCompletedItems.map((item) => (
-                        <ProcessingCenterItem
+                        <Card
                           key={item.id}
-                          item={item}
-                          onAction={async (action, itemId) => {
-                            if (action === 'deleted') {
-                              // Remove from both lists
-                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                              setCourseLessons(prev => prev.filter(lesson => lesson.id !== itemId));
-                            } else if (action === 'status_changed') {
-                              // Refresh the data
-                              setGeneratedItems(prev => [...prev]);
-                              await fetchLessons();
-                            } else if (action === 'updated') {
-                              // Refresh both lists
-                              setGeneratedItems(prev => [...prev]);
-                              await fetchLessons();
-                            }
-                          }}
-                        />
+                          className="transition-all hover:shadow-md w-full"
+                          style={{ minHeight: expandedItems.has(item.id) ? 'auto' : '120px', width: '100%' }}
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <FileText className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <CardTitle className="text-lg truncate">{item.title}</CardTitle>
+                                  <CardDescription className="mt-1">
+                                    <div className="flex items-center gap-4 text-xs">
+                                      <span className="flex items-center gap-1">
+                                        <User className="h-3 w-3" />
+                                        {item.createdBy}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {item.createdAt}
+                                      </span>
+                                      {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
+                                    </div>
+                                  </CardDescription>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>Verified</span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleExpanded(item.id)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="ml-1"
+                                  aria-label="Close"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardHeader>
+
+                          {expandedItems.has(item.id) && (
+                            <CardContent className="pt-0 border-t">
+                              <div className="space-y-4">
+                                {item.content && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h4 className="font-medium">Content Preview</h4>
+                                    </div>
+                                    
+                                    <div className="bg-white p-3 rounded-md" style={{ overflow: 'visible', maxHeight: 'none' }}>
+                                      <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1" style={{ overflow: 'visible', maxHeight: 'none' }}>
+                                        <div>
+                                          <b>Title:</b>{" "}
+                                          {item.title ||
+                                            (item.metadata && item.metadata.title) ||
+                                            "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>Type:</b>{" "}
+                                          {item.type ||
+                                            (item.metadata && item.metadata.type) ||
+                                            "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>Duration:</b>{" "}
+                                          {(item.metadata && item.metadata.duration) || "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>QAQF Level:</b>{" "}
+                                          {typeof item.qaqfLevel === "number"
+                                            ? item.qaqfLevel
+                                            : typeof (item as any).qaqflevel === "number"
+                                            ? (item as any).qaqflevel
+                                            : "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>User ID:</b>{" "}
+                                          {(item.metadata && item.metadata.userid) || "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>Course ID:</b>{" "}
+                                          {(item.metadata && item.metadata.courseid) || "N/A"}
+                                        </div>
+                                        <div>
+                                          <b>Verification Status:</b>{" "}
+                                          {item.status ? (
+                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getVerificationStatusColor(item.status)}`}>
+                                              {getVerificationStatusIcon(item.status)}
+                                              {getVerificationStatusText(item.status)}
+                                            </span>
+                                          ) : (
+                                            "Not verified"
+                                          )}
+                                        </div>
+                                        <div>
+                                          <b>Description:</b>
+                                          <div 
+                                            className="mt-2 p-3 bg-white border rounded-md"
+                                            dangerouslySetInnerHTML={{ 
+                                              __html: item.description || (item.metadata && item.metadata.description) || "" 
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          )}
+                        </Card>
                       ))}
                     </div>
                   </div>

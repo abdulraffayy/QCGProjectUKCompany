@@ -133,6 +133,11 @@ const LessonPlanPage: React.FC = () => {
   const [refreshWeeks, setRefreshWeeks] = useState<number>(0);
   const [refreshModules, setRefreshModules] = useState<number>(0);
 
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  // Track permanently disabled buttons after first click
+  const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
+
   // For intra-week drag and drop - REMOVED since we only allow left-to-right dragging
 
   // Add Module Dialog state
@@ -1463,6 +1468,10 @@ const LessonPlanPage: React.FC = () => {
 
   // Add AI Generate handler for right side edit dialog
   const handleRightSideAIGenerate = async () => {
+    // Permanently disable this button after first click
+    setPermanentlyDisabledButtons(prev => new Set([...prev, 'rightSideAI']));
+    setIsAIGenerating(true);
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -1498,26 +1507,36 @@ const LessonPlanPage: React.FC = () => {
     } catch (error) {
       console.error('AI Generate error:', error);
       setRightSideEditForm(f => ({ ...f, description: "AI generation failed." }));
+    } finally {
+      setIsAIGenerating(false);
+      // Button stays permanently disabled - no re-enabling
     }
   };
 
   // Add state for AI query and reference for Add Lesson dialog
   const [newModuleAiQuery, setNewModuleAiQuery] = useState("");
   const [newModuleAiReference, setNewModuleAiReference] = useState("");
+  
 
   // Add AI Generate handler for Add Lesson dialog
   const handleAddModuleAIGenerate = async () => {
+    // Permanently disable this button after first click
+    setPermanentlyDisabledButtons(prev => new Set([...prev, 'addModuleAI']));
+    setIsAIGenerating(true);
+  
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         alert('User token is missing!');
         return;
       }
+  
       const generation_type = newModuleType || "quiz";
       const material = newModuleAiReference || "";
       const qaqf_level = String(newModuleQAQF || "1");
       const subject = newModuleTitle || "";
       const userquery = newModuleAiQuery || "";
+  
       const response = await fetch('/api/ai/assessment-content', {
         method: 'POST',
         headers: {
@@ -1532,18 +1551,23 @@ const LessonPlanPage: React.FC = () => {
           userquery,
         }),
       });
-      if (!response.ok) throw new Error('Failed to generate content');
+  
       const data = await response.json();
-      if (data.generated_content && data.generated_content.length > 0) {
+  
+      if (data.generated_content?.length > 0) {
         setNewModuleDescription(data.generated_content[0]);
       } else {
         setNewModuleDescription("No content generated.");
       }
     } catch (error) {
-      console.error('AI Generate error:', error);
+      console.error("AI Generate error:", error);
       setNewModuleDescription("AI generation failed.");
+    } finally {
+      setIsAIGenerating(false);
+      // Button stays permanently disabled - no re-enabling
     }
   };
+  
 
   return (
     <div className="container max-w-screen-xl mx-auto py-6 px-4">
@@ -2165,7 +2189,22 @@ const LessonPlanPage: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="default" onClick={handleAddModuleAIGenerate}>AI Generate</Button>
+            <Button 
+              variant="default" 
+              onClick={handleAddModuleAIGenerate}
+              disabled={isAIGenerating || permanentlyDisabledButtons.has('addModuleAI')}
+            >
+              {isAIGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Generating...
+                </>
+              ) : permanentlyDisabledButtons.has('addModuleAI') ? (
+                'Already Generated'
+              ) : (
+                'AI Generate'
+              )}
+            </Button>
             <Button variant="outline" onClick={() => handleAddModule({
               title: newModuleTitle,
               type: newModuleType,
@@ -2449,7 +2488,22 @@ const LessonPlanPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleSaveRightSideModuleEdit}>Save</Button>
-            <Button variant="default" onClick={handleRightSideAIGenerate}>AI Generate</Button>
+            <Button 
+              variant="default" 
+              onClick={handleRightSideAIGenerate}
+              disabled={isAIGenerating || permanentlyDisabledButtons.has('rightSideAI')}
+            >
+              {isAIGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Generating...
+                </>
+              ) : permanentlyDisabledButtons.has('rightSideAI') ? (
+                'Already Generated'
+              ) : (
+                'AI Generate'
+              )}
+            </Button>
             <DialogClose asChild>
               <Button variant="ghost">Cancel</Button>
             </DialogClose>
