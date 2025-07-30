@@ -21,7 +21,8 @@ import {
   Library,
   Layout,
   File,
-  Folder
+  Folder,
+  Loader2
 } from 'lucide-react';
 
 interface StudyMaterial {
@@ -116,7 +117,16 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({ title: 'Material created successfully' });
+      toast({
+        title: "Successfully uploaded PDF!",
+        description: (
+          <span className="flex items-center">
+            <FileText className="h-5 w-5 text-green-600 mr-2" />
+            Your PDF has been uploaded and is now available.
+          </span>
+        ),
+        duration: 4000,
+      });
       setShowCreateDialog(false);
       setSelectedFile(null);
     },
@@ -164,8 +174,14 @@ export default function StudyMaterial() {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
       toast({ title: 'Material deleted successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to delete material', variant: 'destructive' });
+    onError: (error: any) => {
+      if (error instanceof Error && error.message === 'Failed to delete material') {
+        toast({ title: 'Material not found or already deleted', variant: 'destructive' });
+      } else if (error?.response?.status === 404) {
+        toast({ title: 'Material not found (404)', variant: 'destructive' });
+      } else {
+        toast({ title: 'Failed to delete material', variant: 'destructive' });
+      }
     },
   });
 
@@ -227,8 +243,14 @@ export default function StudyMaterial() {
       queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
       toast({ title: 'Collection deleted successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to delete collection', variant: 'destructive' });
+    onError: (error: any) => {
+      if (error instanceof Error && error.message === 'Failed to delete collection') {
+        toast({ title: 'Collection not found or already deleted', variant: 'destructive' });
+      } else if (error?.response?.status === 404) {
+        toast({ title: 'Collection not found (404)', variant: 'destructive' });
+      } else {
+        toast({ title: 'Failed to delete collection', variant: 'destructive' });
+      }
     },
   });
 
@@ -287,8 +309,14 @@ export default function StudyMaterial() {
       queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
       toast({ title: 'Template deleted successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to delete template', variant: 'destructive' });
+    onError: (error: any) => {
+      if (error instanceof Error && error.message === 'Failed to delete template') {
+        toast({ title: 'Template not found or already deleted', variant: 'destructive' });
+      } else if (error?.response?.status === 404) {
+        toast({ title: 'Template not found (404)', variant: 'destructive' });
+      } else {
+        toast({ title: 'Failed to delete template', variant: 'destructive' });
+      }
     },
   });
 
@@ -557,10 +585,7 @@ export default function StudyMaterial() {
                           <FileText className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDownload(material)}>
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
+
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(material)}>
@@ -767,7 +792,17 @@ export default function StudyMaterial() {
                 )}
               </div>
               <Button type="submit" className="w-full" disabled={createMaterialMutation.isPending}>
-                {createMaterialMutation.isPending ? 'Uploading...' : 'Upload Material'}
+                {createMaterialMutation.isPending ? (
+                  <span className="flex items-center justify-center">
+                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                    Uploading...
+                  </span>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Upload Material
+                  </>
+                )}
               </Button>
             </form>
           )}
@@ -928,16 +963,7 @@ export default function StudyMaterial() {
                 </>
               )}
               
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                <div>
-                  <Label className="font-semibold">Created</Label>
-                  <p className="mt-1">{new Date(selectedItem.createdAt).toLocaleString()}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold">Updated</Label>
-                  <p className="mt-1">{new Date(selectedItem.updatedAt).toLocaleString()}</p>
-                </div>
-              </div>
+             
             </div>
           )}
         </DialogContent>
@@ -992,10 +1018,10 @@ export default function StudyMaterial() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              {/* <div>
                 <Label htmlFor="file">Replace File (optional)</Label>
                 <Input type="file" onChange={handleFileSelect} accept=".pdf,.doc,.docx,.txt" />
-              </div>
+              </div> */}
               <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
                 {updateMaterialMutation.isPending ? 'Updating...' : 'Update Material'}
               </Button>

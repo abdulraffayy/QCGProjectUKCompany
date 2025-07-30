@@ -37,7 +37,7 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
       // Connect to Python backend authentication
-      const response = await fetch('http://localhost:8000/api/auth/login-json', {
+      const response = await fetch('api/auth/login-json', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

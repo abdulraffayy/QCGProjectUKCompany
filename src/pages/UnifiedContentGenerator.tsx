@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import {
   Loader2, BookOpen, FileText, Users, Target, CheckCircle,
   GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
-  Upload, Link, FileImage, Globe, Scan, Eye, User, Clock, X, XCircle, AlertTriangle
+  Upload, Link, FileImage, Globe, Scan, Eye
 } from 'lucide-react';
 import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
 import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
@@ -80,7 +80,8 @@ interface GeneratedItem {
   content?: string;
   createdAt: string;
   createdBy: string;
-  status: 'verified' | 'unverified' | 'rejected';
+  status: string;
+  verificationStatus?: 'verified' | 'unverified' | 'rejected' | 'pending';
   progress?: number;
   estimatedTime?: string;
   metadata?: any;
@@ -107,7 +108,6 @@ const UnifiedContentGenerator: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
   const [openLessonId, setOpenLessonId] = useState<string | number | null>(null);
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Fetch QAQF data dynamically
   const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
@@ -181,52 +181,52 @@ const UnifiedContentGenerator: React.FC = () => {
         {
           id: '1',
           type: 'content',
-          title: 'Sample Unverified Content',
-          description: 'This is a sample content that is currently unverified',
+          title: 'Sample Processing Content',
+          description: 'This is a sample content that is currently processing',
           qaqfLevel: 1,
           qaqfComplianceScore: 85,
           content: 'Sample content for testing',
           createdAt: new Date().toISOString(),
           createdBy: 'User',
-          status: 'unverified',
+          status: 'processing',
           progress: 45,
           estimatedTime: '2 minutes',
         },
         {
           id: '2',
           type: 'course',
-          title: 'Sample Verified Course',
-          description: 'This is a sample course that has been verified',
+          title: 'Sample Completed Course',
+          description: 'This is a sample course that has been completed',
           qaqfLevel: 2,
           qaqfComplianceScore: 92,
           content: 'Sample course content for testing',
           createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
           createdBy: 'User',
-          status: 'verified',
+          status: 'completed',
         },
         {
           id: '3',
           type: 'content',
-          title: 'Sample Rejected Content',
-          description: 'This is a sample content that was rejected',
+          title: 'Sample Failed Content',
+          description: 'This is a sample content that failed to process',
           qaqfLevel: 1,
           qaqfComplianceScore: 0,
-          content: 'Sample rejected content for testing',
+          content: 'Sample failed content for testing',
           createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
           createdBy: 'User',
-          status: 'rejected',
+          status: 'failed',
         },
         {
           id: '4',
           type: 'course',
-          title: 'Sample Unverified Course',
-          description: 'This is a sample course that is unverified',
+          title: 'Sample Pending Course',
+          description: 'This is a sample course that is pending',
           qaqfLevel: 3,
           qaqfComplianceScore: 78,
-          content: 'Sample unverified course content for testing',
+          content: 'Sample pending course content for testing',
           createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
           createdBy: 'User',
-          status: 'unverified',
+          status: 'pending',
         },
       ];
       setGeneratedItems(sampleItems);
@@ -245,8 +245,11 @@ const UnifiedContentGenerator: React.FC = () => {
         const res = await fetch('/api/courses');
         if (!res.ok) throw new Error('Failed to fetch courses');
         const data = await res.json();
-        setCourses(Array.isArray(data) ? data : []);
+        const coursesData = Array.isArray(data) ? data : [];
+        setCourses(coursesData);
+        console.log("Courses loaded:", coursesData);
       } catch (err) {
+        console.error("Error fetching courses:", err);
         // Optionally show a toast
       }
     };
@@ -269,6 +272,7 @@ const UnifiedContentGenerator: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log("selectedCourse changed to:", selectedCourse);
     fetchLessons();
   }, [selectedCourse]);
 
@@ -394,7 +398,7 @@ const UnifiedContentGenerator: React.FC = () => {
       content: typeof lessonPlanData === 'string' ? lessonPlanData : JSON.stringify(lessonPlanData),
       createdAt: new Date().toISOString(),
       createdBy: 'User',
-      status: 'unverified',
+      status: 'completed',
     };
     setGeneratedItems(prev => [lessonPlanItem, ...prev]);
     setShowLessonPlan(false);
@@ -415,15 +419,36 @@ const UnifiedContentGenerator: React.FC = () => {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+
+      // Get selected PDF information
+      const selectedPDFInfo = materials
+        .filter(pdf => selectedPDFs.includes(pdf.id))
+        .map(pdf => ({
+          id: pdf.id,
+          title: pdf.title || pdf.file_name,
+          file_name: pdf.file_name
+        }));
+
+      // Get selected course information
+      const selectedCourseInfo = courses.find(course => course.id === selectedCourse);
+
+      const requestData = {
+        ...data,
+        qaqf_characteristics: qaqfCharacteristics?.filter(c =>
+          data.selected_characteristics.includes(c.id)
+        ).map(c => c.name) || [],
+        selected_pdfs: selectedPDFInfo,
+        
+        selected_course_id: selectedCourse,
+        
+      };
+
+      console.log("API Request Data:", requestData);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          ...data,
-          qaqf_characteristics: qaqfCharacteristics?.filter(c =>
-            data.selected_characteristics.includes(c.id)
-          ).map(c => c.name) || []
-        }),
+        body: JSON.stringify(requestData),
       });
       if (!response.ok) throw new Error(`Failed to generate ${data.generation_type}`);
       return response.json();
@@ -441,7 +466,7 @@ const UnifiedContentGenerator: React.FC = () => {
           : (data.generated_content || data.content || JSON.stringify(data)),
         createdAt: new Date().toISOString(),
         createdBy: 'User',
-        status: 'unverified',
+        status: 'completed',
       };
       setGeneratedItems(prev => [newItem, ...prev]);
       setActiveTab('processing');
@@ -470,15 +495,19 @@ const UnifiedContentGenerator: React.FC = () => {
         file_name: pdf.file_name
       }));
 
+    // Get selected course information
+    const selectedCourseInfo = courses.find(course => String(course.id) === selectedCourse);
+
     const dataForLog = {
       ...data,
       selected_characteristics: selectedNames,
       selected_pdfs: selectedPDFInfo,
+      selected_course: selectedCourseInfo,
     };
     setIsGenerating(true);
     console.log("Submit button clicked");
-    console.log("Current form data:", dataForLog);
-    console.log("Selected PDFs:", selectedPDFInfo);
+ 
+    console.log("Selected Course Name:", selectedCourseInfo?.title);
     generationMutation.mutate(data);
     setTimeout(() => setIsGenerating(false), 3000);
   };
@@ -510,7 +539,7 @@ const UnifiedContentGenerator: React.FC = () => {
   const approveItem = (id: string) => {
     setGeneratedItems(prev =>
       prev.map(item =>
-        item.id === id ? { ...item, status: 'verified' } : item
+        item.id === id ? { ...item, status: 'completed' } : item
       )
     );
     toast({ title: "Content approved and ready for deployment" });
@@ -531,64 +560,6 @@ const UnifiedContentGenerator: React.FC = () => {
     console.log("Applied course:", selectedCourse);
   };
 
-  // Helper functions for verification status
-  const getVerificationStatusIcon = (verificationStatus: string) => {
-    switch (verificationStatus) {
-      case "verified":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "rejected":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case "unverified":
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-blue-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getVerificationStatusColor = (verificationStatus: string) => {
-    switch (verificationStatus) {
-      case "verified":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "unverified":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "pending":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getVerificationStatusText = (verificationStatus: string) => {
-    switch (verificationStatus) {
-      case "verified":
-        return "Verified";
-      case "rejected":
-        return "Rejected";
-      case "unverified":
-        return "Unverified";
-      case "pending":
-        return "Pending";
-      default:
-        return "Pending";
-    }
-  };
-
-  const toggleExpanded = (itemId: string) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
-
   if (levelsLoading || characteristicsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -599,7 +570,7 @@ const UnifiedContentGenerator: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6 h-screen overflow-hidden">
+    <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6">
       <div className="flex items-center space-x-3 mb-6">
         <GraduationCap className="h-8 w-8 text-primary" />
         <div>
@@ -879,11 +850,22 @@ const UnifiedContentGenerator: React.FC = () => {
                             type="checkbox"
                             checked={selectedPDFs.includes(pdf.id)}
                             onChange={e => {
-                              setSelectedPDFs(prev =>
-                                e.target.checked
-                                  ? [...prev, pdf.id]
-                                  : prev.filter(id => id !== pdf.id)
-                              );
+                              const newSelectedPDFs = e.target.checked
+                                ? [...selectedPDFs, pdf.id]
+                                : selectedPDFs.filter(id => id !== pdf.id);
+                              setSelectedPDFs(newSelectedPDFs);
+                              
+                              // Console logging for PDF selection
+                              const selectedPDFInfo = materials
+                                .filter(pdfItem => newSelectedPDFs.includes(pdfItem.id))
+                                .map(pdfItem => ({
+                                  id: pdfItem.id,
+                                  title: pdfItem.title || pdfItem.file_name,
+                                  file_name: pdfItem.file_name
+                                }));
+                              console.log("PDF Selection Changed:", selectedPDFInfo);
+                              console.log("Selected PDF IDs:", newSelectedPDFs);
+                              console.log("Selected PDF Names:", selectedPDFInfo.map(p => p.title));
                             }}
                             className="mr-2"
                             style={{ width: 18, height: 18 }}
@@ -1324,6 +1306,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           <SelectItem value="verified">Verified</SelectItem>
                           <SelectItem value="unverified">Unverified</SelectItem>
                           <SelectItem value="rejected">Rejected</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1342,7 +1325,23 @@ const UnifiedContentGenerator: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
-                      <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                      <Select value={selectedCourse} onValueChange={(value) => {
+                        setSelectedCourse(value);
+                        console.log("Raw selected value:", value);
+                        console.log("Available courses:", courses);
+                        
+                        // Try different ways to find the course
+                        const selectedCourseInfo = courses.find(course => {
+                          const courseId = String(course.id);
+                          const selectedValue = String(value);
+                          return courseId === selectedValue;
+                        });
+                        
+                        console.log("Course selected:", selectedCourseInfo);
+                        console.log("Selected Course ID:", value);
+                        console.log("Selected Course Name:", selectedCourseInfo?.title);
+                        console.log("Selected Course Full Object:", selectedCourseInfo);
+                      }}>
                         <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                           <SelectValue placeholder="Select a course" />
                         </SelectTrigger>
@@ -1385,7 +1384,6 @@ const UnifiedContentGenerator: React.FC = () => {
                           estimatedTime: undefined,
                           content: JSON.stringify(lesson, null, 2), // for Content Preview
                           metadata: lesson,
-                          verificationStatus: lesson.status || 'pending', // Add verification status
                         }}
                         onAction={async (action, itemId) => {
                           if (action === 'deleted') {
@@ -1410,7 +1408,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           id: item.id,
                           title: item.title,
                           type: item.type,
-                          status: item.status,
+                          status: (item.status as any) as 'verified' | 'unverified' | 'rejected' | 'pending',
                           createdAt: item.createdAt,
                           createdBy: item.createdBy,
                           description: item.description,
@@ -1419,7 +1417,6 @@ const UnifiedContentGenerator: React.FC = () => {
                           estimatedTime: item.estimatedTime,
                           content: item.content,
                           metadata: item.metadata,
-                          verificationStatus: item.status || 'pending', // Add verification status
                         }}
                         onAction={async (action, itemId) => {
                           if (action === 'deleted') {
@@ -1462,9 +1459,9 @@ const UnifiedContentGenerator: React.FC = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-yellow-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'unverified').length}
+                          {getFilteredAndSortedItems().filter(i => i.status === 'processing').length}
                         </p>
-                        <p className="text-sm text-gray-600">Unverified</p>
+                        <p className="text-sm text-gray-600">Processing</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-gray-600">
@@ -1491,19 +1488,24 @@ const UnifiedContentGenerator: React.FC = () => {
             </CardHeader>
             <CardContent>
               {(() => {
-                // Get completed items from generated items
-                const completedGeneratedItems = generatedItems.filter(item => item.status === 'verified');
+                // Get verified items from generated items
+                const verifiedGeneratedItems = generatedItems.filter(item => 
+                  item.status === 'verified' || item.verificationStatus === 'verified'
+                );
                 
-                // Get completed items from course lessons
-                const completedCourseLessons = courseLessons.filter(lesson => lesson.status === 'verified');
+                // Get verified items from course lessons
+                const verifiedCourseLessons = courseLessons.filter(lesson => 
+                  lesson.status === 'verified' || lesson.verificationStatus === 'verified'
+                );
                 
-                // Combine all completed items
-                const allCompletedItems = [
-                  ...completedGeneratedItems.map(item => ({
+                // Combine all verified items
+                const allVerifiedItems = [
+                  ...verifiedGeneratedItems.map(item => ({
                     id: item.id,
                     title: item.title,
                     type: item.type,
-                    status: item.status,
+                    status: ((item.status === 'verified' || item.verificationStatus === 'verified') ? 'verified' : 'pending') as 'verified' | 'pending',
+                    verificationStatus: (item.verificationStatus || (item.status === 'verified' ? 'verified' : 'pending')) as 'verified' | 'pending',
                     createdAt: item.createdAt,
                     createdBy: item.createdBy,
                     description: item.description,
@@ -1513,11 +1515,12 @@ const UnifiedContentGenerator: React.FC = () => {
                     content: item.content,
                     metadata: item.metadata,
                   })),
-                  ...completedCourseLessons.map(lesson => ({
+                  ...verifiedCourseLessons.map(lesson => ({
                     id: lesson.id,
                     title: lesson.title,
                     type: lesson.type || '',
-                    status: lesson.status || 'completed',
+                    status: ((lesson.status === 'verified' || lesson.verificationStatus === 'verified') ? 'verified' : 'pending') as 'verified' | 'pending',
+                    verificationStatus: (lesson.verificationStatus || (lesson.status === 'verified' ? 'verified' : 'pending')) as 'verified' | 'pending',
                     createdAt: lesson.createddate || '',
                     createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
                     description: lesson.description || '',
@@ -1529,13 +1532,13 @@ const UnifiedContentGenerator: React.FC = () => {
                   }))
                 ];
 
-                if (allCompletedItems.length === 0) {
+                if (allVerifiedItems.length === 0) {
                   return (
                     <div className="text-center py-12">
                       <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-lg font-medium text-muted-foreground">No completed content yet</p>
+                      <p className="text-lg font-medium text-muted-foreground">No verified content yet</p>
                       <p className="text-sm text-muted-foreground">
-                        Complete items in the Processing Center to see them here in your Module Library.
+                        Verify items in the Processing Center to see them here in your Module Library.
                       </p>
                     </div>
                   );
@@ -1546,138 +1549,32 @@ const UnifiedContentGenerator: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">Completed Items ({allCompletedItems.length})</span>
+                        <span className="font-medium">Verified Items ({allVerifiedItems.length})</span>
                       </div>
                       
                     </div>
                     
                     <div className="space-y-4">
-                      {allCompletedItems.map((item) => (
-                        <Card
+                      {allVerifiedItems.map((item) => (
+                        <ProcessingCenterItem
                           key={item.id}
-                          className="transition-all hover:shadow-md w-full"
-                          style={{ minHeight: expandedItems.has(item.id) ? 'auto' : '120px', width: '100%' }}
-                        >
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-3 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <FileText className="h-4 w-4 text-blue-600" />
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <CardTitle className="text-lg truncate">{item.title}</CardTitle>
-                                  <CardDescription className="mt-1">
-                                    <div className="flex items-center gap-4 text-xs">
-                                      <span className="flex items-center gap-1">
-                                        <User className="h-3 w-3" />
-                                        {item.createdBy}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3" />
-                                        {item.createdAt}
-                                      </span>
-                                      {item.qaqfLevel && <span>Level {item.qaqfLevel}</span>}
-                                    </div>
-                                  </CardDescription>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
-                                  <CheckCircle className="h-3 w-3" />
-                                  <span>Verified</span>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleExpanded(item.id)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="ml-1"
-                                  aria-label="Close"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardHeader>
-
-                          {expandedItems.has(item.id) && (
-                            <CardContent className="pt-0 border-t">
-                              <div className="space-y-4">
-                                {item.content && (
-                                  <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <h4 className="font-medium">Content Preview</h4>
-                                    </div>
-                                    
-                                    <div className="bg-white p-3 rounded-md" style={{ overflow: 'visible', maxHeight: 'none' }}>
-                                      <div className="bg-gray-50 p-4 rounded shadow-sm border text-sm space-y-1" style={{ overflow: 'visible', maxHeight: 'none' }}>
-                                        <div>
-                                          <b>Title:</b>{" "}
-                                          {item.title ||
-                                            (item.metadata && item.metadata.title) ||
-                                            "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>Type:</b>{" "}
-                                          {item.type ||
-                                            (item.metadata && item.metadata.type) ||
-                                            "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>Duration:</b>{" "}
-                                          {(item.metadata && item.metadata.duration) || "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>QAQF Level:</b>{" "}
-                                          {typeof item.qaqfLevel === "number"
-                                            ? item.qaqfLevel
-                                            : typeof (item as any).qaqflevel === "number"
-                                            ? (item as any).qaqflevel
-                                            : "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>User ID:</b>{" "}
-                                          {(item.metadata && item.metadata.userid) || "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>Course ID:</b>{" "}
-                                          {(item.metadata && item.metadata.courseid) || "N/A"}
-                                        </div>
-                                        <div>
-                                          <b>Verification Status:</b>{" "}
-                                          {item.status ? (
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getVerificationStatusColor(item.status)}`}>
-                                              {getVerificationStatusIcon(item.status)}
-                                              {getVerificationStatusText(item.status)}
-                                            </span>
-                                          ) : (
-                                            "Not verified"
-                                          )}
-                                        </div>
-                                        <div>
-                                          <b>Description:</b>
-                                          <div 
-                                            className="mt-2 p-3 bg-white border rounded-md"
-                                            dangerouslySetInnerHTML={{ 
-                                              __html: item.description || (item.metadata && item.metadata.description) || "" 
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          )}
-                        </Card>
+                          item={item}
+                          onAction={async (action, itemId) => {
+                            if (action === 'deleted') {
+                              // Remove from both lists
+                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                              setCourseLessons(prev => prev.filter(lesson => lesson.id !== itemId));
+                            } else if (action === 'status_changed') {
+                              // Refresh the data
+                              setGeneratedItems(prev => [...prev]);
+                              await fetchLessons();
+                            } else if (action === 'updated') {
+                              // Refresh both lists
+                              setGeneratedItems(prev => [...prev]);
+                              await fetchLessons();
+                            }
+                          }}
+                        />
                       ))}
                     </div>
                   </div>

@@ -134,7 +134,7 @@ const LessonPlanPage: React.FC = () => {
   const [refreshModules, setRefreshModules] = useState<number>(0);
 
   const [isAIGenerating, setIsAIGenerating] = useState(false);
-  const [buttonDisabled, setButtonDisabled] = useState(false);
+ 
   // Track permanently disabled buttons after first click
   const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
 

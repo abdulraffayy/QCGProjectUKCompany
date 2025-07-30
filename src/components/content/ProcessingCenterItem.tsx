@@ -50,7 +50,7 @@ interface ProcessingCenterItemProps {
     id: string;
     title: string;
     type: string;
-    status: "verified" | "unverified" | "rejected";
+    status?: "verified" | "unverified" | "rejected" | "pending";
     progress?: number;
     createdAt: string;
     createdBy: string;
@@ -59,7 +59,7 @@ interface ProcessingCenterItemProps {
     estimatedTime?: string;
     content?: string;
     metadata?: any;
-    verificationStatus?: "verified" | "unverified" | "rejected"; // Add verification status
+    verificationStatus?: "verified" | "unverified" | "rejected" | "pending"; // Add verification status
   };
   lessons?: any[];
   onAction?: (action: string, itemId: string) => void;
@@ -96,18 +96,22 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [aiReference, setAiReference] = useState("");
   const [aiGenerateLoading, setAiGenerateLoading] = useState(false);
 
-  // Check localStorage on mount to see if AI Generate should be disabled for this item
-  useEffect(() => {
-    const isDisabled = localStorage.getItem(`processingCenterAiGenerateDisabled_${item.id}`) === 'true';
-    if (isDisabled) {
-      setAiGenerateLoading(true); // This will keep the button disabled
-    }
-  }, [item.id]);
-
   // Add state for card height (for resizing)
   const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const isResizing = React.useRef(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  // Track permanently disabled buttons after first click
+  const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
+
+  // Check localStorage on mount to see if AI Generate should be disabled for this item
+  useEffect(() => {
+    const isDisabled = localStorage.getItem(`processingCenterAiGenerateDisabled_${item.id}`) === 'true';
+    console.log(`Item ${item.id} disabled state:`, isDisabled);
+    if (isDisabled) {
+      setPermanentlyDisabledButtons(prev => new Set([...prev, 'aiGenerate']));
+    }
+  }, [item.id]);
 
   // Mouse event handlers for resizing (vertical only)
   useEffect(() => {
@@ -156,7 +160,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   };
 
   // Add verification status functions
-  const getVerificationStatusIcon = (verificationStatus: string) => {
+  const getVerificationStatusIcon = (verificationStatus: string | undefined) => {
     switch (verificationStatus) {
       case "verified":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -171,7 +175,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  const getVerificationStatusColor = (verificationStatus: string) => {
+  const getVerificationStatusColor = (verificationStatus: string | undefined) => {
     switch (verificationStatus) {
       case "verified":
         return "bg-green-100 text-green-800 border-green-200";
@@ -186,7 +190,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  const getVerificationStatusText = (verificationStatus: string) => {
+  const getVerificationStatusText = (verificationStatus: string | undefined) => {
     switch (verificationStatus) {
       case "verified":
         return "Verified";
@@ -341,19 +345,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   };
 
   const handleAiGenerate = async () => {
-    // Prevent multiple simultaneous calls - this check happens immediately
-    if (aiGenerateLoading) {
-      return;
-    }
-    
-    // Set loading state immediately to disable button
+    // Permanently disable this button after first click
+    setPermanentlyDisabledButtons(prev => new Set([...prev, 'aiGenerate']));
     setAiGenerateLoading(true);
     
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         alert('User token is missing!');
-        setAiGenerateLoading(false);
         return;
       }
       
@@ -386,7 +385,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       
       if (data.generated_content && data.generated_content.length > 0) {
         setEditableData(prev => ({ ...prev, description: data.generated_content[0] }));
-        // Permanently disable the button after successful generation
+        // Store in localStorage to remember the disabled state
         localStorage.setItem(`processingCenterAiGenerateDisabled_${item.id}`, 'true');
       } else {
         setEditableData(prev => ({ ...prev, description: "No content generated." }));
@@ -394,10 +393,17 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     } catch (error) {
       console.error('AI Generate error:', error);
       setEditableData(prev => ({ ...prev, description: "AI generation failed." }));
-      // Re-enable button only on error
+    } finally {
       setAiGenerateLoading(false);
+      // Button stays permanently disabled - no re-enabling
     }
-    // Don't set aiGenerateLoading to false on success - keep it disabled permanently
+  };
+
+  // Temporary function to reset localStorage for testing
+  const resetAiGenerateState = () => {
+    localStorage.removeItem(`processingCenterAiGenerateDisabled_${item.id}`);
+    setPermanentlyDisabledButtons(new Set());
+    setAiGenerateLoading(false);
   };
 
   // useEffect to handle deletion state
@@ -449,10 +455,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-            {item.verificationStatus && (
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getVerificationStatusColor(item.verificationStatus)}`}>
-                        {getVerificationStatusIcon(item.verificationStatus)}
-                        <span>{getVerificationStatusText(item.verificationStatus)}</span>
+            {(item.verificationStatus || item.status) && (
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getVerificationStatusColor(item.verificationStatus || item.status || "pending")}`}>
+                        {getVerificationStatusIcon(item.verificationStatus || item.status || "pending")}
+                        <span>{getVerificationStatusText(item.verificationStatus || item.status || "pending")}</span>
                       </div>
                     )}
               <Button
@@ -557,10 +563,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       {/* Add verification status display */}
                       <div>
                         <b>Verification Status:</b>{" "}
-                        {item.verificationStatus ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getVerificationStatusColor(item.verificationStatus)}`}>
-                            {getVerificationStatusIcon(item.verificationStatus)}
-                            {getVerificationStatusText(item.verificationStatus)}
+                        {(item.verificationStatus || item.status) ? (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getVerificationStatusColor(item.verificationStatus || item.status || "pending")}`}>
+                            {getVerificationStatusIcon(item.verificationStatus || item.status || "pending")}
+                            {getVerificationStatusText(item.verificationStatus || item.status || "pending")}
                           </span>
                         ) : (
                           "Not verified"
@@ -762,19 +768,24 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               <Save className="h-4 w-4 mr-2" />
               {saveLoading ? "Updating..." : "Update"}
             </Button>
-            <div className="flex justify-end">
-                  <Button
-                    onClick={handleAiGenerate}
-                    disabled={aiGenerateLoading}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {aiGenerateLoading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                    ) : (
-                      <Settings className="h-4 w-4 mr-2" />
-                    )}
-                    {aiGenerateLoading ? "Generating..." : "AI Generate"}
-                  </Button>
+                        <div className="flex justify-end">
+                          <Button 
+                variant="default" 
+                onClick={handleAiGenerate}
+                disabled={aiGenerateLoading || permanentlyDisabledButtons.has('aiGenerate')}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {aiGenerateLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating...
+                  </>
+                ) : permanentlyDisabledButtons.has('aiGenerate') ? (
+                  'Already Generated'
+                ) : (
+                  'AI Generate'
+                )}
+              </Button>
                 </div>
           </DialogFooter>
         </DialogContent>

@@ -39,6 +39,8 @@ function AuthenticatedRoutes() {
     );
   }
 
+  
+
   if (!isAuthenticated) {
     return (
       <Switch>

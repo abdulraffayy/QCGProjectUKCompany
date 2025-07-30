@@ -10,12 +10,18 @@ import bcrypt
 import secrets
 import datetime
 from datetime import timedelta
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 from werkzeug.utils import secure_filename
 from functools import wraps
-
+# import markdown
+import traceback
+import re
+import unicodedata
+import fitz  # PyMuPDF
+import docx
+from docx import Document
 app = Flask(__name__)
 CORS(app)
 
@@ -25,6 +31,9 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -137,16 +146,10 @@ def init_complete_db():
             description TEXT,
             type VARCHAR(50) NOT NULL,
             qaqf_level INTEGER NOT NULL,
-            module_code VARCHAR(20),
             created_by_user_id INTEGER NOT NULL,
-            verification_status VARCHAR(20) DEFAULT 'pending',
-            verified_by_user_id INTEGER,
             content TEXT,
             file_url VARCHAR(255),
             file_name VARCHAR(255),
-            file_size INTEGER,
-            characteristics TEXT,
-            tags TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (created_by_user_id) REFERENCES users (id)
@@ -218,49 +221,49 @@ def init_complete_db():
         pass
     
     # Insert QAQF levels
-    qaqf_levels = [
-        (1, 'Foundation Certificate', 'Basic knowledge and skills for entry-level positions'),
-        (2, 'Foundation Diploma', 'Enhanced foundation skills with practical application'),
-        (3, 'Diploma', 'Intermediate skills with specialized knowledge'),
-        (4, 'Higher Diploma', 'Advanced diploma with leadership components'),
-        (5, 'Bachelor Degree', 'Undergraduate degree with comprehensive knowledge'),
-        (6, 'Bachelor Honours', 'Enhanced bachelor degree with research elements'),
-        (7, 'Master Degree', 'Postgraduate degree with advanced specialization'),
-        (8, 'Master Research', 'Research-focused master degree'),
-        (9, 'Doctoral Degree', 'Highest academic qualification with original research')
-    ]
+    # qaqf_levels = [
+    #     (1, 'Foundation Certificate', 'Basic knowledge and skills for entry-level positions'),
+    #     (2, 'Foundation Diploma', 'Enhanced foundation skills with practical application'),
+    #     (3, 'Diploma', 'Intermediate skills with specialized knowledge'),
+    #     (4, 'Higher Diploma', 'Advanced diploma with leadership components'),
+    #     (5, 'Bachelor Degree', 'Undergraduate degree with comprehensive knowledge'),
+    #     (6, 'Bachelor Honours', 'Enhanced bachelor degree with research elements'),
+    #     (7, 'Master Degree', 'Postgraduate degree with advanced specialization'),
+    #     (8, 'Master Research', 'Research-focused master degree'),
+    #     (9, 'Doctoral Degree', 'Highest academic qualification with original research')
+    # ]
     
-    for level_data in qaqf_levels:
-        try:
-            conn.execute('''
-                INSERT OR IGNORE INTO qaqf_levels (level, name, description)
-                VALUES (?, ?, ?)
-            ''', level_data)
-        except:
-            pass
+    # for level_data in qaqf_levels:
+    #     try:
+    #         conn.execute('''
+    #             INSERT OR IGNORE INTO qaqf_levels (level, name, description)
+    #             VALUES (?, ?, ?)
+    #         ''', level_data)
+    #     except:
+    #         pass
     
     # Insert QAQF characteristics
-    characteristics = [
-        ('Clarity', 'Clear presentation and understanding of concepts', 'cognitive'),
-        ('Completeness', 'Comprehensive coverage of required material', 'cognitive'),
-        ('Accuracy', 'Factual correctness and precision', 'cognitive'),
-        ('Coherence', 'Logical structure and flow', 'cognitive'),
-        ('Relevance', 'Applicable to real-world contexts', 'practical'),
-        ('Complexity', 'Appropriate level of difficulty', 'practical'),
-        ('Innovation', 'Creative and original thinking', 'creative'),
-        ('Critical Thinking', 'Analysis and evaluation skills', 'analytical'),
-        ('Communication', 'Effective expression and presentation', 'communication'),
-        ('Collaboration', 'Teamwork and cooperative learning', 'social')
-    ]
+    # characteristics = [
+    #     ('Clarity', 'Clear presentation and understanding of concepts', 'cognitive'),
+    #     ('Completeness', 'Comprehensive coverage of required material', 'cognitive'),
+    #     ('Accuracy', 'Factual correctness and precision', 'cognitive'),
+    #     ('Coherence', 'Logical structure and flow', 'cognitive'),
+    #     ('Relevance', 'Applicable to real-world contexts', 'practical'),
+    #     ('Complexity', 'Appropriate level of difficulty', 'practical'),
+    #     ('Innovation', 'Creative and original thinking', 'creative'),
+    #     ('Critical Thinking', 'Analysis and evaluation skills', 'analytical'),
+    #     ('Communication', 'Effective expression and presentation', 'communication'),
+    #     ('Collaboration', 'Teamwork and cooperative learning', 'social')
+    # ]
     
-    for char_data in characteristics:
-        try:
-            conn.execute('''
-                INSERT OR IGNORE INTO qaqf_characteristics (name, description, category)
-                VALUES (?, ?, ?)
-            ''', char_data)
-        except:
-            pass
+    # for char_data in characteristics:
+    #     try:
+    #         conn.execute('''
+    #             INSERT OR IGNORE INTO qaqf_characteristics (name, description, category)
+    #             VALUES (?, ?, ?)
+    #         ''', char_data)
+    #     except:
+    #         pass
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS generatecourses (
@@ -396,6 +399,47 @@ def log_activity(user_id, action, entity_type, entity_id, details=None):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'QAQF Platform API is running'}), 200
+
+
+def clean_text(text):
+    text = unicodedata.normalize("NFKD", text)
+    text = ''.join(c for c in text if c.isprintable())
+    text = text.replace("", "-").replace("•", "-").replace("\u00a0", " ").replace("\uf0b7", "-")
+    text = re.sub(r"[-–—]{2,}", "-", text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
+def extract_pdf_content(filepath):
+    try:
+        content = ""
+        pdf = fitz.open(filepath)
+        for page in pdf:
+            raw_text = page.get_text()
+            content += clean_text(raw_text) + "\n"
+        return content.strip()
+    except Exception:
+        traceback.print_exc()
+        return ""
+
+
+def extract_txt_content(filepath):
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return clean_text(f.read())
+    except Exception:
+        traceback.print_exc()
+        return ""
+
+
+def extract_doc_content(filepath):
+    try:
+        doc = Document(filepath)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return clean_text(text)
+    except Exception:
+        traceback.print_exc()
+        return ""
 
 # AUTH ROUTES
 @app.route('/api/auth/login-json', methods=['POST'])
@@ -710,72 +754,6 @@ def update_weeklessonorders():
     db.commit()
     return jsonify({'success': True})
 
-
-
-
-# ai assessment-content
-
-@app.route('/api/ai/assessment-content', methods=['POST'])
-@token_required
-def assessment_content_ollama(current_user_id):
-    data = request.get_json()
-    try:
-        contenttype = data.get('generation_type', 'quiz').lower()
-        material = data.get('material', 'nomaterial').lower()
-        qaqf_level = data.get('qaqf_level', '1').lower()
-        subject = data.get('subject', '').lower()
-        userquery = data.get('userquery').lower()
-        if material == "nomaterial":
-            prompt = f"""Create a comprehensive {contenttype} for related to {subject} at QAQF Level {qaqf_level}. 
-            Format professionally with proper headings and structure. 
-            Ensure the content is engaging and suitable for learning purposes.
-            User query: {userquery}"""
-        else:
-            prompt = f"""Create a comprehensive {contenttype} for {subject} at QAQF Level {qaqf_level} based on the provided material: {material}. 
-            Format professionally with proper headings and structure. 
-            Ensure the content is engaging and suitable for learning purposes.
-            User query: {userquery}"""
-        print(prompt)
-        # Try Ollama API first
-        finn ="** Race Story Quiz: QAQF Level 2*\n\nInstructions:* Read each question carefully and choose the correct answer.\n\n*1. What prompted a hare to make fun of a tortoise?\na) The tortoise's appearance\nb) The tortoise's slow speed\nc) The tortoise's goal\nd) The tortoise's behavior\n\nAnswer: b) The tortoise's slow speed\n\n2. How did the tortoise respond to the hare's mocking laugh?\na) He ran away\nb) He apologized\nc) He replied that he gets there sooner than expected\nd) He ignored him\n\nAnswer: c) He replied that he gets there sooner than expected\n\n3. Who agreed to act as the judge for the race between the hare and the tortoise?\na) The fox\nb) The hare\nc) The tortoise\nd) An animal from the forest\n\nAnswer: a) The fox\n\n4. What did the hare do while waiting for the tortoise to catch up during the race?\na) He kept running\nb) He cheered the tortoise on\nc) He took a nap beside the course\nd) He rested at the finish line\n\nAnswer: c) He took a nap beside the course\n\n5. What moral lesson can be learned from this story?*\na) That speed is everything in life\nb) That it's always better to run fast than steady\nc) That the race is not always to the swift, but rather to those who persevere and stay focused\nd) That animals should never compete with each other\n\nAnswer: c) That the race is not always to the swift, but rather to those who persevere and stay focused",
-        return jsonify({
-            'generated_content': finn,
-            'status': 'success'
-        })
-        return
-        ollama_response = requests.post('http://localhost:11434/api/generate', 
-            json={
-                'model': 'llama3.2',
-                'prompt': prompt,
-                'stream': False
-            }, 
-            timeout=3000
-        )
-        
-        if ollama_response.status_code == 200:
-            generated_content = ollama_response.json().get('response', '')
-        else:
-            raise Exception("Ollama API not available")
-            
-        finn = generated_content.strip()
-        print(finn)
-        # if contenttype == "content":
-        #     db = get_db()
-        #     cur = db.cursor()
-        #     cur.execute('''
-        #         INSERT INTO generatedlesson (courseid, title, level, description, userid, duration, type)
-        #         VALUES (?, ?, ?, ?, ?, ?,?)
-        #     ''', (4, title, qaqf_level, finn , current_user_id, 20, content_type))
-        #     db.commit()
-        return jsonify({
-            'generated_content': finn,
-            'status': 'success'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Content generation failed: {str(e)}'}), 500
-
-
 # FILE UPLOAD AND TEXT EXTRACTION
 @app.route('/api/content/extract-text', methods=['POST'])
 @token_required
@@ -853,143 +831,8 @@ This extracted content can now be used as source material for AI-powered content
 @token_required
 def generate_content_with_ollama(current_user_id):
     data = request.get_json()
-    content_type = data.get('content_type', 'academic_paper')
-    subject = data.get('subject', 'General Education')
-    qaqf_level = data.get('qaqf_level', 5)
-    additional_instructions = data.get('additional_instructions', '')
-    source_content = data.get('source_content', '')
-    characteristics = data.get('characteristics', [])
-    assessment = f"""# {subject} Assessment - QAQF Level {qaqf_level}
-
-## Instructions
-This {content_type} assesses your understanding of {subject} concepts at QAQF Level {qaqf_level}. Please read all questions carefully and provide complete answers.
-
-## Section A: Multiple Choice Questions (40 points)
-
-1. Which of the following best describes the core concept of {subject}?
-   a) Option A - Basic understanding
-   b) Option B - Intermediate application
-   c) Option C - Advanced synthesis
-   d) Option D - Expert evaluation
-
-2. In the context of {subject}, what is the most important consideration?
-   a) Theoretical framework
-   b) Practical application
-   c) Historical context
-   d) Future implications
-
-## Section B: Short Answer Questions (30 points)
-
-3. Explain the key principles of {subject} and their relevance to Level {qaqf_level} learning outcomes. (15 points)
-
-4. Describe how you would apply {subject} concepts in a real-world scenario. (15 points)
-
-## Section C: Extended Response (30 points)
-
-5. Critically analyze the importance of {subject} in your field of study. Your response should demonstrate Level {qaqf_level} understanding and include:
-   - Analysis of key concepts
-   - Evaluation of different perspectives
-   - Synthesis of ideas
-   - Practical applications
-
-## Marking Criteria
-
-### Level {qaqf_level} Assessment Rubric:
-- *Excellent (90-100%)*: Demonstrates comprehensive understanding with critical analysis
-- *Good (80-89%)*: Shows solid understanding with some analytical depth
-- *Satisfactory (70-79%)*: Basic understanding with limited analysis
-- *Needs Improvement (60-69%)*: Minimal understanding, requires additional support
-- *Unsatisfactory (Below 60%)*: Insufficient understanding of core concepts
-
-## Time Allocation: {data.get('duration', '60 minutes')}
-## Total Marks: {data.get('total_marks', '100')}
-
-Assessment generated with AI assistance for {subject} at QAQF Level {qaqf_level}"""
-        
-        # Log activity
-    log_activity(current_user_id, 'ai_assess', 'content', 0, {
-        'assessment_type': content_type,
-        'qaqf_level': qaqf_level,
-        'subject': subject
-    })
-    
-    return jsonify({
-        'assessment': assessment.strip(),
-        'assessment_type': content_type,
-        'qaqf_level': qaqf_level,
-        'status': 'success'
-    })
-@token_required
-def generate_content_with_ollama(current_user_id):
-    data = request.get_json()
-    
-    try:
-        content_type = data.get('content_type', 'academic_paper')
-        subject = data.get('subject', 'General Education')
-        qaqf_level = data.get('qaqf_level', 5)
-        additional_instructions = data.get('additional_instructions', '')
-        source_content = data.get('source_content', '')
-        characteristics = data.get('characteristics', [])
-        
-        prompt = f"""Create a comprehensive {content_type} for {subject} at QAQF Level {qaqf_level}.
-
-Requirements:
-- Content Type: {content_type}
-- Subject: {subject}
-- QAQF Level: {qaqf_level}
-- Educational Standards: Follow QAQF guidelines for Level {qaqf_level}
-
-{f"Source Material: {source_content}" if source_content else ""}
-{f"Additional Instructions: {additional_instructions}" if additional_instructions else ""}
-
-Generate well-structured, educational content with:
-1. Clear learning objectives
-2. Comprehensive coverage of the topic
-3. Appropriate complexity for Level {qaqf_level}
-4. Assessment considerations
-5. Practical applications
-
-Format the content professionally with proper headings and structure."""
-
-        try:
-            # Try Ollama API first
-            ollama_response = requests.post('http://localhost:11434/api/generate', 
-                json={
-                    'model': 'llama3.2',
-                    'prompt': prompt,
-                    'stream': False
-                }, 
-                timeout=30
-            )
-            
-            if ollama_response.status_code == 200:
-                generated_content = ollama_response.json().get('response', '')
-            else:
-                raise Exception("Ollama API not available")
-                
-        except:
-            # Fallback structured content when Ollama is not available
-            return jsonify({
-                'error': 'Ollama API is not available. Please ensure the Ollama service is running.'
-            }), 503
-        
-        # Log activity
-        log_activity(current_user_id, 'ai_generate', 'content', 0, {
-            'content_type': content_type,
-            'subject': subject,
-            'qaqf_level': qaqf_level
-        })
-        
-        return jsonify({
-            'generated_content': generated_content.strip(),
-            'content_type': content_type,
-            'qaqf_level': qaqf_level,
-            'status': 'success'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Content generation failed: {str(e)}'}), 500
-    data = request.get_json()
+    print(data, current_user_id)
+    return jsonify({'error': 'AI content generation is not yet implemented.'}), 501
     try:
         contenttype = data.get('generation_type', 'content').lower()
         prompt = ""
@@ -1128,6 +971,53 @@ Format the content professionally with proper headings and structure."""
     except Exception as e:
         return jsonify({'error': f'Content generation failed: {str(e)}'}), 500
 
+@app.route('/api/ai/assessment-content', methods=['POST'])
+@token_required
+def assessment_content_ollama(current_user_id):
+    data = request.get_json()
+    try:
+        contenttype = data.get('generation_type', 'quiz').lower()
+        material = data.get('material', 'nomaterial').lower()
+        qaqf_level = data.get('qaqf_level', '1').lower()
+        subject = data.get('subject', '').lower()
+        userquery = data.get('userquery').lower()
+        if material == "nomaterial":
+            prompt = f"""Create a comprehensive {contenttype} for related to {subject} at QAQF Level {qaqf_level}. 
+            Format professionally with proper headings and structure. 
+            Ensure the content is engaging and suitable for learning purposes.
+            User query: {userquery}"""
+        else:
+            prompt = f"""Create a comprehensive {contenttype} for {subject} at QAQF Level {qaqf_level} based on the provided material: {material}. 
+            Format professionally with proper headings and structure. 
+            Ensure the content is engaging and suitable for learning purposes.
+            User query: {userquery}"""
+        print(prompt)
+        # Try Ollama API first
+        ollama_response = requests.post('http://localhost:11434/api/generate', 
+            json={
+                'model': 'llama3.2',
+                'prompt': prompt,
+                'stream': False
+            }, 
+            timeout=3000
+        )
+        
+        if ollama_response.status_code == 200:
+            generated_content = ollama_response.json().get('response', '')
+        else:
+            raise Exception("Ollama API not available")
+            
+        finn = generated_content.strip()
+        print(finn)
+        finn2 = markdown.markdown(finn)
+        return jsonify({
+            'generated_content': finn2,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Content generation failed: {str(e)}'}), 500
+
 # CONTENT ROUTES
 @app.route('/api/content', methods=['GET'])
 @token_required
@@ -1224,48 +1114,70 @@ def get_study_materials(current_user_id):
 @app.route('/api/study-materials', methods=['POST'])
 @token_required
 def create_study_material(current_user_id):
-    data = request.get_json()
-    
-    required_fields = ['title', 'description', 'type', 'qaqf_level', 'characteristics']
-    if not all(field in data for field in required_fields):
+    title = request.form.get('title')
+    description = request.form.get('description')
+    material_type = request.form.get('type')
+    qaqf_level = request.form.get('qaqf_level')
+
+    if not all([title, description, material_type, qaqf_level]):
         return jsonify({'error': 'Missing required fields'}), 400
-    
-    characteristics_json = json.dumps(data['characteristics'])
-    tags_json = json.dumps(data.get('tags', []))
-    
+
+    file = request.files.get('file')
+    content = ""
+    file_url = None
+    file_name = None
+    UPLOAD_FOLDER = 'uploads'
+    ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'md'}
+    if file and allowed_file(file.filename):
+        print(file.filename)
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
+
+        ext = filename.rsplit('.', 1)[1].lower()
+        file_name = filename
+        file_url = file_path
+
+        try:
+            if ext == 'pdf':
+                content = extract_pdf_content(file_path)
+            elif ext == 'txt':
+                content = extract_txt_content(file_path)
+            elif ext in ['doc', 'docx']:
+                content = extract_doc_content(file_path)
+            elif ext == 'md':
+                content = extract_txt_content(file_path)  # treat markdown as plain text
+        except Exception as e:
+            return jsonify({'error': 'Failed to extract file content', 'details': str(e)}), 500
+
     conn = get_db()
     try:
-        cursor=conn.execute('''
+        cursor = conn.execute('''
             INSERT INTO study_materials 
-            (title, description, type, qaqf_level, module_code, content, file_url, file_name, 
-             file_size, characteristics, tags, created_by_user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (title, description, type, qaqf_level, created_by_user_id, content, file_url, file_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            data['title'],
-            data['description'],
-            data['type'],
-            data['qaqf_level'],
-            data.get('module_code'),
-            data.get('content'),
-            data.get('file_url'),
-            data.get('file_name'),
-            data.get('file_size'),
-            characteristics_json,
-            tags_json,
-            current_user_id
+            title,
+            description,
+            material_type,
+            int(qaqf_level),
+            current_user_id,
+            content,
+            file_url,
+            file_name
         ))
         
         material_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        
+
         log_activity(current_user_id, 'create', 'study_material', material_id)
-        
+
         return jsonify({
             'message': 'Study material created successfully',
             'id': material_id
         }), 201
-        
+
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 500

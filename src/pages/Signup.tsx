@@ -68,15 +68,18 @@ export default function Signup() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("Signup successful:", data); // Debug log
+      
       toast({
         title: "Account created successfully",
-        description: `Welcome to the platform, ${data.user.name}! Please login to continue.`,
+        description: `Welcome to the platform! Please login to continue.`,
       });
 
-      // Redirect to login page
+      // Redirect to login page immediately
       setLocation("/login");
     },
     onError: (error: Error) => {
+      console.log("Signup error:", error); // Debug log
       toast({
         title: "Signup failed",
         description: error.message,

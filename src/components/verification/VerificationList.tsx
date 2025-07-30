@@ -10,9 +10,9 @@ import { Textarea } from "../ui/textarea";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { useToast } from "../../hooks/use-toast";
-import { apiRequest, queryClient } from "../lib/queryClient";
+import { queryClient } from "../../lib/queryClient";
 import { getColorByLevel, QAQFCharacteristics } from "../../lib/qaqf";
-import { Content, VerificationStatus } from "@shared/schema";
+// import { Content, VerificationStatus } from "@shared/schema";
 
 interface VerificationListProps {
   contents: Content[];
@@ -107,19 +107,19 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
           <TabsList className="mb-4">
             <TabsTrigger value="pending">
               Pending 
-              <Badge variant="warning" className="ml-2">
+              <Badge variant="secondary" className="ml-2">
                 {contents.filter(c => c.verificationStatus === VerificationStatus.PENDING).length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="in_review">
               In Review
-              <Badge variant="info" className="ml-2">
+              <Badge variant="outline" className="ml-2">
                 {contents.filter(c => c.verificationStatus === VerificationStatus.IN_REVIEW).length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="verified">
               Verified
-              <Badge variant="success" className="ml-2">
+              <Badge variant="default" className="ml-2">
                 {contents.filter(c => c.verificationStatus === VerificationStatus.VERIFIED).length}
               </Badge>
             </TabsTrigger>

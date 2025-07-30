@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardTitle } from "../ui/card";
+import { Card, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
@@ -377,8 +377,12 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid grid-cols-1">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="content">Content Details</TabsTrigger>
+            <TabsTrigger value="video-options">Video Options</TabsTrigger>
+            <TabsTrigger value="marking-criteria">Marking Criteria</TabsTrigger>
+            <TabsTrigger value="quality-assurance">Quality Assurance</TabsTrigger>
+            <TabsTrigger value="assessment">Assessment</TabsTrigger>
           </TabsList>
           
           {/* Content Generation Options */}
@@ -1054,40 +1058,82 @@ const ContentGenerator: React.FC = () => {
           </TabsContent>
           
           {/* Assessment Options */}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="adaptive-scoring"
-                            checked={useAdaptiveScoring}
-                            onCheckedChange={(checked) => setUseAdaptiveScoring(checked === true)}
-                          />
-                          <label
-                            htmlFor="adaptive-scoring"
-                            className="text-sm font-medium leading-none"
-                          >
-                            Use adaptive scoring and feedback
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+          <TabsContent value="assessment" className="space-y-4 pt-2">
+            <div className="space-y-4">
+              <div>
+                <Label className="block text-sm font-medium text-neutral-700 mb-1">Assessment Type</Label>
+                <Select value={assessmentType} onValueChange={handleAssessmentTypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select assessment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                    <SelectItem value="essay">Essay</SelectItem>
+                    <SelectItem value="mixed">Mixed</SelectItem>
+                    <SelectItem value="puzzle">Puzzle</SelectItem>
+                    <SelectItem value="sorting">Sorting Exercise</SelectItem>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {assessmentType === "puzzle" && (
+                <div>
+                  <Label className="block text-sm font-medium text-neutral-700 mb-1">Puzzle Type</Label>
+                  <Select value={puzzleType} onValueChange={setPuzzleType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select puzzle type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="crossword">Crossword</SelectItem>
+                      <SelectItem value="wordSearch">Word Search</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {assessmentType === "quiz" && (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="block text-sm font-medium text-neutral-700 mb-1">Time Limit (minutes)</Label>
+                    <Input 
+                      type="number" 
+                      value={quizTimeLimit}
+                      onChange={(e) => setQuizTimeLimit(parseInt(e.target.value) || 0)}
+                      placeholder="0 for unlimited"
+                    />
+                  </div>
                   
-                  {/* Standard assessment options */}
-                  {(assessmentType === "multiple-choice" || assessmentType === "essay" || assessmentType === "mixed") && (
-                    <div>
-                      <Label className="block text-sm font-medium mb-1">
-                        Number of Questions: {numberOfQuestions}
-                      </Label>
-                      <Slider defaultValue={[10]}
-                        min={5}
-                        max={20}
-                        step={1}
-                        value={[numberOfQuestions]}
-                        onValueChange={(value) => setNumberOfQuestions(value[0])}
-                      />
-                    </div>
-                  )}
-                </>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="adaptive-scoring"
+                      checked={useAdaptiveScoring}
+                      onCheckedChange={(checked) => setUseAdaptiveScoring(checked === true)}
+                    />
+                    <label
+                      htmlFor="adaptive-scoring"
+                      className="text-sm font-medium leading-none"
+                    >
+                      Use adaptive scoring and feedback
+                    </label>
+                  </div>
+                </div>
+              )}
+              
+              {/* Standard assessment options */}
+              {(assessmentType === "multiple-choice" || assessmentType === "essay" || assessmentType === "mixed") && (
+                <div>
+                  <Label className="block text-sm font-medium mb-1">
+                    Number of Questions: {numberOfQuestions}
+                  </Label>
+                  <Slider defaultValue={[10]}
+                    min={5}
+                    max={20}
+                    step={1}
+                    value={[numberOfQuestions]}
+                    onValueChange={(value) => setNumberOfQuestions(value[0])}
+                  />
+                </div>
               )}
             </div>
           </TabsContent>
