@@ -53,6 +53,7 @@ function AuthenticatedRoutes() {
   }
   return (
     <Switch>
+      
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/forgot-password" component={ForgotPassword} />

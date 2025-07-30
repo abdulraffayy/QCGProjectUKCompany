@@ -9,7 +9,8 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
-import { useToast } from '../hooks/use-toast';
+
+import { toast } from 'react-toastify';
 import { 
   Plus, 
   FileText, 
@@ -72,8 +73,9 @@ export default function StudyMaterial() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
-  const { toast } = useToast();
+ 
   const queryClient = useQueryClient();
 
   // Fetch study materials
@@ -102,36 +104,31 @@ export default function StudyMaterial() {
 
   // Create material mutation
   const createMaterialMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string; type: string; qaqf_level: number; content: string; characteristics: any[]; tags: any[]; }) => {
+    mutationFn: async (formData: FormData) => {
       const token = localStorage.getItem('token');
+      
       const response = await fetch('/api/study-materials', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(data),
+        body: formData,
       });
       if (!response.ok) throw new Error('Failed to create material');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Material created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({
-        title: "Successfully uploaded PDF!",
-        description: (
-          <span className="flex items-center">
-            <FileText className="h-5 w-5 text-green-600 mr-2" />
-            Your PDF has been uploaded and is now available.
-          </span>
-        ),
-        duration: 4000,
-      });
+      toast.success("PDF successfully uploaded");
       setShowCreateDialog(false);
       setSelectedFile(null);
+      setIsUploading(false); // Stop loading state
     },
-    onError: () => {
-      toast({ title: 'Failed to create material', variant: 'destructive' });
+    onError: (error) => {
+      console.error('Failed to create material:', error);
+      toast.error('Failed to create material');
+      setIsUploading(false); // Stop loading state
     },
   });
 
@@ -205,7 +202,7 @@ export default function StudyMaterial() {
       setShowCreateDialog(false);
     },
     onError: () => {
-      toast({ title: 'Failed to create collection', variant: 'destructive' });
+      toast ({ title: 'Failed to create collection', variant: 'destructive' });
     },
   });
 
@@ -415,6 +412,8 @@ export default function StudyMaterial() {
 
   const handleSubmitMaterial = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsUploading(true); // Start loading state
+  
     const formData = new FormData(event.currentTarget);
 
     // Ensure all text fields are part of formData for update as well
@@ -448,19 +447,9 @@ export default function StudyMaterial() {
     if (selectedItem) {
       updateMaterialMutation.mutate({ id: selectedItem.id, formData });
     } else {
-      // For creation, the backend expects these to be part of the initial data structure
-      // rather than added to FormData individually if not a file.
-      // Assuming createMaterialMutation can handle direct data object or updated to FormData already.
-      // If not, this section might need adjustment to match previous solution attempts.
-      createMaterialMutation.mutate({ 
-        title: title,
-        description: description,
-        type: type,
-        qaqf_level: Number(qaqfLevel),
-        content: content,
-        characteristics: [],
-        tags: [],
-      });
+      // For creation, pass the FormData directly to the mutation
+      console.log('Submitting form data:', formData);
+      createMaterialMutation.mutate(formData);
     }
   };
 
@@ -546,7 +535,9 @@ export default function StudyMaterial() {
             </div>
             
             {materialsLoading ? (
-              <div className="text-center py-8">Loading materials...</div>
+              <div className="flex justify-center items-center h-full w-full py-8">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {materials.map((material) => (
@@ -791,11 +782,11 @@ export default function StudyMaterial() {
                   </p>
                 )}
               </div>
-              <Button type="submit" className="w-full" disabled={createMaterialMutation.isPending}>
-                {createMaterialMutation.isPending ? (
+              <Button type="submit" className="w-full" disabled={isUploading}>
+                {isUploading ? (
                   <span className="flex items-center justify-center">
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                    Uploading...
+                   uploading...
+                    
                   </span>
                 ) : (
                   <>
@@ -910,7 +901,7 @@ export default function StudyMaterial() {
                     </div>
                     <div>
                       <Label className="font-semibold">QAQF Level</Label>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqfLevel}</p>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqf_level}</p>
                     </div>
                   </div>
                   
@@ -925,14 +916,7 @@ export default function StudyMaterial() {
                     </div>
                   )}
                   
-                  {selectedItem.content && (
-                    <div>
-                      <Label className="font-semibold">Content</Label>
-                      <div className="mt-1 p-3 bg-gray-50 rounded max-h-40 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-sm">{selectedItem.content}</pre>
-                      </div>
-                    </div>
-                  )}
+                
                 </>
               )}
 
@@ -945,7 +929,7 @@ export default function StudyMaterial() {
                     </div>
                     <div>
                       <Label className="font-semibold">QAQF Level</Label>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqfLevel}</p>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqf_level}</p>
                     </div>
                   </div>
                   
