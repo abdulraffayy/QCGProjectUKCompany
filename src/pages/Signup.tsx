@@ -8,8 +8,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "react-toastify";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 
 const signupSchema = z.object({
@@ -30,12 +29,10 @@ export default function Signup() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
@@ -56,35 +53,38 @@ export default function Signup() {
           email: data.email,
           password: data.password,
           name: data.name,
-          role: data.role,
+          role: "user", 
         }),
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Signup failed");
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.detail || "Signup failed");
       }
 
       return response.json();
     },
     onSuccess: (data) => {
-      console.log("Signup successful:", data); // Debug log
-      
-      toast({
-        title: "Account created successfully",
-        description: `Welcome to the platform! Please login to continue.`,
-      });
+      toast.success("Account Signup successful");
 
       // Redirect to login page immediately
       setLocation("/login");
     },
     onError: (error: Error) => {
-      console.log("Signup error:", error); // Debug log
-      toast({
-        title: "Signup failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      let errorMessage = "Signup failed. Please try again.";
+      
+      // Handle specific error cases
+      if (error.message.includes("Username or email already exists")) {
+        errorMessage = "This username or email is already registered. Please use different credentials or try logging in.";
+      } else if (error.message.includes("Username already registered")) {
+        errorMessage = "This username is already taken. Please choose a different username.";
+      } else if (error.message.includes("Email already registered")) {
+        errorMessage = "This email is already registered. Please use a different email or try logging in.";
+      } else if (error.message.includes("Incorrect username or password")) {
+        errorMessage = "Invalid credentials. Please check your username and password.";
+      }
+      
+      toast.error(errorMessage);
     },
   });
 
@@ -147,24 +147,6 @@ export default function Signup() {
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select onValueChange={(value) => setValue("role", value as "user" | "admin" | "verification" | "moderation")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="verification">Verification</SelectItem>
-                  <SelectItem value="moderation">Moderation</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && (
-                <p className="text-sm text-red-500">{errors.role.message}</p>
               )}
             </div>
 

@@ -9,7 +9,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 
-import { useToast } from "../hooks/use-toast";
+import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
@@ -23,7 +23,6 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
   const { login } = useAuth();
 
   const {
@@ -48,9 +47,8 @@ export default function Login() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Login failed: ${errorData}`);
+      if (!response.ok) {    
+        throw new Error(`Login failed invalid credentials`);
       }
 
       return await response.json();
@@ -59,10 +57,7 @@ export default function Login() {
       // Use AuthContext login function
       login(data.access_token, data.user);
       
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${data.user.name}!`,
-      });
+      toast.success(`Welcome back, ${data.user.name}!`);
 
       // Redirect to dashboard
       setLocation("/dashboard");
@@ -77,11 +72,7 @@ export default function Login() {
         errorMessage = "Invalid username or password. Try admin/admin123 or user/user123";
       }
       
-      toast({
-        title: "Login failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(errorMessage);
     },
   });
 

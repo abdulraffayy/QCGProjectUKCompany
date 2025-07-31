@@ -12,6 +12,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const { user } = useAuth();
   const isVerifier = user?.role === 'verification';
   const isModerator = user?.role === 'moderation';
+  const isAdmin = user?.role === 'admin';
+  const isRegularUser = user?.role === 'user';
 
   const isActiveRoute = (path: string) => {
     return location === path;
@@ -86,62 +88,85 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             </Link>
           </>
         )}
-        {/* If verifier, skip these links above */}
         
+        {/* Only show Quality Assurance section for non-regular users */}
+        {!isRegularUser && (
+          <>
+            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Quality Assurance
+            </div>
+            
+            {!isModerator && (
+              <Link href="/verification" className={navItemClass("/verification")}>
+                <span className="material-icons mr-3 text-inherit">verified</span>
+                Verification
+              </Link>
+            )}
+            
+            {!isVerifier && (
+              <Link href="/moderation" className={navItemClass("/moderation")}>
+                <span className="material-icons mr-3 text-inherit">gavel</span>
+                Moderation
+              </Link>
+            )}
+            
+            <Link href="/assessment" className={navItemClass("/assessment")}>
+              <span className="material-icons mr-3 text-inherit">school</span>
+              Assessment
+            </Link>
+            
+            
+
+            <Link href="/analytics" className={navItemClass("/analytics")}>
+              <span className="material-icons mr-3 text-inherit">analytics</span>
+              Analytics
+            </Link>
+          </>
+        )}
+        
+        {/* Only show Administration section for non-regular users */}
+        {!isRegularUser && (
+          <>
+            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Administration
+            </div>
+            
+            <Link href="/qaqf-admin" className={navItemClass("/qaqf-admin")}>
+              <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
+              QAQF Admin
+            </Link>
+            
+            <Link href="/settings" className={navItemClass("/settings")}>
+              <span className="material-icons mr-3 text-inherit">settings</span>
+              Settings
+            </Link>
+          </>
+        )}
+        
+        {/* Show Settings for regular users */}
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          Quality Assurance
-        </div>
-        
-        {!isModerator && (
-          <Link href="/verification" className={navItemClass("/verification")}>
-            <span className="material-icons mr-3 text-inherit">verified</span>
-            Verification
-          </Link>
-        )}
-        
+              Quality Assurance
+            </div>
         {!isVerifier && (
-          <Link href="/moderation" className={navItemClass("/moderation")}>
-            <span className="material-icons mr-3 text-inherit">gavel</span>
-            Moderation
-          </Link>
-        )}
-        
-        
-        <Link href="/assessment" className={navItemClass("/assessment")}>
-          <span className="material-icons mr-3 text-inherit">school</span>
-          Assessment
-        </Link>
-        
-        {!isVerifier && (
-          <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}> 
-            <span className="material-icons mr-3 text-inherit">assignment_late</span>
-            Assessment in Progress
-          </Link>
+              <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}> 
+                <span className="material-icons mr-3 text-inherit">assignment_late</span>
+                Assessment in Progress
+              </Link>
+            )}
+        {isRegularUser && (
+          <>
+            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Account
+            </div>
+            
+            <Link href="/settings" className={navItemClass("/settings")}>
+              <span className="material-icons mr-3 text-inherit">settings</span>
+              Settings
+            </Link>
+          </>
         )}
 
-        <Link href="/analytics" className={navItemClass("/analytics")}>
-          <span className="material-icons mr-3 text-inherit">analytics</span>
-          Analytics
-        </Link>
-        
-        <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          Administration
-        </div>
-        
-        <Link href="/qaqf-admin" className={navItemClass("/qaqf-admin")}>
-          <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
-          QAQF Admin
-        </Link>
-        
-        <Link href="/settings" className={navItemClass("/settings")}>
-          <span className="material-icons mr-3 text-inherit">settings</span>
-          Settings
-        </Link>
-        
-        <div className="sidebar-menu-item flex items-center px-4 py-3 text-neutral-700 cursor-pointer">
-          <span className="material-icons mr-3 text-neutral-500">help</span>
-          Help & Guides
-        </div>
+
       </nav>
     </aside>
   );

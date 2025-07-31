@@ -640,21 +640,7 @@ const LessonPlanPage: React.FC = () => {
           )
         );
         
-        // Also update assignedModules state with server data
-        setAssignedModules(prev => {
-          const newAssigned = { ...prev };
-          Object.keys(newAssigned).forEach(weekIdStr => {
-            const weekId = parseInt(weekIdStr);
-            if (newAssigned[weekId]) {
-              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
-                mod.id === id
-                  ? { ...mod, ...serverUpdatedModule }
-                  : mod
-              );
-            }
-          });
-          return newAssigned;
-        });
+
       } else {
         // Fallback: update with payload if server fetch fails
         setModules(prevModules => 
@@ -665,20 +651,7 @@ const LessonPlanPage: React.FC = () => {
           )
         );
         
-        setAssignedModules(prev => {
-          const newAssigned = { ...prev };
-          Object.keys(newAssigned).forEach(weekIdStr => {
-            const weekId = parseInt(weekIdStr);
-            if (newAssigned[weekId]) {
-              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
-                mod.id === id
-                  ? { ...mod, ...updatedModule }
-                  : mod
-              );
-            }
-          });
-          return newAssigned;
-        });
+
       }
       
       // Force a re-render to ensure UI updates
@@ -786,8 +759,7 @@ const LessonPlanPage: React.FC = () => {
     } else {
       setWeeksFromApi([]); // Clear weeks when no course is selected
     }
-    // Clear assigned modules when course changes
-    setAssignedModules({});
+
   }, [selectedCourse]);
 
   const [draggedContent, setDraggedContent] = useState<any | null>(null);
@@ -882,24 +854,17 @@ const LessonPlanPage: React.FC = () => {
   };
 
 
-  // Add a state to track which modules are assigned to which week
-  const [assignedModules, setAssignedModules] = useState<{ [weekId: number]: any[] }>({});
+
 
   // Helper: Get unassigned modules (not in any week, only for selected course)
   const getUnassignedModules = () => {
-    const assignedIds = Object.values(assignedModules).flat().map((m) => m.id);
+    // Show all modules for the selected course on the left side (keep them visible even if assigned)
     return modules.filter(
-      (m) => !assignedIds.includes(m.id) && m.courseid === selectedCourse
+      (m) => m.courseid === selectedCourse
     );
   };
 
-  // Helper: Get modules for a week (only for selected course)
-  const getModulesForWeek = (weekId: number) => {
-    const modules = assignedModules[weekId] || [];
-    // Only return modules that belong to the selected course
-    const filteredModules = modules.filter(module => module.courseid === selectedCourse);
-    return filteredModules;
-  };
+
 
   // Function to call API when module is dropped on week (DEPRECATED - use assignModuleToWeek instead)
   const handleModuleDropOnWeek = async (week: any, module: any) => {
@@ -999,21 +964,7 @@ const LessonPlanPage: React.FC = () => {
         const updatedModule = await updatedModuleRes.json();
         console.log('Server returned updated module:', updatedModule);
         
-        // Update the module in assignedModules state with server data
-        setAssignedModules(prev => {
-          const newAssigned = { ...prev };
-          Object.keys(newAssigned).forEach(weekIdStr => {
-            const weekId = parseInt(weekIdStr);
-            if (newAssigned[weekId]) {
-              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
-                mod.id === rightSideEditModule.id
-                  ? { ...mod, ...updatedModule }
-                  : mod
-              );
-            }
-          });
-          return newAssigned;
-        });
+
 
         // Also update the main modules state with server data
         setModules(prevModules => 
@@ -1024,21 +975,7 @@ const LessonPlanPage: React.FC = () => {
           )
         );
       } else {
-        // Fallback: update with payload if server fetch fails
-        setAssignedModules(prev => {
-          const newAssigned = { ...prev };
-          Object.keys(newAssigned).forEach(weekIdStr => {
-            const weekId = parseInt(weekIdStr);
-            if (newAssigned[weekId]) {
-              newAssigned[weekId] = newAssigned[weekId].map((mod: any) =>
-                mod.id === rightSideEditModule.id
-                  ? { ...mod, ...payload }
-                  : mod
-              );
-            }
-          });
-          return newAssigned;
-        });
+
 
         setModules(prevModules => 
           prevModules.map(module => 
@@ -1067,17 +1004,7 @@ const LessonPlanPage: React.FC = () => {
     try {
       const success = await handleDeleteModuleApi(rightSideDeleteModule.id);
       if (success) {
-        // Remove from assignedModules
-        setAssignedModules(prev => {
-          const newAssigned = { ...prev };
-          Object.keys(newAssigned).forEach(weekIdStr => {
-            const weekId = parseInt(weekIdStr);
-            if (newAssigned[weekId]) {
-              newAssigned[weekId] = newAssigned[weekId].filter((mod: any) => mod.id !== rightSideDeleteModule.id);
-            }
-          });
-          return newAssigned;
-        });
+
 
         // Also remove from the modules list (left side) if it exists there
         setModules(prevModules =>
@@ -1227,10 +1154,12 @@ const LessonPlanPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      
+      if (!res.ok) {
+        throw new Error(`Failed to assign module to week: ${res.statusText}`);
+      }
+      
       const data = await res.json();
-
-      // Don't refetch immediately to avoid resetting the UI state
-      // The UI is already updated, so we just need to save to backend
       return data;
     } catch (err) {
       console.error('API error:', err);
@@ -1294,9 +1223,14 @@ const LessonPlanPage: React.FC = () => {
 
   // Add state for weekLessons (used for storing lessons for each week)
   const [weekLessons, setWeekLessons] = useState<{ [weekId: number]: any[] }>({});
+  
+  // Debug useEffect to log weekLessons changes
+  useEffect(() => {
+    console.log('weekLessons state changed:', weekLessons);
+  }, [weekLessons]);
 
   // Helper function to fetch all data for selected course
-  const fetchCourseData = async (courseId: string) => {
+  const fetchCourseData = async (courseId: string, skipWeekLessons = false) => {
     if (!courseId) {
       setModules([]);
       setWeeksFromApi([]);
@@ -1315,21 +1249,23 @@ const LessonPlanPage: React.FC = () => {
       const weeksArr = Array.isArray(weeksData) ? weeksData : [];
       setWeeksFromApi(weeksArr);
 
-      // 3. For each week, fetch its lessons
-      const weekLessonsObj: { [weekId: number]: any[] } = {};
-      await Promise.all(
-        weeksArr.map(async (week: any) => {
-          const weekId = week.id || week.weekid;
-          try {
-            const wlRes = await fetch(`/api/weeklessons/week/${weekId}`);
-            const wlData = await wlRes.json();
-            weekLessonsObj[weekId] = Array.isArray(wlData) ? wlData : [];
-          } catch {
-            weekLessonsObj[weekId] = [];
-          }
-        })
-      );
-      setWeekLessons(weekLessonsObj);
+      // 3. For each week, fetch its lessons (only if not skipped)
+      if (!skipWeekLessons) {
+        const weekLessonsObj: { [weekId: number]: any[] } = {};
+        await Promise.all(
+          weeksArr.map(async (week: any) => {
+            const weekId = week.id || week.weekid;
+            try {
+              const wlRes = await fetch(`/api/weeklessons/week/${weekId}`);
+              const wlData = await wlRes.json();
+              weekLessonsObj[weekId] = Array.isArray(wlData) ? wlData : [];
+            } catch {
+              weekLessonsObj[weekId] = [];
+            }
+          })
+        );
+        setWeekLessons(weekLessonsObj);
+      }
     } catch (err) {
       setModules([]);
       setWeeksFromApi([]);
@@ -1346,7 +1282,7 @@ const LessonPlanPage: React.FC = () => {
       setWeeksFromApi([]);
       setWeekLessons({});
     }
-    setAssignedModules({});
+
   }, [selectedCourse]);
 
   // --- NEW: Course/Week/Lesson Viewer Section ---
@@ -1555,7 +1491,7 @@ const LessonPlanPage: React.FC = () => {
       const data = await response.json();
   
       if (data.generated_content?.length > 0) {
-        setNewModuleDescription(data.generated_content[0]);
+        setNewModuleDescription(data.generated_content);
       } else {
         setNewModuleDescription("No content generated.");
       }
@@ -1815,16 +1751,37 @@ const LessonPlanPage: React.FC = () => {
                             const moduleId = e.dataTransfer.getData('moduleId');
                             const module = modules.find(m => m.id.toString() === moduleId);
                             if (module) {
-                              // Immediately update UI to show the module on the right side
-                              setAssignedModules(prev => ({
-                                ...prev,
-                                [week.id]: [...(prev[week.id] || []), module]
-                              }));
-                              // Remove from left side immediately
-                              setModules(prev => prev.filter(m => m.id !== module.id));
-                              // Then call the API to save to backend
-                              await assignModuleToWeek(module, week);
-                              await fetchWeekModules(week.id); // <-- fetch fresh modules for this week
+                              try {
+                                // Call the API first to assign the module to the week
+                                const result = await assignModuleToWeek(module, week);
+                                
+                                // If API call is successful, update the UI immediately
+                                if (result) {
+                                  // Add to weekLessons state immediately
+                                  setWeekLessons(prev => ({
+                                    ...prev,
+                                    [week.id]: [...(prev[week.id] || []), {
+                                      id: result.id, // weeklesson id from API response
+                                      lessonid: module.id,
+                                      title: module.title,
+                                      weekid: week.id,
+                                      orderno: result.orderno
+                                    }]
+                                  }));
+                                  
+                                  // Keep the module on the left side (don't remove it)
+                                  // setModules(prev => {
+                                  //   const newModules = prev.filter(m => m.id !== module.id);
+                                  //   console.log('Updated modules state:', newModules);
+                                  //   return newModules;
+                                  // });
+                                  
+                                  toast({ title: "Module assigned successfully!", description: `${module.title} added to ${week.title}` });
+                                }
+                              } catch (error) {
+                                console.error('Error assigning module to week:', error);
+                                toast({ title: "Error", description: "Failed to assign module to week", variant: "destructive" });
+                              }
                             }
                           }}
                         >
