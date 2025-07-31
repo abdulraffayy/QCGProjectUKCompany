@@ -1870,7 +1870,7 @@ const LessonPlanPage: React.FC = () => {
                                       <SortableLesson key={weekLessonId} lesson={lesson}>
                                         {({ attributes, listeners }) => (
                                           <div className="border rounded p-2 bg-blue-50 flex items-center justify-between">
-                                            <span>{found ? found.title : "No Title"}</span>
+                                            <span>{lesson.title || (found ? found.title : "No Title")}</span>
                                             <span>
                                               {/* Drag handle */}
                                               <span {...attributes} {...listeners} style={{ cursor: 'grab', marginRight: 8 }}>☰</span>

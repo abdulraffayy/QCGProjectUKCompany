@@ -550,12 +550,12 @@ export default function StudyMaterial() {
                       <CardTitle className="text-lg">{material.title}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <p className="text-sm text-gray-600 line-clamp-2">{material.description}</p>
+                      {/* <p className="text-sm text-gray-600 line-clamp-2">{material.description}</p> */}
                       <div className="space-y-1 text-xs text-gray-500">
-                        <div className="flex justify-between">
+                        {/* <div className="flex justify-between">
                           <span>Type:</span>
                           <span className="capitalize">{material.type}</span>
-                        </div>
+                        </div> */}
                         {material.fileName && (
                           <div className="flex justify-between">
                             <span>File:</span>
@@ -915,8 +915,6 @@ export default function StudyMaterial() {
                       </div>
                     </div>
                   )}
-                  
-                
                 </>
               )}
 
@@ -978,7 +976,7 @@ export default function StudyMaterial() {
                 <Label htmlFor="type">Type</Label>
                 <Select name="type" defaultValue={selectedItem.type}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="document">Document</SelectItem>
@@ -991,7 +989,7 @@ export default function StudyMaterial() {
               </div>
               <div>
                 <Label htmlFor="qaqfLevel">QAQF Level</Label>
-                <Select name="qaqfLevel" defaultValue={selectedItem.qaqfLevel?.toString()}>
+                <Select name="qaqfLevel" defaultValue={selectedItem.qaqf_level?.toString()}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

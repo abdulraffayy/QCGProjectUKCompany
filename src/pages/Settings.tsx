@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Button } from "../components/ui/button";
@@ -6,11 +10,24 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { useToast } from "../hooks/use-toast";
-// import { Link } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
-// import { useProfile } from '../contexts/UserProfileContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+
+// Admin form schema
+const adminSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  role: z.enum(["user", "admin", "verification", "moderation"]),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type AdminForm = z.infer<typeof adminSchema>;
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
@@ -29,6 +46,64 @@ const SettingsPage: React.FC = () => {
   const [theme, setTheme] = useState("light");
 
   const { logout, user } = useAuth();
+
+  // Form setup for admin tab
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<AdminForm>({
+    resolver: zodResolver(adminSchema),
+    defaultValues: {
+      role: "user",
+    },
+  });
+
+  // Admin mutation
+  const adminMutation = useMutation({
+    mutationFn: async (data: AdminForm) => {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          role: data.role,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Account creation failed");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log("Account created successfully:", data);
+      toast({
+        title: "Account created successfully",
+        description: `New account has been created successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      console.log("Account creation error:", error);
+      toast({
+        title: "Account creation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: AdminForm) => {
+    adminMutation.mutate(data);
+  };
 
   const handleSaveProfile = () => {
     setIsSaving(true);
@@ -98,6 +173,7 @@ const SettingsPage: React.FC = () => {
             <TabsList className="mb-4">
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="admin">Admin</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile">
@@ -119,10 +195,10 @@ const SettingsPage: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="institution">Institution</Label>
-                      <Input id="institution" value={user?.institution || ''} readOnly />
-                    </div>
+                                         <div>
+                       <Label htmlFor="institution">Institution</Label>
+                       <Input id="institution" value="" readOnly />
+                     </div>
                     <div>
                       <Label htmlFor="role">Role</Label>
                       <Input id="role" value={user?.role || ''} readOnly />
@@ -144,7 +220,112 @@ const SettingsPage: React.FC = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
+                         <TabsContent value="admin"> 
+               <Card>
+                 <CardHeader>
+                   <CardTitle>Admin Settings</CardTitle>
+                   <CardDescription>Create new user accounts</CardDescription>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                         <Label htmlFor="name">Full Name</Label>
+                         <Input
+                           id="name"
+                           type="text"
+                           placeholder="Enter full name"
+                           {...register("name")}
+                           className={errors.name ? "border-red-500" : ""}
+                         />
+                         {errors.name && (
+                           <p className="text-sm text-red-500">{errors.name.message}</p>
+                         )}
+                       </div>
+                       <div className="space-y-2">
+                         <Label htmlFor="username">Username</Label>
+                         <Input
+                           id="username"
+                           type="text"
+                           placeholder="Choose username"
+                           {...register("username")}
+                           className={errors.username ? "border-red-500" : ""}
+                         />
+                         {errors.username && (
+                           <p className="text-sm text-red-500">{errors.username.message}</p>
+                         )}
+                       </div>
+                     </div>
+                   
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                         <Label htmlFor="email">Email Address</Label>
+                         <Input
+                           id="email"
+                           type="email"
+                           placeholder="Enter email address"
+                           {...register("email")}
+                           className={errors.email ? "border-red-500" : ""}
+                         />
+                         {errors.email && (
+                           <p className="text-sm text-red-500">{errors.email.message}</p>
+                         )}
+                       </div>
+                       <div className="space-y-2">
+                         <Label htmlFor="role">Role</Label>
+                         <Select onValueChange={(value) => setValue("role", value as "user" | "admin" | "verification" | "moderation")}>
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select role" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="user">User</SelectItem>
+                             <SelectItem value="admin">Admin</SelectItem>
+                             <SelectItem value="verification">Verification</SelectItem>
+                             <SelectItem value="moderation">Moderation</SelectItem>
+                           </SelectContent>
+                         </Select>
+                         {errors.role && (
+                           <p className="text-sm text-red-500">{errors.role.message}</p>
+                         )}
+                       </div>
+                     </div>
+                   
+                     <div className="space-y-2">
+                       <Label htmlFor="password">Password</Label>
+                       <Input
+                         id="password"
+                         type="password"
+                         placeholder="Enter password"
+                         {...register("password")}
+                         className={errors.password ? "border-red-500" : ""}
+                       />
+                       {errors.password && (
+                         <p className="text-sm text-red-500">{errors.password.message}</p>
+                       )}
+                     </div>
+
+                     <div className="space-y-2">
+                       <Label htmlFor="confirmPassword">Confirm Password</Label>
+                       <Input
+                         id="confirmPassword"
+                         type="password"
+                         placeholder="Confirm password"
+                         {...register("confirmPassword")}
+                         className={errors.confirmPassword ? "border-red-500" : ""}
+                       />
+                       {errors.confirmPassword && (
+                         <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                       )}
+                     </div>
+                   
+                     <Button type="submit" disabled={adminMutation.isPending}>
+                       {adminMutation.isPending ? 'Creating Account...' : 'Create Account'}
+                     </Button>
+                   </form>
+                 </CardContent>
+               </Card>
+             </TabsContent>
             <TabsContent value="notifications">
               <Card>
                 <CardHeader>
@@ -160,9 +341,7 @@ const SettingsPage: React.FC = () => {
                       onCheckedChange={setEmailNotifications}
                     />
                   </div>
-                  
                   <Separator />
-                  
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Notification Types</h4>
                     
@@ -175,7 +354,6 @@ const SettingsPage: React.FC = () => {
                         disabled={!emailNotifications}
                       />
                     </div>
-                    
                     <div className="flex items-center justify-between">
                       <Label htmlFor="content-rejected" className="flex-1">When my content is rejected</Label>
                       <Switch 
@@ -185,7 +363,6 @@ const SettingsPage: React.FC = () => {
                         disabled={!emailNotifications}
                       />
                     </div>
-                    
                     <div className="flex items-center justify-between">
                       <Label htmlFor="new-comments" className="flex-1">New comments on my content</Label>
                       <Switch 
@@ -196,11 +373,10 @@ const SettingsPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
                   <Button>Save Preferences</Button>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent>            
           </Tabs>
         </div>
       </div>
