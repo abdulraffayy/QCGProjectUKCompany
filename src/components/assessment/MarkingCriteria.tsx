@@ -31,7 +31,6 @@ import {
   MarketingRubricTemplate, 
   InnovativeAssessmentMethods,
   getRubricByContentType,
-  getInnovativeAssessmentMethod,
   calculateRubricScore,
   AssessmentResponseTemplates
 } from "../../lib/markingCriteria";
@@ -317,7 +316,7 @@ const MarkingCriteria: React.FC<MarkingCriteriaProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Assessment Metrics</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {innovativeMethod.metrics.map((metric, index) => (
+                      {innovativeMethod.metrics?.map((metric, index) => (
                         <div key={index} className="p-3 bg-white rounded border">
                           <p className="font-medium text-sm">{metric.name}</p>
                           <p className="text-xs text-neutral-600">{metric.description}</p>
@@ -332,7 +331,7 @@ const MarkingCriteria: React.FC<MarkingCriteriaProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Simulation Types</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {innovativeMethod.simulationTypes.map((type, index) => (
+                      {innovativeMethod.simulationTypes?.map((type, index) => (
                         <div key={index} className="p-3 bg-white rounded border">
                           <p className="font-medium text-sm">{type.name}</p>
                           <p className="text-xs text-neutral-600">{type.description}</p>
@@ -347,7 +346,7 @@ const MarkingCriteria: React.FC<MarkingCriteriaProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Assessment Components</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {innovativeMethod.components.map((component, index) => (
+                      {innovativeMethod.components?.map((component, index) => (
                         <div key={index} className="p-3 bg-white rounded border">
                           <p className="font-medium text-sm">{component.name}</p>
                           <p className="text-xs text-neutral-600">{component.description}</p>
@@ -362,7 +361,7 @@ const MarkingCriteria: React.FC<MarkingCriteriaProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Journey Stages</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {innovativeMethod.journeyStages.map((stage, index) => (
+                      {innovativeMethod.journeyStages?.map((stage, index) => (
                         <div key={index} className="p-3 bg-white rounded border">
                           <p className="font-medium text-sm">{stage.name}</p>
                           <p className="text-xs text-neutral-600">{stage.description}</p>
@@ -377,7 +376,7 @@ const MarkingCriteria: React.FC<MarkingCriteriaProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Adaptive Elements</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {innovativeMethod.adaptiveElements.map((element, index) => (
+                      {innovativeMethod.adaptiveElements?.map((element, index) => (
                         <div key={index} className="p-3 bg-white rounded border">
                           <p className="font-medium text-sm">{element.name}</p>
                           <p className="text-xs text-neutral-600">{element.description}</p>

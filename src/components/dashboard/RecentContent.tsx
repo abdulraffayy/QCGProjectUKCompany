@@ -3,10 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
-import { Link } from "wouter";
 import { getColorByLevel } from "../../lib/qaqf";
-import { cn } from "../../lib/utils";
-import { Content } from "@shared/schema";
+import { Content } from "shared/schema";
 
 interface RecentContentProps {
   contents: Content[];
@@ -123,7 +121,7 @@ const RecentContent: React.FC<RecentContentProps> = ({ contents, isLoading }) =>
                   <TableRow key={content.id} className="hover:bg-neutral-50">
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-neutral-800">{content.title}</div>
-                      <div className="text-neutral-500 text-xs">Module: {content.moduleCode}</div>
+                      <div className="text-neutral-500 text-xs">Module: {content.module_code}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={getContentTypeBadgeVariant(content.type) as any}>
@@ -131,17 +129,17 @@ const RecentContent: React.FC<RecentContentProps> = ({ contents, isLoading }) =>
                       </Badge>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-${getColorByLevel(content.qaqfLevel)} font-medium`}>
-                        Level {content.qaqfLevel}
+                      <span className={`text-${getColorByLevel(content.qaqf_level)} font-medium`}>
+                        Level {content.qaqf_level}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getBadgeVariant(content.verificationStatus) as any}>
-                        {content.verificationStatus.replace('_', ' ')}
+                      <Badge variant={getBadgeVariant(content.verification_status) as any}>
+                       
                       </Badge>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-neutral-500">
-                      {formatDate(content.createdAt)}
+                      {formatDate(content.created_at)}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Separator } from '../components/ui/separator';
 import { Progress } from '../components/ui/progress';
 import { Link } from 'wouter';
-import { ArrowLeft, TrendingUp, Users, BookOpen, CheckCircle, AlertCircle, Target } from 'lucide-react';
+import { ArrowLeft, TrendingUp, BookOpen, CheckCircle, Target } from 'lucide-react';
 
 // Types for dynamic QAQF data
 interface QAQFLevel {

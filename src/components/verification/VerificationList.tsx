@@ -12,7 +12,15 @@ import { Label } from "../ui/label";
 import { useToast } from "../../hooks/use-toast";
 import { queryClient } from "../../lib/queryClient";
 import { getColorByLevel, QAQFCharacteristics } from "../../lib/qaqf";
-// import { Content, VerificationStatus } from "@shared/schema";
+import { Content } from "shared/schema";
+
+// Define verification status enum
+enum VerificationStatus {
+  PENDING = "pending",
+  VERIFIED = "verified", 
+  REJECTED = "rejected",
+  IN_REVIEW = "in_review"
+}
 
 interface VerificationListProps {
   contents: Content[];
@@ -90,10 +98,10 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
   };
 
   const filteredContents = contents.filter(content => {
-    if (activeTab === "pending") return content.verificationStatus === VerificationStatus.PENDING;
-    if (activeTab === "verified") return content.verificationStatus === VerificationStatus.VERIFIED;
-    if (activeTab === "rejected") return content.verificationStatus === VerificationStatus.REJECTED;
-    if (activeTab === "in_review") return content.verificationStatus === VerificationStatus.IN_REVIEW;
+    if (activeTab === "pending") return content.verification_status === VerificationStatus.PENDING;
+    if (activeTab === "verified") return content.verification_status === VerificationStatus.VERIFIED;
+    if (activeTab === "rejected") return content.verification_status === VerificationStatus.REJECTED;
+    if (activeTab === "in_review") return content.verification_status === VerificationStatus.IN_REVIEW;
     return true;
   });
 
@@ -108,25 +116,25 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
             <TabsTrigger value="pending">
               Pending 
               <Badge variant="secondary" className="ml-2">
-                {contents.filter(c => c.verificationStatus === VerificationStatus.PENDING).length}
+                {contents.filter(c => c.verification_status === VerificationStatus.PENDING).length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="in_review">
               In Review
               <Badge variant="outline" className="ml-2">
-                {contents.filter(c => c.verificationStatus === VerificationStatus.IN_REVIEW).length}
+                {contents.filter(c => c.verification_status === VerificationStatus.IN_REVIEW).length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="verified">
               Verified
               <Badge variant="default" className="ml-2">
-                {contents.filter(c => c.verificationStatus === VerificationStatus.VERIFIED).length}
+                {contents.filter(c => c.verification_status === VerificationStatus.VERIFIED).length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="rejected">
               Rejected
               <Badge variant="destructive" className="ml-2">
-                {contents.filter(c => c.verificationStatus === VerificationStatus.REJECTED).length}
+                {contents.filter(c => c.verification_status === VerificationStatus.REJECTED).length}
               </Badge>
             </TabsTrigger>
           </TabsList>
@@ -158,7 +166,7 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
                       <TableRow key={content.id} className="hover:bg-neutral-50">
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <div className="font-medium text-neutral-800">{content.title}</div>
-                          <div className="text-neutral-500 text-xs">Module: {content.moduleCode}</div>
+                          <div className="text-neutral-500 text-xs">Module: {content.module_code}</div>
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <Badge variant={getContentTypeBadgeVariant(content.type) as any}>
@@ -166,15 +174,15 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-${getColorByLevel(content.qaqfLevel)} font-medium`}>
-                            Level {content.qaqfLevel}
+                          <span className={`text-${getColorByLevel(content.qaqf_level)} font-medium`}>
+                            Level {content.qaqf_level}
                           </span>
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap">
-                          User ID: {content.createdByUserId}
+                          User ID: {content.created_by_user_id}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-neutral-500">
-                          {formatDate(content.createdAt)}
+                          {formatDate(content.created_at)}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -187,13 +195,13 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
                               <span className="material-icons text-sm">visibility</span>
                             </Button>
                             <Button 
-                              variant={content.verificationStatus === VerificationStatus.PENDING ? "default" : "outline"} 
+                              variant={content.verification_status === VerificationStatus.PENDING ? "default" : "outline"} 
                               size="sm"
                               onClick={() => handleVerify(content)}
-                              disabled={content.verificationStatus === VerificationStatus.VERIFIED}
+                              disabled={content.verification_status === VerificationStatus.VERIFIED}
                             >
                               <span className="material-icons text-sm mr-1">verified</span>
-                              {content.verificationStatus === VerificationStatus.PENDING ? "Verify" : "Review"}
+                              {content.verification_status === VerificationStatus.PENDING ? "Verify" : "Review"}
                             </Button>
                           </div>
                         </TableCell>
@@ -214,7 +222,7 @@ const VerificationList: React.FC<VerificationListProps> = ({ contents, isLoading
             <DialogHeader>
               <DialogTitle>{selectedContent.title}</DialogTitle>
               <DialogDescription>
-                Module: {selectedContent.moduleCode} | QAQF Level {selectedContent.qaqfLevel}
+                Module: {selectedContent.module_code} | QAQF Level {selectedContent.qaqf_level}
               </DialogDescription>
             </DialogHeader>
 

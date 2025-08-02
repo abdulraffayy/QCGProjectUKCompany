@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle,} from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Input } from "../components/ui/input";
@@ -174,7 +174,7 @@ const MyContentPage: React.FC = () => {
 
         <TabsContent value="content" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contents.filter(content => content.type === 'academic_paper' || content.type === 'lecture').map((content: Content) => (
+            {contents.filter((content: Content) => content.type === 'academic_paper' || content.type === 'lecture').map((content: Content) => (
               <Card key={content.id} className="shadow-sm hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{content.title}</CardTitle>
@@ -182,7 +182,7 @@ const MyContentPage: React.FC = () => {
                 <CardContent>
                   <p className="text-neutral-600 text-sm mb-4 line-clamp-2">{content.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqfLevel}</span>
+                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqf_level}</span>
                     <span className="material-icons text-sm text-blue-600">article</span>
                   </div>
                 </CardContent>
@@ -193,7 +193,7 @@ const MyContentPage: React.FC = () => {
 
         <TabsContent value="assessments" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contents.filter(content => content.type === 'assessment').map((content: Content) => (
+            {contents.filter((content: Content) => content.type === 'assessment').map((content: Content) => (
               <Card key={content.id} className="shadow-sm hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{content.title}</CardTitle>
@@ -201,7 +201,7 @@ const MyContentPage: React.FC = () => {
                 <CardContent>
                   <p className="text-neutral-600 text-sm mb-4 line-clamp-2">{content.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqfLevel}</span>
+                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqf_level}</span>
                     <span className="material-icons text-sm text-green-600">quiz</span>
                   </div>
                 </CardContent>
@@ -212,7 +212,7 @@ const MyContentPage: React.FC = () => {
 
         <TabsContent value="videos" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contents.filter(content => content.type === 'video').map((content: Content) => (
+            {contents.filter((content: Content) => content.type === 'video').map((content: Content) => (
               <Card key={content.id} className="shadow-sm hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{content.title}</CardTitle>
@@ -220,7 +220,7 @@ const MyContentPage: React.FC = () => {
                 <CardContent>
                   <p className="text-neutral-600 text-sm mb-4 line-clamp-2">{content.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqfLevel}</span>
+                    <span className="text-xs text-neutral-500">QAQF Level {content.qaqf_level}</span>
                     <span className="material-icons text-sm text-red-600">play_circle</span>
                   </div>
                 </CardContent>
@@ -246,7 +246,7 @@ const MyContentPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium mb-2">QAQF Level</h4>
-                    <Badge>{selectedContent.qaqfLevel}</Badge>
+                    <Badge>{selectedContent.qaqf_level}</Badge>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Content Type</h4>

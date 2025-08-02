@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import QAQFAnalytics from "../components/analytics/QAQFAnalytics";
 import BatchProcessingPanel from "../components/content/BatchProcessingPanel";
-import { useToast } from "../hooks/use-toast";
+
 
 interface Lesson {
   id: number;
@@ -22,7 +22,6 @@ interface Lesson {
 }
 
 const AnalyticsPage: React.FC = () => {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateRange, setDateRange] = useState("all-time");
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -49,14 +48,7 @@ const AnalyticsPage: React.FC = () => {
   }, []);
   
   // Handle content update (e.g., after batch processing)
-  const handleContentUpdate = () => {
-    refetch();
-    toast({
-      title: "Content Updated",
-      description: "Analytics data has been refreshed.",
-    });
-  };
-  
+ 
   // Date range filter options
   const dateRangeOptions = [
     { value: "all-time", label: "All Time" },
@@ -263,7 +255,7 @@ const AnalyticsPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="qaqf-analysis">
-          <QAQFAnalytics contents={getFilteredContents()} />
+          <QAQFAnalytics contents={getFilteredContents() as any} />
         </TabsContent>
 
         <TabsContent value="batch-processing">

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Button } from "../components/ui/button";
@@ -10,7 +11,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "react-toastify";
 import { useAuth } from '../contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
@@ -30,7 +31,7 @@ const adminSchema = z.object({
 type AdminForm = z.infer<typeof adminSchema>;
 
 const SettingsPage: React.FC = () => {
-  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isSaving, setIsSaving] = useState(false);
   
   // Notification settings
@@ -40,10 +41,9 @@ const SettingsPage: React.FC = () => {
   const [newComments, setNewComments] = useState(true);
   
   // API Key Management
-  const [apiKey, setApiKey] = useState("••••••••••••••••••••••");
+
   
-  // Appearance settings
-  const [theme, setTheme] = useState("light");
+
 
   const { logout, user } = useAuth();
 
@@ -78,26 +78,52 @@ const SettingsPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Account creation failed");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: await response.text() };
+        }
+        throw new Error(errorData.error || errorData.detail || "Account creation failed");
       }
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log("Account created successfully:", data);
-      toast({
-        title: "Account created successfully",
-        description: `New account has been created successfully.`,
-      });
+      
+      // Show success toast with role-specific message
+      const roleName = variables.role.charAt(0).toUpperCase() + variables.role.slice(1);
+      toast.success(`${roleName} account created successfully`);
+     
+
+      if (variables.role === "admin" || variables.role === "verification") {
+        setLocation("/login")
+      }
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
       console.log("Account creation error:", error);
-      toast({
-        title: "Account creation failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      
+      let errorMessage = "Account creation failed. Please try again.";
+      
+      // Handle specific error cases for duplicate email
+      if (error.message.includes("Email already registered") || 
+          error.message.includes("Email already exists") ||
+          error.message.includes("already registered")) {
+        errorMessage = "This email is already registered. Please use a different email address.";
+      } else if (error.message.includes("Username already registered") || 
+                 error.message.includes("Username already exists")) {
+        errorMessage = "This username is already taken. Please choose a different username.";
+      } else if (error.message.includes("Username or email already exists")) {
+        errorMessage = "This username or email is already registered. Please use different credentials.";
+      }
+      
+      // Add role-specific context to error message
+      const roleName = variables?.role ? variables.role.charAt(0).toUpperCase() + variables.role.slice(1) : "User";
+      const roleSpecificError = `${roleName} account creation failed: ${errorMessage}`;
+      
+      toast.error(roleSpecificError);
+      console.log("Error toast shown:", roleSpecificError);
     },
   });
 
@@ -111,23 +137,12 @@ const SettingsPage: React.FC = () => {
     // Simulate saving
     setTimeout(() => {
       setIsSaving(false);
-      toast({
-        title: "Profile Updated",
-        description: "Your profile settings have been saved successfully.",
-      });
+      toast.success("Profile settings have been saved successfully");
+      console.log("Profile settings saved successfully");
     }, 1000);
   };
 
-  const handleRegenerateApiKey = () => {
-    // Simulate API key regeneration
-    setTimeout(() => {
-      setApiKey("••••••••••••••••••••••");
-      toast({
-        title: "API Key Regenerated",
-        description: "Your new API key has been generated. Keep it secure!",
-      });
-    }, 500);
-  };
+ 
 
   function getInitials(name: string | undefined) {
     if (!name) return '';
@@ -279,7 +294,6 @@ const SettingsPage: React.FC = () => {
                              <SelectValue placeholder="Select role" />
                            </SelectTrigger>
                            <SelectContent>
-                             <SelectItem value="user">User</SelectItem>
                              <SelectItem value="admin">Admin</SelectItem>
                              <SelectItem value="verification">Verification</SelectItem>
                              <SelectItem value="moderation">Moderation</SelectItem>

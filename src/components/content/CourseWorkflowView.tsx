@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
+
 import { useToast } from "../../hooks/use-toast";
-import { Content } from "@shared/schema";
+import { Content } from "shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
 interface CourseWorkflowViewProps {
@@ -13,15 +13,13 @@ interface CourseWorkflowViewProps {
   showLatest?: boolean;
   limit?: number;
   showCreateNew?: boolean;
-  showWorkflowButtons?: boolean;
 }
 
 const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
   contentId,
   showLatest = true,
   limit = 3,
-  showCreateNew = false,
-  showWorkflowButtons = true
+  showCreateNew = false
 }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("content");
@@ -126,35 +124,9 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
     }, 2000);
   };
 
-  const handleExport = () => {
-    if (!selectedContent) return;
-    
-    toast({
-      title: "Export Started",
-      description: `Exporting "${selectedContent.title}" to PDF...`,
-    });
-    
-    // Simulate export process
-    setTimeout(() => {
-      toast({
-        title: "Export Complete",
-        description: `${selectedContent.title} has been successfully exported.`,
-      });
-    }, 1500);
-  };
 
-  const handleShare = () => {
-    if (!selectedContent) return;
-    
-    // Copy a shareable link to clipboard
-    const shareableLink = `${window.location.origin}/content/${selectedContent.id}`;
-    navigator.clipboard.writeText(shareableLink);
-    
-    toast({
-      title: "Link Copied",
-      description: "Shareable link has been copied to clipboard.",
-    });
-  };
+
+
 
   if (isLoading) {
     return (
@@ -216,17 +188,17 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
             <div className="mb-6">
               <h2 className="text-xl font-bold text-neutral-800 mb-2">{selectedContent.title}</h2>
               <div className="flex flex-wrap gap-2 mb-3">
-                <Badge className={getQaqfLevelColor(selectedContent.qaqfLevel)}>
-                  QAQF Level {selectedContent.qaqfLevel}
+                <Badge className={getQaqfLevelColor(selectedContent.qaqf_level)}>
+                  QAQF Level {selectedContent.qaqf_level}
                 </Badge>
-                <Badge className={getVerificationStatusColor(selectedContent.verificationStatus)}>
-                  {selectedContent.verificationStatus.replace('_', ' ')}
+                <Badge className={getVerificationStatusColor(selectedContent.verification_status)}>
+                  {selectedContent.verification_status.replace('_', ' ')}
                 </Badge>
                 <Badge variant="outline">
-                  Module: {selectedContent.moduleCode || 'N/A'}
+                  Module: {selectedContent.module_code || 'N/A'}
                 </Badge>
                 <Badge variant="outline" className="bg-neutral-100">
-                  Created: {formatDate(selectedContent.createdAt)}
+                  Created: {formatDate(selectedContent.created_at)}
                 </Badge>
               </div>
               <p className="text-neutral-600">{selectedContent.description}</p>
@@ -299,11 +271,11 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                       <dl className="divide-y divide-gray-200">
                         <div className="py-2 grid grid-cols-2 gap-3">
                           <dt className="text-sm font-medium text-neutral-500">QAQF Level</dt>
-                          <dd className="text-sm text-neutral-900">{selectedContent.qaqfLevel}</dd>
+                          <dd className="text-sm text-neutral-900">{selectedContent.qaqf_level}</dd>
                         </div>
                         <div className="py-2 grid grid-cols-2 gap-3">
                           <dt className="text-sm font-medium text-neutral-500">Quality Status</dt>
-                          <dd className="text-sm text-neutral-900">{selectedContent.verificationStatus.replace('_', ' ')}</dd>
+                          <dd className="text-sm text-neutral-900">{selectedContent.verification_status.replace('_', ' ')}</dd>
                         </div>
                       </dl>
                     </div>
@@ -313,7 +285,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                       <dl className="divide-y divide-gray-200">
                         <div className="py-2 grid grid-cols-2 gap-3">
                           <dt className="text-sm font-medium text-neutral-500">Module Code</dt>
-                          <dd className="text-sm text-neutral-900">{selectedContent.moduleCode || 'N/A'}</dd>
+                          <dd className="text-sm text-neutral-900">{selectedContent.module_code || 'N/A'}</dd>
                         </div>
                         <div className="py-2 grid grid-cols-2 gap-3">
                           <dt className="text-sm font-medium text-neutral-500">Content Type</dt>
@@ -328,11 +300,11 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <dt className="text-sm font-medium text-neutral-500 mb-1">Created By</dt>
-                        <dd className="text-sm text-neutral-900">User ID: {selectedContent.createdByUserId}</dd>
+                        <dd className="text-sm text-neutral-900">User ID: {selectedContent.created_by_user_id}</dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-neutral-500 mb-1">Creation Date</dt>
-                        <dd className="text-sm text-neutral-900">{formatDate(selectedContent.createdAt)}</dd>
+                        <dd className="text-sm text-neutral-900">{formatDate(selectedContent.created_at)}</dd>
                       </div>
                     </div>
                   </div>
@@ -340,7 +312,7 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                   <div className="border rounded-md p-4 bg-neutral-50">
                     <h4 className="font-medium mb-3">Last Update</h4>
                     <p className="text-sm text-neutral-600">
-                      Last modified: {formatDate(selectedContent.updatedAt)}
+                      Last modified: {formatDate(selectedContent.updated_at)}
                     </p>
                   </div>
                 </div>
@@ -351,8 +323,8 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
             <div className="mt-6 border-t pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium">Module Approval</h3>
-                <Badge variant="outline" className={getVerificationStatusColor(selectedContent.verificationStatus)}>
-                  {selectedContent.verificationStatus.replace('_', ' ')}
+                <Badge variant="outline" className={getVerificationStatusColor(selectedContent.verification_status)}>
+                  {selectedContent.verification_status.replace('_', ' ')}
                 </Badge>
               </div>
               
@@ -374,8 +346,8 @@ const CourseWorkflowView: React.FC<CourseWorkflowViewProps> = ({
                         id: selectedContent.id,
                         title: selectedContent.title,
                         type: selectedContent.type,
-                        moduleCode: selectedContent.moduleCode,
-                        qaqfLevel: selectedContent.qaqfLevel,
+                        moduleCode: selectedContent.module_code,
+                        qaqfLevel: selectedContent.qaqf_level,
                         characteristics: selectedContent.characteristics
                       }));
                       

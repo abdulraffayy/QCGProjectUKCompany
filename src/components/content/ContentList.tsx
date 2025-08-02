@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,} from "../ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { getColorByLevel } from "../../lib/qaqf";
-import { saveContentAsPDF } from "../lib/pdfGenerator";
-import { Content } from "@shared/schema";
+
+import { Content } from "shared/schema";
 import { useToast } from "../../hooks/use-toast";
 
 interface ContentListProps {
@@ -79,7 +78,7 @@ const ContentList: React.FC<ContentListProps> = ({
   const filteredContents = contents.filter(content => 
     content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    content.moduleCode?.toLowerCase().includes(searchTerm.toLowerCase())
+    content.module_code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleViewContent = (content: Content) => {
@@ -87,28 +86,19 @@ const ContentList: React.FC<ContentListProps> = ({
     setIsViewDialogOpen(true);
   };
 
-  const handleDeleteContent = (contentId: number) => {
+  const handleDeleteContent = () => {
     toast({
       title: "Content Deleted",
       description: "The content has been deleted successfully.",
     });
   };
   
-  const handleExportToPDF = (content: Content) => {
-    try {
-      saveContentAsPDF(content);
-      toast({
-        title: "PDF Export Successful",
-        description: `${content.title} has been exported as a PDF file.`,
-      });
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      toast({
-        title: "PDF Export Failed",
-        description: "There was a problem exporting your content to PDF. Please try again.",
-        variant: "destructive"
-      });
-    }
+  const handleExportToPDF = () => {
+    toast({
+      title: "PDF Export Not Available",
+      description: "PDF export functionality is not currently available.",
+      variant: "destructive"
+    });
   };
 
   return (
@@ -189,7 +179,7 @@ const ContentList: React.FC<ContentListProps> = ({
                   <TableRow key={content.id} className="hover:bg-neutral-50">
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-neutral-800">{content.title}</div>
-                      <div className="text-neutral-500 text-xs">Module: {content.moduleCode}</div>
+                      <div className="text-neutral-500 text-xs">Module: {content.module_code}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={getContentTypeBadgeVariant(content.type) as any}>
@@ -197,17 +187,17 @@ const ContentList: React.FC<ContentListProps> = ({
                       </Badge>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-${getColorByLevel(content.qaqfLevel)} font-medium`}>
-                        Level {content.qaqfLevel}
+                      <span className={`text-${getColorByLevel(content.qaqf_level)} font-medium`}>
+                        Level {content.qaqf_level}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getBadgeVariant(content.verificationStatus) as any}>
-                        {content.verificationStatus.replace('_', ' ')}
+                      <Badge variant={getBadgeVariant(content.verification_status) as any}>
+                        {content.verification_status.replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-neutral-500">
-                      {formatDate(content.createdAt)}
+                      {formatDate(content.created_at)}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -223,7 +213,7 @@ const ContentList: React.FC<ContentListProps> = ({
                           variant="ghost" 
                           size="icon" 
                           className="text-primary mr-2"
-                          onClick={() => handleExportToPDF(content)}
+                          onClick={() => handleExportToPDF()}
                           title="Export to PDF"
                         >
                           <span className="material-icons text-sm">picture_as_pdf</span>
@@ -242,7 +232,7 @@ const ContentList: React.FC<ContentListProps> = ({
                               <span className="material-icons text-sm mr-2">visibility</span>
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportToPDF(content)}>
+                            <DropdownMenuItem onClick={() => handleExportToPDF()}>
                             <span className="material-icons text-sm mr-2">picture_as_pdf</span>
                             Export to PDF
                           </DropdownMenuItem>
@@ -250,7 +240,7 @@ const ContentList: React.FC<ContentListProps> = ({
                             <span className="material-icons text-sm mr-2">share</span>
                             Share
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteContent(content.id)}>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteContent()}>
                             <span className="material-icons text-sm mr-2">delete</span>
                             Delete
                           </DropdownMenuItem>
@@ -272,7 +262,7 @@ const ContentList: React.FC<ContentListProps> = ({
           <DialogHeader>
             <DialogTitle>{selectedContent?.title}</DialogTitle>
             <DialogDescription>
-              Module: {selectedContent?.moduleCode} | QAQF Level {selectedContent?.qaqfLevel}
+              Module: {selectedContent?.module_code} | QAQF Level {selectedContent?.qaqf_level}
             </DialogDescription>
           </DialogHeader>
 

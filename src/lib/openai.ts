@@ -1,5 +1,10 @@
 import { apiRequest } from "./queryClient";
 
+// Type assertion for Vite env
+const getEnvVar = (key: string): string => {
+  return (import.meta as any).env?.[key] || '';
+};
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 
 export interface GenerateContentRequest {
@@ -54,7 +59,7 @@ export interface UploadSourceResponse {
 // Generate academic content
 export async function generateAcademicContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const baseUrl = getEnvVar('VITE_API_BASE_URL');
     const response = await apiRequest("POST", baseUrl + "/api/generate/content", request);
     
     if (!response.ok) {
@@ -89,7 +94,7 @@ export async function generateVideo(request: GenerateVideoRequest): Promise<Gene
 // Verify content against QAQF framework
 export async function verifyContent(content: string, qaqfLevel: number): Promise<VerificationResponse> {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const baseUrl = getEnvVar('VITE_API_BASE_URL');
     const response = await apiRequest("POST", baseUrl + "/api/verify/content", {
       content,
       qaqfLevel
@@ -110,7 +115,7 @@ export async function verifyContent(content: string, qaqfLevel: number): Promise
 // Check content against British standards
 export async function checkBritishStandards(content: string): Promise<BritishStandardsResponse> {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const baseUrl = getEnvVar('VITE_API_BASE_URL');
     const response = await apiRequest("POST", baseUrl + "/api/check/british-standards", {
       content
     });
@@ -133,7 +138,7 @@ export async function uploadSource(file: File): Promise<UploadSourceResponse> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', file.type);
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const baseUrl = getEnvVar('VITE_API_BASE_URL');
     const response = await fetch(baseUrl + '/api/upload/source', {
       method: 'POST',
       body: formData,

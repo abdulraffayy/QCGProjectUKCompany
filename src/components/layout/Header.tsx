@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
-  const { user, logout } = useAuth();
+  const { user, } = useAuth();
 
   return (
     <header className="bg-white border-b border-neutral-200 flex items-center justify-between p-4 h-16">

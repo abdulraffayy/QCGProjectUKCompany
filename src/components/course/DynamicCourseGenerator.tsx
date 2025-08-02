@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation,} from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -15,7 +15,7 @@ import { Progress } from '../ui/progress';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
-  Loader2, BookOpen, Clock, Users, Target, CheckCircle, AlertCircle, 
+  Loader2, BookOpen, Clock, Target, CheckCircle, 
   GraduationCap, Settings, FileText, BarChart3, Lightbulb, Award
 } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
@@ -90,7 +90,6 @@ const DynamicCourseGenerator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Fetch QAQF data dynamically
   const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({

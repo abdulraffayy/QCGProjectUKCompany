@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardTitle } from "../ui/card";
+import { Card, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
@@ -12,14 +12,13 @@ import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Badge } from "../ui/badge";
 import { Slider } from "../ui/slider";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../ui/dialog";
-import MarkingCriteriaModule from "../components/assessment/MarkingCriteriaModule";
-import { apiRequest } from "../lib/queryClient";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
+import MarkingCriteriaModule from "../../components/assessment/MarkingCriteriaModule";
 
 const ContentGenerator: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("content");
-  const [contentType, setContentType] = useState("academic_paper");
+  const [contentType] = useState("academic_paper");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [qaqfLevel, setQaqfLevel] = useState("");
@@ -35,7 +34,7 @@ const ContentGenerator: React.FC = () => {
   const [showMarkingCriteria, setShowMarkingCriteria] = useState(false);
   
   // Assessment specific options
-  const [includeAssessment, setIncludeAssessment] = useState(true);
+  const [includeAssessment] = useState(true);
   const [assessmentType, setAssessmentType] = useState("multiple-choice");
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
   
@@ -82,7 +81,7 @@ const ContentGenerator: React.FC = () => {
       }
     ]
   });
-  const [markingRubricType, setMarkingRubricType] = useState("Academic Standards");
+
   
   // Verification and moderation options
   const [verificationStatus, setVerificationStatus] = useState<string>("pending");
@@ -371,7 +370,7 @@ const ContentGenerator: React.FC = () => {
               className="flex items-center justify-center px-4 py-2 rounded-lg text-sm w-full"
             >
               <span className="material-icons text-sm mr-2">description</span>
-              Academic Course
+              0Academic Course
             </Button>
           </div>
         </div>
@@ -396,8 +395,8 @@ const ContentGenerator: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {QAQFLevels.map((level) => (
-                      <SelectItem key={level.id} value={level.id.toString()}>
-                        Level {level.id} - {level.name}
+                      <SelectItem key={level.level} value={level.level.toString()}>
+                        Level {level.level} - {level.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1343,7 +1342,7 @@ const ContentGenerator: React.FC = () => {
                           <div className="mt-4">
                             <h4 className="text-sm font-medium mb-2">Criteria Breakdown</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {markingAssessmentResult.criteria.map((criterion, index) => (
+                              {markingAssessmentResult.criteria.map((criterion: any, index: number) => (
                                 <div key={index} className="border p-3 rounded-md">
                                   <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm font-medium">{criterion.title}</span>
@@ -1581,7 +1580,7 @@ const ContentGenerator: React.FC = () => {
                     throw new Error(`Failed to save content: ${response.status}`);
                   }
                   
-                  const savedContent = await response.json();
+                  
                   
                   // Show success notification
                   toast({

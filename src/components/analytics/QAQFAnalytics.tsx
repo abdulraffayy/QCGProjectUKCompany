@@ -14,7 +14,7 @@ import {
   analyzeContentOverTime
 } from '../../lib/analyticsHelpers';
 import { QAQFCharacteristics, QAQFLevels } from '../../lib/qaqf';
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema';
 
 interface QAQFAnalyticsProps {
   contents: Content[];
@@ -42,9 +42,9 @@ const QAQFAnalytics: React.FC<QAQFAnalyticsProps> = ({ contents }) => {
   const levelsData = React.useMemo(() => {
     const distribution = calculateLevelDistribution(contents);
     return QAQFLevels.map(level => ({
-      name: `Level ${level.id}`,
-      count: distribution[level.id] || 0,
-      id: level.id
+      name: `Level ${level.level}`,
+      count: distribution[level.level] || 0,
+      id: level.level
     }));
   }, [contents]);
   
@@ -200,7 +200,7 @@ const QAQFAnalytics: React.FC<QAQFAnalyticsProps> = ({ contents }) => {
                     fill="#8884d8"
                     label={({ name, count }) => `${name}: ${count}`}
                   >
-                    {levelsData.map((entry, index) => (
+                    {levelsData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -310,7 +310,7 @@ const QAQFAnalytics: React.FC<QAQFAnalyticsProps> = ({ contents }) => {
                     fill="#8884d8"
                     label={({ name, count }) => `${name}: ${count}`}
                   >
-                    {contentTypeData.map((entry, index) => (
+                    {contentTypeData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

@@ -2,14 +2,7 @@
 
 import {
   DndContext,
-  useDraggable,
-  useDroppable,
   closestCenter,
-  DragEndEvent,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -20,35 +13,30 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Separator } from '../components/ui/separator';
+// import { Badge } from '../components/ui/badge';
+// import { Separator } from '../components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { useToast } from "../hooks/use-toast";
-import { LessonPlan } from '../../shared/schema';
-import { Clock, Users, Edit, Download, Eye, Trash2 } from 'lucide-react';
+// import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import {Edit, Eye, Trash2 } from 'lucide-react';
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogFooter,
   DialogTitle,
   DialogClose,
 } from "../components/ui/dialog";
-// import { Editor } from '@tinymce/tinymce-react';
 import JoditEditor from 'jodit-react';
-import { Skeleton } from '../components/ui/skeleton';
+// import { Skeleton } from '../components/ui/skeleton';
 
-type LessonPlanWithCourse = LessonPlan & {
-  courseid?: string;
-  learningObjectives?: string[];
-};
 
-const DRAGGABLE_PREFIX = 'module-';
-const DROPPABLE_PREFIX = 'week-';
+
+
 
 const QAQF_LEVELS: { [key: number]: string } = {
   1: 'Entry',
@@ -62,7 +50,6 @@ const QAQF_LEVELS: { [key: number]: string } = {
   9: 'Master',
 };
 
-// --- Types for Course/Week/Lesson Viewer Section ---
 export interface SimpleCourse {
   id: string;
   title: string;
@@ -78,14 +65,7 @@ export interface SimpleLesson {
 
 const LessonPlanPage: React.FC = () => {
   const editor = useRef(null);
-  const [description, setDescription] = useState('');
-  const config = {
-    readonly: false,
-    height: 250,
-    width: '100%',
-  };
 
-  // Utility function to strip HTML tags from text
   const stripHtml = (html: string) => {
     if (!html) return '';
     return html.replace(/<[^>]*>/g, '').trim();
@@ -93,30 +73,23 @@ const LessonPlanPage: React.FC = () => {
 
 
 
-  // Define a type for Week
-  interface Week {
-    id: number;
-    title: string;
-    modules: any[];
-    isEditing: boolean;
-  }
+
 
 
 
   const [selectedCourse, setSelectedCourse] = useState<string>("");
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const { toast } = useToast();
+
   const [modules, setModules] = useState<any[]>([]);
-  const [weeks, setWeeks] = useState<Week[]>([]);
-  const [draggedModule, setDraggedModule] = useState<any>(null);
-  const [editingWeekId, setEditingWeekId] = useState<number | null>(null);
-  const [editingModule, setEditingModule] = useState<{ weekId: number, moduleId: number } | null>(null);
-  const [moduleEditValue, setModuleEditValue] = useState<string>("");
+
+
+
+
+
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogValue, setEditDialogValue] = useState("");
-  const [editDialogWeekId, setEditDialogWeekId] = useState<number | null>(null);
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [addDialogValue, setAddDialogValue] = useState("");
+
   const [editModuleDialogOpen, setEditModuleDialogOpen] = useState(false);
   const [editModuleDialogWeekId, setEditModuleDialogWeekId] = useState<number | null>(null);
   const [editModuleDialogModuleId, setEditModuleDialogModuleId] = useState<number | null>(null);
@@ -127,18 +100,10 @@ const LessonPlanPage: React.FC = () => {
   const [editModuleDialogType, setEditModuleDialogType] = useState("lecture");
   const [editModuleDialogDuration, setEditModuleDialogDuration] = useState("");
   const [editModuleDialogQAQF, setEditModuleDialogQAQF] = useState(1);
-  const [editModuleDialogLevel, setEditModuleDialogLevel] = useState("");
   const [editModuleDialogDescription, setEditModuleDialogDescription] = useState("");
-  const [dummyCourse, setDummyCourse] = useState<any>("")
-  const [refreshWeeks, setRefreshWeeks] = useState<number>(0);
   const [refreshModules, setRefreshModules] = useState<number>(0);
-
   const [isAIGenerating, setIsAIGenerating] = useState(false);
  
-  // Track permanently disabled buttons after first click
-  const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
-
-  // For intra-week drag and drop - REMOVED since we only allow left-to-right dragging
 
   // Add Module Dialog state
   const [addModuleDialogOpen, setAddModuleDialogOpen] = useState(false);
@@ -159,38 +124,15 @@ const LessonPlanPage: React.FC = () => {
     status: "",
   });
 
-  // Add Lesson Dialog state
-  const [lessonForm, setLessonForm] = useState({
-    courseid: "",
-    title: "",
-    level: "",
-    description: "",
-    userid: "",
-    duration: "",
-    type: "lecture",
-  });
 
-  // Add Weeks Dialog state
+
   const [addWeeksDialogOpen, setAddWeeksDialogOpen] = useState(false);
   const [addWeeksForm, setAddWeeksForm] = useState({ courseid: '', title: '' });
-
-  // Fetch saved lesson plans from the database
-  // const { data: lessonPlans = [], isLoading, refetch } = useQuery<LessonPlanWithCourse[]>({
-  //   queryKey: ['/api/lesson-plans'],
-  // });
-
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-
-
-
-
-  // Add state for module delete dialog
   const [deleteModuleDialogOpen, setDeleteModuleDialogOpen] = useState(false);
   const [deleteModuleTarget, setDeleteModuleTarget] = useState<{ weekId: number, moduleId: number } | null>(null);
-
-  // Add state for right side module edit dialog
   const [rightSideEditDialogOpen, setRightSideEditDialogOpen] = useState(false);
   const [rightSideEditModule, setRightSideEditModule] = useState<any>(null);
   const [rightSideEditForm, setRightSideEditForm] = useState({
@@ -202,14 +144,13 @@ const LessonPlanPage: React.FC = () => {
     courseid: "",
     userid: "",
     level: "",
-    description: "", // <-- YEH LINE ZARUR ADD KAREN
+    description: "", 
   });
 
-  // Add state for right side module delete dialog
   const [rightSideDeleteDialogOpen, setRightSideDeleteDialogOpen] = useState(false);
   const [rightSideDeleteModule, setRightSideDeleteModule] = useState<any>(null);
 
-  // Function to fetch courses from API
+  
   const fetchCoursesFromAPI = async (userid?: string) => {
     try {
       let url = '/api/courses';
@@ -219,17 +160,17 @@ const LessonPlanPage: React.FC = () => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch courses');
       const data = await res.json();
-      setDummyCourse(data)
 
-      // Assuming API returns array of course objects with a 'title' property
+
+     
       setCourses(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching courses:', err);
-      // Optionally show a toast or ignore
+      
     }
   };
 
-  // Function to fetch modules from the API (now accepts courseId)
+
   const fetchModulesFromAPI = async (courseId?: string) => {
     try {
       let url = '/api/lessons';
@@ -239,18 +180,22 @@ const LessonPlanPage: React.FC = () => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch lessons');
       const data = await res.json();
+      console.log('API returned modules data:', data);
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('First module data structure:', data[0]);
+      }
       setModules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching modules:', err);
-      // Optionally show a toast or ignore
+     
     }
   };
 
-  // Function to add a week via API (move to top for clarity)
+ 
   const handleAddWeekApi = async () => {
     try {
       if (!selectedCourse) {
-        toast({ title: "Error", description: "Please select a course first", variant: "destructive" });
+        toast.error("Please select a course first");
         return;
       }
 
@@ -265,10 +210,9 @@ const LessonPlanPage: React.FC = () => {
       });
       if (!res.ok) throw new Error('Failed to add week');
 
-      // Get the created week from response
-      const newWeek = await res.json();
+      await res.json();
 
-      toast({ title: "Success", description: "Week added!" });
+      toast.success("Week added successfully!");
 
       // Close the dialog and reset form
       setAddDialogOpen(false);
@@ -278,109 +222,23 @@ const LessonPlanPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Now fetch weeks for the selected course and update state
-      await fetchWeeksFromAPI(selectedCourse);
+      await fetchWeeksFromAPI();
 
       // Force a re-render by updating the refreshWeeks state
-      setRefreshWeeks(prev => prev + 1);
     } catch (err) {
       console.error('Error adding week:', err);
-      toast({ title: "Error", description: "Could not add week", variant: "destructive" });
+      toast.error("Could not add week. Please try again.");
     }
   };
 
-  // Function to add a lesson via API
-  const handleAddLessonApi = async () => {
-    try {
-      const res = await fetch('/api/lessons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lessonForm, courseid: selectedCourse }),
-      });
-      if (!res.ok) throw new Error('Failed to add lesson');
-      toast({ title: "Success", description: "Lesson added!" });
-      setAddDialogOpen(false);
-      setLessonForm({
-        courseid: "",
-        title: "",
-        level: "",
-        description: "",
-        userid: "",
-        duration: "",
-        type: "lecture",
-      });
-    } catch (err) {
-      toast({ title: "Error", description: "Could not add lesson", variant: "destructive" });
-    }
-  };
 
-  // Function to add multiple weeks via API
-  const handleAddWeeks = async () => {
-    try {
-      const res = await fetch('/api/weeks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(addWeeksForm),
-      });
-      if (!res.ok) throw new Error('Failed to add week');
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        const firstEmptyIdx = currentWeeks.findIndex(w => w.modules.length === 0);
-        if (firstEmptyIdx !== -1) {
-          // Only add the module, do NOT change the week title
-          const newWeeks = [...currentWeeks];
-          newWeeks[firstEmptyIdx] = {
-            ...newWeeks[firstEmptyIdx],
-            modules: [{
-              id: Date.now(),
-              title: addWeeksForm.title,
-              type: 'lecture',
-              qaqfLevel: 1,
-              duration: '',
-              script: '',
-              courseid: addWeeksForm.courseid,
-            }],
-          };
-          return newWeeks;
-        } else {
-          // If all weeks are filled, add a new week at the end
-          return [
-            ...currentWeeks,
-            {
-              id: currentWeeks.length > 0 ? Math.max(...currentWeeks.map(w => w.id)) + 1 : 1,
-              title: `Week ${currentWeeks.length + 1}`,
-              modules: [{
-                id: Date.now(),
-                title: addWeeksForm.title,
-                type: 'lecture',
-                qaqfLevel: 1,
-                duration: '',
-                script: '',
-                courseid: addWeeksForm.courseid,
-              }],
-              isEditing: false,
-            },
-          ];
-        }
-      });
-      setAddWeeksDialogOpen(false);
-      setAddWeeksForm({ courseid: '', title: '' });
-      toast({ title: 'Success', description: 'Week added!' });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Could not add week', variant: 'destructive' });
-    }
-  };
 
-  // Fetch courses on mount and when user changes
+
+
+  // Fetch courses on mount
   useEffect(() => {
-    if (selectedUser) {
-      fetchCoursesFromAPI(selectedUser);
-      // Clear selected course when user changes
-      setSelectedCourse("");
-    } else {
-      // Fetch all courses if no user selected
-      fetchCoursesFromAPI();
-    }
-  }, [selectedUser]);
+    fetchCoursesFromAPI();
+  }, []);
 
   // Fetch modules for the selected course
   useEffect(() => {
@@ -400,155 +258,59 @@ const LessonPlanPage: React.FC = () => {
 
   // Remove localStorage logic for modules and weeks since assignments are now backend-driven
 
-  // Drag and drop handlers
-  const handleDragStart = (module: any) => {
-    setDraggedModule(module);
-  };
-  const handleDrop = (weekId: number) => {
-    if (draggedModule) {
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        return currentWeeks.map(week =>
-          week.id === weekId
-            ? { ...week, modules: [...week.modules, { ...draggedModule }] }
-            : week
-        );
-      });
-      setModules(modules => modules.filter(m => m.id !== draggedModule.id));
-      setDraggedModule(null);
-    }
-  };
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
 
-  // Week title edit (popup)
-  const handleEditWeekTitle = (weekId: number, currentTitle: string) => {
-    setEditDialogWeekId(weekId);
-    setEditDialogValue(currentTitle);
-    setEditDialogOpen(true);
-  };
-  const handleDialogSave = () => {
-    if (editDialogWeekId !== null) {
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        return currentWeeks.map(week =>
-          week.id === editDialogWeekId ? { ...week, title: editDialogValue } : week
-        );
-      });
-    }
-    setEditDialogOpen(false);
-    setEditDialogWeekId(null);
-    setEditDialogValue("");
-  };
-  const handleSaveWeekTitle = () => {
-    setEditingWeekId(null);
-  };
-  const handleDeleteWeek = (weekId: number) => {
-    setWeeks(weeks => {
-      const currentWeeks = weeks || [];
-      return currentWeeks.filter(week => week.id !== weekId);
-    });
-  };
 
-  // Add week handlers
-  const handleAddWeek = () => {
-    setAddDialogValue("");
-    setAddDialogOpen(true);
-  };
-  const handleAddDialogSave = () => {
-    if (addDialogValue.trim() !== "") {
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        return [
-          ...currentWeeks,
-          {
-            id: currentWeeks.length > 0 ? Math.max(...currentWeeks.map(w => w.id)) + 1 : 1,
-            title: addDialogValue,
-            modules: [],
-            isEditing: false,
-          },
-        ];
-      });
-    }
-    setAddDialogOpen(false);
-    setAddDialogValue("");
-  };
 
-  // Module edit
-  const handleEditModule = (weekId: number, moduleId: number, script: string) => {
-    setEditingModule({ weekId, moduleId });
-    setModuleEditValue(script);
-  };
-  const handleModuleScriptChange = (value: string) => {
-    setModuleEditValue(value);
-  };
-  const handleSaveModule = () => {
-    if (editingModule) {
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        return currentWeeks.map(week => {
-          if (week.id === editingModule.weekId) {
-            return {
-              ...week,
-              modules: week.modules.map((mod: any) =>
-                mod.id === editingModule.moduleId ? { ...mod, script: moduleEditValue } : mod
-              )
-            };
-          }
-          return week;
-        });
+
+
+  const handleDialogSave = async () => {
+    if (!editDialogValue.trim()) {
+      toast.error("Please enter a week title");
+      return;
+    }
+
+    try {
+      // Use the editWeekData that was set when the dialog was opened
+      if (!editWeekData) {
+        toast.error("Week data not found");
+        return;
+      }
+
+      const res = await fetch(`/api/weeks/${editWeekData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseid: editWeekData.courseid,
+          title: editDialogValue,
+        }),
       });
-      setEditingModule(null);
-      setModuleEditValue("");
+
+      if (!res.ok) throw new Error('Failed to update week');
+
+      toast.success("Week updated successfully!");
+      setEditDialogOpen(false);
+      setEditDialogValue("");
+      setEditWeekData(null);
+      await fetchWeeksFromAPI(); // Refresh weeks from API
+    } catch (err) {
+      toast.error("Could not update week. Please try again.");
     }
   };
 
 
-  // Module edit dialog handlers
-  const handleOpenEditModuleDialog = (weekId: number, module: any) => {
-    setEditModuleDialogWeekId(weekId);
-    setEditModuleDialogModuleId(module.id);
-    setEditModuleDialogTitle(module.title);
-    setEditModuleDialogScript(module.script || "");
-    setEditModuleDialogCourseId(module.courseid || "");
-    setEditModuleDialogUserId(module.userid || "");
-    setEditModuleDialogType(module.type || "lecture");
-    setEditModuleDialogDuration(module.duration || "");
-    setEditModuleDialogQAQF(module.qaqfLevel || 1);
-    setEditModuleDialogLevel(module.level || "");
-    setEditModuleDialogDescription(module.description || ""); // Use the actual description as-is
-    setEditModuleDialogOpen(true);
-  };
+
+
+
+
+
+
+
+
+
+
   const handleEditModuleDialogSave = async () => {
     if (editModuleDialogWeekId !== null && editModuleDialogModuleId !== null) {
-      // Update local weeks state immediately for better UX
-      setWeeks(weeks => {
-        const currentWeeks = weeks || [];
-        return currentWeeks.map(week => {
-          if (week.id === editModuleDialogWeekId) {
-            return {
-              ...week,
-              modules: week.modules.map((mod: any) =>
-                mod.id === editModuleDialogModuleId
-                  ? {
-                    ...mod,
-                    title: editModuleDialogTitle,
-                    description: stripHtml(editModuleDialogDescription), // Strip HTML tags
-                    courseid: editModuleDialogCourseId,
-                    userid: editModuleDialogUserId,
-                    type: editModuleDialogType,
-                    duration: editModuleDialogDuration,
-                    qaqfLevel: editModuleDialogQAQF,
-                    level: editModuleDialogLevel,
-                  }
-                  : mod
-              )
-            };
-          }
-          return week;
-        });
-      });
+
       
       // Call the API to update the module in the backend
       await handleEditModuleApi(editModuleDialogModuleId);
@@ -563,7 +325,6 @@ const LessonPlanPage: React.FC = () => {
     setEditModuleDialogType("lecture");
     setEditModuleDialogDuration("");
     setEditModuleDialogQAQF(1);
-    setEditModuleDialogLevel("");
   };
 
   // Intra-week drag handlers - REMOVED since we only allow left-to-right dragging
@@ -574,6 +335,7 @@ const LessonPlanPage: React.FC = () => {
       ...newModule,
       description: stripHtml(newModule.description), // Strip HTML tags
       courseid: selectedCourse,
+      level: newModule.qaqfLevel, // Send as 'level' to match backend field name
     };
     try {
       const res = await fetch('/api/lessons', {
@@ -590,9 +352,9 @@ const LessonPlanPage: React.FC = () => {
         { ...createdModule, id: createdModule.id || Date.now(), courseid: selectedCourse }
       ]);
       fetchModulesFromAPI(selectedCourse)
-      toast({ title: 'Success', description: 'Module added!' });
+      toast.success('Module added successfully!');
     } catch (err) {
-      toast({ title: 'Error', description: 'Could not add module', variant: 'destructive' });
+      toast.error('Could not add module. Please try again.');
     }
     // Close the dialog and reset form
     setAddModuleDialogOpen(false);
@@ -614,8 +376,7 @@ const LessonPlanPage: React.FC = () => {
       userid: editModuleDialogUserId,
       type: editModuleDialogType,
       duration: editModuleDialogDuration,
-      qaqfLevel: editModuleDialogQAQF,
-      level: editModuleDialogLevel,
+      level: editModuleDialogQAQF, // Send as 'level' to match backend field name
     };
     try {
       const res = await fetch(`/api/lessons/${id}`, {
@@ -657,9 +418,9 @@ const LessonPlanPage: React.FC = () => {
       // Force a re-render to ensure UI updates
       setRefreshModules(prev => prev + 1);
       
-      toast({ title: "Success", description: "Module updated!" });
+      toast.success("Module updated successfully!");
     } catch (err) {
-      toast({ title: "Error", description: "Could not update module", variant: "destructive" });
+      toast.error("Could not update module. Please try again.");
     }
   };
 
@@ -670,10 +431,10 @@ const LessonPlanPage: React.FC = () => {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete module');
-      toast({ title: 'Success', description: 'Module deleted!' });
+      toast.success('Module deleted successfully!');
       return true;
     } catch (err) {
-      toast({ title: 'Error', description: 'Could not delete module', variant: 'destructive' });
+      toast.error('Could not delete module. Please try again.');
       return false;
     }
   };
@@ -682,9 +443,7 @@ const LessonPlanPage: React.FC = () => {
   const userId = user.id || user.userid;
 
 
-  const CourseIDD = Array.isArray(dummyCourse)
-    ? dummyCourse.find((item) => item?.id === selectedCourse)?.id
-    : undefined;
+
 
 
   useEffect(() => {
@@ -703,11 +462,7 @@ const LessonPlanPage: React.FC = () => {
 
 
 
-  useEffect(() => {
-    if (addDialogOpen && userId) {
-      setLessonForm(f => ({ ...f, userid: userId }));
-    }
-  }, [addDialogOpen, userId]);
+
 
   useEffect(() => {
     if (addWeeksDialogOpen && userId) {
@@ -731,7 +486,7 @@ const LessonPlanPage: React.FC = () => {
       moduleIndex += 4;
     }
 
-    setWeeks(weeksCopy);
+
     // Optionally clear modules list if you want
     // setModules([]);
     // Optionally persist to localStorage
@@ -740,7 +495,7 @@ const LessonPlanPage: React.FC = () => {
 
   const [weeksFromApi, setWeeksFromApi] = useState<any[]>([]);
 
-  const fetchWeeksFromAPI = async (courseId: string) => {
+  const fetchWeeksFromAPI = async () => {
     try {
       const res = await fetch('/api/weeks');
       if (!res.ok) throw new Error('Failed to fetch weeks');
@@ -755,103 +510,28 @@ const LessonPlanPage: React.FC = () => {
   // Call this in useEffect to load on mount
   useEffect(() => {
     if (selectedCourse) {
-      fetchWeeksFromAPI(selectedCourse);
+      fetchWeeksFromAPI();
     } else {
       setWeeksFromApi([]); // Clear weeks when no course is selected
     }
 
   }, [selectedCourse]);
 
-  const [draggedContent, setDraggedContent] = useState<any | null>(null);
-
-  const handleDropOnWeek = (week: any) => {
-    if (!draggedContent) return;
-    // Here you would POST to your backend to assign the lesson to the week
-    // Example:
-    fetch('/api/weeklessons', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        courseid: week.courseid,
-        lessonid: draggedContent.id,
-        weekid: week.id,
-        userid: draggedContent.userid, // or current user id
-        orderno: Math.floor(Math.random() * 100000) + 1, // random orderno
-        status: 'active'
-      })
-    })
-      .then(res => res.json())
-      .then(data => {
-        // Optionally, show a toast or refresh week lessons
-        setDraggedContent(null);
-        // Optionally, refetch weeks or weeklessons here
-      });
-  };
-
-
-  function DraggableLesson({ lesson }: { lesson: any }) {
-    const { attributes, listeners, setNodeRef, transform } = useDraggable({
-      id: lesson.id,
-      data: lesson, // extra info if needed
-    });
-
-    return (
-      <div
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        className="border rounded-md p-3 bg-neutral-50 hover:shadow-sm cursor-move transition-all"
-        style={{
-          transform: transform
-            ? `translate(${transform.x}px, ${transform.y}px)`
-            : undefined,
-        }}
-      >
-        <h6 className="font-medium">{lesson.title}</h6>
-        <div className="text-xs text-neutral-500">{lesson.type} • {lesson.duration}</div>
-      </div>
-    );
-  }
 
 
 
-  function DroppableWeek({ week, children }: { week: any, children: React.ReactNode }) {
-    const { setNodeRef, isOver } = useDroppable({
-      id: DROPPABLE_PREFIX + week.id,
-    });
-    return (
-      <div
-        ref={setNodeRef}
-        className={`border rounded-md overflow-hidden ${isOver ? 'bg-green-100' : ''}`}
-      >
-        {children}
-      </div>
-    );
-  }
 
 
-  // DnDKit: onDragStart handler for DragOverlay
-  const onDragStart = (event: DragStartEvent) => {
-    const moduleId = parseInt(event.active.id.toString().replace(DRAGGABLE_PREFIX, ''));
-    const module = modules.find((m) => m.id === moduleId);
-    if (module) setActiveDragModule(module);
-  };
 
-  // DnDKit: onDragEnd handler - Modified to only allow left to right dragging
-  const onDragEnd = async (event: DragEndEvent) => {
-    setActiveDragModule(null);
-    const { active, over } = event;
-    if (!active || !over) return;
 
-    // Only handle if dragging from left to right (modules to weeks)
-    if (
-      active.id.toString().startsWith(DRAGGABLE_PREFIX) &&
-      over.id.toString().startsWith(DROPPABLE_PREFIX)
-    ) {
-      // Don't handle drag and drop here - let the onDrop handler handle it
-      // This prevents duplicate API calls and order number issues
-    }
-  };
+
+
+
+
+
+
+
+
 
 
 
@@ -866,48 +546,11 @@ const LessonPlanPage: React.FC = () => {
 
 
 
-  // Function to call API when module is dropped on week (DEPRECATED - use assignModuleToWeek instead)
-  const handleModuleDropOnWeek = async (week: any, module: any) => {
-    // This function is deprecated - use assignModuleToWeek instead
-  };
 
-  // Add this function near the other API helpers
-  const fetchWeekLessons = async (weekId: number) => {
-    try {
-      const res = await fetch(`/api/weeklessons`);
-      if (!res.ok) throw new Error('Failed to fetch week lessons');
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      console.error('Error fetching week lessons:', err);
-      return null;
-    }
-  };
 
-  // Add function to handle Add Weeks button click
-  const handleAddWeeksClick = async () => {
-    try {
-      if (!selectedCourse) {
-        toast({ title: "Error", description: "Please select a course first", variant: "destructive" });
-        return;
-      }
 
-      const res = await fetch('/api/weeks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          courseid: selectedCourse,
-          title: `Week ${weeksFromApi.length + 1}`,
-          userid: userId
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to add week');
-      toast({ title: "Success", description: "Week added!" });
-      await fetchWeeksFromAPI(selectedCourse);
-    } catch (err) {
-      toast({ title: "Error", description: "Could not add week", variant: "destructive" });
-    }
-  };
+
+
 
   // Function to handle edit module on right side
   const handleEditRightSideModule = (module: any) => {
@@ -916,11 +559,11 @@ const LessonPlanPage: React.FC = () => {
       title: module.title || "",
       type: module.type || "lecture",
       duration: module.duration || "",
-      qaqfLevel: module.qaqfLevel || 1,
+      qaqfLevel: module.qaqfLevel || module.level || 1,
       script: module.script || "",
       courseid: module.courseid || "",
       userid: module.userid || "",
-      level: module.level || "",
+      level: module.level || module.qaqfLevel || "",
       description: module.description || "", // <-- YEH LINE ZARUR ADD KAREN
     });
     setRightSideEditDialogOpen(true);
@@ -943,8 +586,8 @@ const LessonPlanPage: React.FC = () => {
         type: rightSideEditForm.type,
         duration: rightSideEditForm.duration,
         qaqfLevel: rightSideEditForm.qaqfLevel,
+        level: rightSideEditForm.qaqfLevel, // Send qaqfLevel as level to match backend
         description: stripHtml(rightSideEditForm.description), // Strip HTML tags
-        level: rightSideEditForm.level,             // include level
         courseid: rightSideEditForm.courseid,
         userid: rightSideEditForm.userid,
         // script: rightSideEditForm.script, // Do NOT include script
@@ -989,11 +632,11 @@ const LessonPlanPage: React.FC = () => {
       // Force a re-render to ensure UI updates
       setRefreshModules(prev => prev + 1);
       
-      toast({ title: "Success", description: "Module updated!" });
+      toast.success("Module updated successfully!");
       setRightSideEditDialogOpen(false);
       setRightSideEditModule(null);
     } catch (err) {
-      toast({ title: "Error", description: "Could not update module", variant: "destructive" });
+      toast.error("Could not update module");
     }
   };
 
@@ -1011,12 +654,12 @@ const LessonPlanPage: React.FC = () => {
           prevModules.filter(module => module.id !== rightSideDeleteModule.id)
         );
 
-        toast({ title: "Success", description: "Module deleted!" });
+        toast.success("Module deleted!");
         setRightSideDeleteDialogOpen(false);
         setRightSideDeleteModule(null);
       }
     } catch (err) {
-      toast({ title: "Error", description: "Could not delete module", variant: "destructive" });
+      toast.error("Could not delete module");
     }
   };
 
@@ -1042,28 +685,21 @@ const LessonPlanPage: React.FC = () => {
 
       if (!res.ok) throw new Error('Failed to update week');
 
-      toast({ title: "Success", description: "Week updated!" });
+      toast.success("Week updated!");
       setEditWeekDialogOpen(false);
       setEditWeekData(null);
-      await fetchWeeksFromAPI(selectedCourse); // Refresh weeks from API for selected course
-      setRefreshWeeks(prev => prev + 1); // Force re-render
+      await fetchWeeksFromAPI(); // Refresh weeks from API for selected course
     } catch (err) {
-      toast({ title: "Error", description: "Could not update week", variant: "destructive" });
+      toast.error("Could not update week");
     }
   };
 
   const deleteWeekById = async (id: number) => {
-    try {
-      const res = await fetch(`/api/weeks/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete week');
-      toast({ title: 'Success', description: 'Week deleted!' });
-      await fetchWeeksFromAPI(selectedCourse); // Refresh weeks for selected course
-      setRefreshWeeks(prev => prev + 1); // Force re-render
-    } catch (err) {
-      toast({ title: 'Error', description: 'Could not delete week', variant: 'destructive' });
-    }
+    const res = await fetch(`/api/weeks/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete week');
+    await fetchWeeksFromAPI(); // Refresh weeks for selected course
   };
 
 
@@ -1081,12 +717,11 @@ const LessonPlanPage: React.FC = () => {
 
 
   // Add state for view module dialog
-  const [viewModuleDialogOpen, setViewModuleDialogOpen] = useState(false);
-  const [viewModuleData, setViewModuleData] = useState<any>(null);
+
+
   const [selectedModuleForView, setSelectedModuleForView] = useState<any>(null);
 
-  // Add state for active drag module (for DnDKit)
-  const [activeDragModule, setActiveDragModule] = useState<any>(null);
+
 
   const moduleDetailsRef = useRef<HTMLDivElement>(null);
 
@@ -1111,8 +746,7 @@ const LessonPlanPage: React.FC = () => {
   // In LessonPlanPage component, add this state:
   const [openModuleId, setOpenModuleId] = useState<string | number | null>(null);
 
-  // Add state to track order numbers for each week
-  const [weekOrderCounters, setWeekOrderCounters] = useState<{ [weekId: number]: number }>({});
+
 
   const assignModuleToWeek = async (module: any, week: any) => {
 
@@ -1167,10 +801,7 @@ const LessonPlanPage: React.FC = () => {
     }
   };
 
-  // 1. Add sensors for DnD Kit at the top of the component
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+
 
   useEffect(() => {
     if (editModuleDialogOpen && editModuleDialogDescription) {
@@ -1179,47 +810,17 @@ const LessonPlanPage: React.FC = () => {
     }
   }, [editModuleDialogOpen]);
 
-  const fetchWeekModules = async (weekId: number) => {
-    const res = await fetch(`/api/weeklessons/week/${weekId}`);
-    const data = await res.json();
-    setWeekModules(prev => ({
-      ...prev,
-      [weekId]: data.map((item: any) => item.module)
-    })); ``
-  };
 
-  // Add state for weekModules (used in fetchWeekModules and DnD logic)
-  const [weekModules, setWeekModules] = useState<{ [weekId: number]: any[] }>({});
 
-  // 1. Assigned module IDs
-  const assignedModuleIds = Object.values(weekModules)
-    .flat()
-    .filter(m => m && m.id !== undefined)
-    .map(m => m.id);
 
-  // 2. Unassigned modules
-  const unassignedModules = modules.filter(
-    m => !assignedModuleIds.includes(m.id)
-  );
 
-  // 3. Render left side
-  {unassignedModules.map(module => (
-    <div key={module.id}>{module.title}</div>
-  ))}
 
-  // At the top of your component
-  const [filterStatus, setFilterStatus] = useState(() => localStorage.getItem('lessonFilterStatus') || 'all');
 
-  // When filter changes
-  const handleFilterChange = (status: string) => {
-    setFilterStatus(status);
-    localStorage.setItem('lessonFilterStatus', status);
-  };
 
-  // When fetching lessons, filter them:
-  const filteredLessons = weeksToShow.filter(week =>
-    filterStatus === 'all' ? true : week.status === filterStatus
-  );
+
+
+
+
 
   // Add state for weekLessons (used for storing lessons for each week)
   const [weekLessons, setWeekLessons] = useState<{ [weekId: number]: any[] }>({});
@@ -1285,97 +886,7 @@ const LessonPlanPage: React.FC = () => {
 
   }, [selectedCourse]);
 
-  // --- NEW: Course/Week/Lesson Viewer Section ---
-  const [viewerCourses, setViewerCourses] = useState<SimpleCourse[]>([]);
-  const [viewerLoadingCourses, setViewerLoadingCourses] = useState(false);
-  const [viewerErrorCourses, setViewerErrorCourses] = useState<string | null>(null);
-  const [viewerSelectedCourseId, setViewerSelectedCourseId] = useState<string>('');
-  const [viewerWeeks, setViewerWeeks] = useState<SimpleWeek[]>([]);
-  const [viewerLoadingWeeks, setViewerLoadingWeeks] = useState(false);
-  const [viewerErrorWeeks, setViewerErrorWeeks] = useState<string | null>(null);
-  const [viewerWeekLessons, setViewerWeekLessons] = useState<{ [weekId: number]: SimpleLesson[] }>({});
-  const [viewerLoadingLessons, setViewerLoadingLessons] = useState<{ [weekId: number]: boolean }>({});
-  const [viewerErrorLessons, setViewerErrorLessons] = useState<{ [weekId: number]: string | null }>({});
 
-  // Fetch courses on mount
-  useEffect(() => {
-    setViewerLoadingCourses(true);
-    setViewerErrorCourses(null);
-    fetch('/api/courses')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch courses');
-        return res.json();
-      })
-      .then(data => {
-        // Accept both id or courseid
-        setViewerCourses(
-          (Array.isArray(data) ? data : []).map((c: any) => ({
-            id: c.id || c.courseid,
-            title: c.title,
-          }))
-        );
-        setViewerLoadingCourses(false);
-      })
-      .catch(err => {
-        setViewerErrorCourses('Error fetching courses');
-        setViewerLoadingCourses(false);
-      });
-  }, []);
-
-  // Fetch weeks when course changes
-  useEffect(() => {
-    if (!viewerSelectedCourseId) {
-      setViewerWeeks([]);
-      return;
-    }
-    setViewerLoadingWeeks(true);
-    setViewerErrorWeeks(null);
-    fetch(`/api/weeks?courseid=${encodeURIComponent(viewerSelectedCourseId)}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch weeks');
-        return res.json();
-      })
-      .then(data => {
-        setViewerWeeks(
-          (Array.isArray(data) ? data : []).map((w: any) => ({
-            id: w.id || w.weekid,
-            title: w.title,
-          }))
-        );
-        setViewerLoadingWeeks(false);
-      })
-      .catch(err => {
-        setViewerErrorWeeks('Error fetching weeks');
-        setViewerLoadingWeeks(false);
-      });
-  }, [viewerSelectedCourseId]);
-
-  // Fetch lessons for each week when weeks change
-  useEffect(() => {
-    if (!viewerWeeks.length) return;
-    const newLessons: { [weekId: number]: SimpleLesson[] } = {};
-    const newLoading: { [weekId: number]: boolean } = {};
-    const newError: { [weekId: number]: string | null } = {};
-    viewerWeeks.forEach(week => {
-      newLoading[week.id] = true;
-      newError[week.id] = null;
-      fetch(`/api/weeklessons/week/${week.id}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch lessons');
-          return res.json();
-        })
-        .then(data => {
-          setViewerWeekLessons(prev => ({ ...prev, [week.id]: (Array.isArray(data) ? data : []).map((l: any) => ({ id: l.id || l.lessonid, title: l.title })) }));
-          setViewerLoadingLessons(prev => ({ ...prev, [week.id]: false }));
-        })
-        .catch(err => {
-          setViewerErrorLessons(prev => ({ ...prev, [week.id]: 'Error fetching lessons' }));
-          setViewerLoadingLessons(prev => ({ ...prev, [week.id]: false }));
-        });
-    });
-    setViewerLoadingLessons(newLoading);
-    setViewerErrorLessons(newError);
-  }, [viewerWeeks]);
 
   // Add this function inside LessonPlanPage component:
   const handleDeleteLessonFromWeek = async (weekId: number, weekLessonId: number) => {
@@ -1384,13 +895,13 @@ const LessonPlanPage: React.FC = () => {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete lesson from week');
-      toast({ title: 'Success', description: 'Lesson removed from week!' });
+      toast.success('Lesson removed from week!');
       // Refresh weekLessons for this week
       const wlRes = await fetch(`/api/weeklessons/week/${weekId}`);
       const wlData = await wlRes.json();
       setWeekLessons(prev => ({ ...prev, [weekId]: Array.isArray(wlData) ? wlData : [] }));
     } catch (err) {
-      toast({ title: 'Error', description: 'Could not remove lesson from week', variant: 'destructive' });
+      toast.error('Could not remove lesson from week');
     }
   };
 
@@ -1405,7 +916,7 @@ const LessonPlanPage: React.FC = () => {
   // Add AI Generate handler for right side edit dialog
   const handleRightSideAIGenerate = async () => {
     // Permanently disable this button after first click
-    setPermanentlyDisabledButtons(prev => new Set([...prev, 'rightSideAI']));
+    
     setIsAIGenerating(true);
     
     try {
@@ -1436,7 +947,7 @@ const LessonPlanPage: React.FC = () => {
       if (!response.ok) throw new Error('Failed to generate content');
       const data = await response.json();
       if (data.generated_content && data.generated_content.length > 0) {
-        setRightSideEditForm(f => ({ ...f, description: data.generated_content[0] }));
+        setRightSideEditForm(f => ({ ...f, description: data.generated_content}));
       } else {
         setRightSideEditForm(f => ({ ...f, description: "No content generated." }));
       }
@@ -1457,7 +968,7 @@ const LessonPlanPage: React.FC = () => {
   // Add AI Generate handler for Add Lesson dialog
   const handleAddModuleAIGenerate = async () => {
     // Permanently disable this button after first click
-    setPermanentlyDisabledButtons(prev => new Set([...prev, 'addModuleAI']));
+    
     setIsAIGenerating(true);
   
     try {
@@ -1473,7 +984,7 @@ const LessonPlanPage: React.FC = () => {
       const subject = newModuleTitle || "";
       const userquery = newModuleAiQuery || "";
   
-      const response = await fetch('/api/ai/assessment-content', {
+      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1661,9 +1172,14 @@ const LessonPlanPage: React.FC = () => {
                               <div><b>Duration:</b> {content.duration}</div>
                               <div>
                                 <b>QAQF Level:</b>{" "}
-                                {(content.qaqfLevel || content.level || content.qaqf_level) && QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]
-                                  ? `QAQF ${content.qaqfLevel || content.level || content.qaqf_level}: ${QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}`
-                                  : `N/A (qaqfLevel: ${content.qaqfLevel}, level: ${content.level}, qaqf_level: ${content.qaqf_level})`}
+                                {(() => {
+                                  const qaqfLevel = content.qaqfLevel || content.level || content.qaqf_level;
+                                  if (qaqfLevel && QAQF_LEVELS[qaqfLevel]) {
+                                    return `QAQF ${qaqfLevel}: ${QAQF_LEVELS[qaqfLevel]}`;
+                                  } else {
+                                    return `N/A (level: ${content.level}, qaqfLevel: ${content.qaqfLevel}, qaqf_level: ${content.qaqf_level})`;
+                                  }
+                                })()}
                               </div>
                               <div><b>User ID:</b> {content.userid}</div>
                               <div><b>Course ID:</b> {content.courseid}</div>
@@ -1712,7 +1228,7 @@ const LessonPlanPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                    {filteredLessons.map(week => (
+                    {weeksToShow.map((week: any) => (
                       <div key={week.id} className="border rounded-md overflow-hidden bg-white">
                         <div className="bg-neutral-100 p-3 flex justify-between items-center">
                           <div className="flex items-center gap-2">
@@ -1724,7 +1240,8 @@ const LessonPlanPage: React.FC = () => {
                               size="sm"
                               className="flex items-center gap-1"
                               onClick={() => {
-                                setEditWeekDialogOpen(true);
+                                setEditDialogOpen(true);
+                                setEditDialogValue(week.title);
                                 setEditWeekData({ ...week });
                               }}
                             >
@@ -1752,16 +1269,14 @@ const LessonPlanPage: React.FC = () => {
                             const module = modules.find(m => m.id.toString() === moduleId);
                             if (module) {
                               try {
-                                // Call the API first to assign the module to the week
-                                const result = await assignModuleToWeek(module, week);
                                 
-                                // If API call is successful, update the UI immediately
+                                const result = await assignModuleToWeek(module, week);
                                 if (result) {
-                                  // Add to weekLessons state immediately
+                                
                                   setWeekLessons(prev => ({
                                     ...prev,
                                     [week.id]: [...(prev[week.id] || []), {
-                                      id: result.id, // weeklesson id from API response
+                                      id: result.id, 
                                       lessonid: module.id,
                                       title: module.title,
                                       weekid: week.id,
@@ -1769,18 +1284,13 @@ const LessonPlanPage: React.FC = () => {
                                     }]
                                   }));
                                   
-                                  // Keep the module on the left side (don't remove it)
-                                  // setModules(prev => {
-                                  //   const newModules = prev.filter(m => m.id !== module.id);
-                                  //   console.log('Updated modules state:', newModules);
-                                  //   return newModules;
-                                  // });
                                   
-                                  toast({ title: "Module assigned successfully!", description: `${module.title} added to ${week.title}` });
+                                  
+                                  toast.success(`${module.title} added to ${week.title}`);
                                 }
                               } catch (error) {
                                 console.error('Error assigning module to week:', error);
-                                toast({ title: "Error", description: "Failed to assign module to week", variant: "destructive" });
+                                toast.error("Failed to assign module to week");
                               }
                             }
                           }}
@@ -1792,26 +1302,25 @@ const LessonPlanPage: React.FC = () => {
                               onDragEnd={async (event) => {
                                 const { active, over } = event;
                                 if (!active || !over || active.id === over.id) return;
-                                // Find the current order
+                                
                                 const oldIndex = weekLessons[week.id].findIndex((l: any) => l.id === active.id);
                                 const newIndex = weekLessons[week.id].findIndex((l: any) => l.id === over.id);
                                 if (oldIndex === -1 || newIndex === -1) return;
-                                // Reorder in UI
+                          
                                 const newLessons = arrayMove(weekLessons[week.id], oldIndex, newIndex);
                                 setWeekLessons((prev) => ({ ...prev, [week.id]: newLessons }));
-                                // Prepare order payload for API
                                 const orderPayload = newLessons.map((l: any, idx: number) => ({
-                                  id: l.id, // Make sure this is the weeklesson id
+                                  id: l.id, 
                                   orderno: idx + 1,
                                 }));
-                                // Defensive: filter out any items missing id or orderno
+                                
                                 const validOrderPayload = orderPayload.filter(item => item.id !== undefined && item.orderno !== undefined);
                                 await fetch('/api/weeklessonsorders', {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify(validOrderPayload), // <-- direct array, not wrapped in any object
+                                  body: JSON.stringify(validOrderPayload), 
                                 });
-                                toast({ title: 'Order updated!' });
+                                toast.success('Order updated!');
                               }}
                             >
                               <SortableContext
@@ -1966,14 +1475,14 @@ const LessonPlanPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Add Week Dialog (appears at bottom) */}
+      
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="fixed left-1/2 bottom-8 top-auto -translate-x-1/2 w-full max-w-md">
           <DialogHeader>
             <DialogTitle>Add Week</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {/* Title input */}
+           
             <input
               className="border rounded px-2 py-1 w-full"
               value={addWeeksForm.title}
@@ -1990,14 +1499,14 @@ const LessonPlanPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Module Edit Dialog */}
+      
       <Dialog open={editModuleDialogOpen} onOpenChange={setEditModuleDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {/* Course ID input */}
+         
             <input
               className="border rounded px-2 py-1 w-full"
               value={newModuleCourseId}
@@ -2005,14 +1514,7 @@ const LessonPlanPage: React.FC = () => {
               placeholder="Course ID"
               autoFocus
             />
-            {/* User ID input */}
-            <input
-              className="border rounded px-2 py-1 w-full"
-              value={editModuleDialogUserId || ""}
-              onChange={e => setEditModuleDialogUserId(e.target.value)}
-              placeholder="User ID"
-            />
-            {/* Type input */}
+          
             <select
               className="border rounded px-2 py-1 w-full"
               value={editModuleDialogType || "lecture"}
@@ -2024,7 +1526,7 @@ const LessonPlanPage: React.FC = () => {
               <option value="activity">Activity</option>
               <option value="case_study">Case Study</option>
             </select>
-            {/* Title input */}
+           
             <input
               className="border rounded px-2 py-1 w-full"
               value={editModuleDialogTitle}
@@ -2075,15 +1577,12 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Module Dialog */}
       <Dialog open={addModuleDialogOpen} onOpenChange={setAddModuleDialogOpen}>
         <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
             <DialogTitle>Add Lesson</DialogTitle>
           </DialogHeader>
-          {/* Remove extra gap below heading by reducing margin/padding */}
           <div className="space-y-3 mt-0">
-            {/* Type input */}
             <select
               className="border rounded px-2 py-1 w-full"
               value={newModuleType}
@@ -2094,6 +1593,10 @@ const LessonPlanPage: React.FC = () => {
               <option value="seminar">Seminar</option>
               <option value="activity">Activity</option>
               <option value="case_study">Case Study</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="practical">Practical</option>
             </select>
             {/* title */}
             <input
@@ -2120,7 +1623,7 @@ const LessonPlanPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            {/* AI Query and Reference Inputs */}
+           
             <input
               className="border rounded px-2 py-1 w-full"
               placeholder="Ask your Query"
@@ -2133,7 +1636,7 @@ const LessonPlanPage: React.FC = () => {
               value={newModuleAiReference}
               onChange={e => setNewModuleAiReference(e.target.value)}
             />
-            {/* JoditEditor for Description, with increased height */}
+            
             <div className="overflow-auto" style={{ maxHeight: 400 }}>
               <JoditEditor
                 ref={editor}
@@ -2149,15 +1652,12 @@ const LessonPlanPage: React.FC = () => {
             <Button 
               variant="default" 
               onClick={handleAddModuleAIGenerate}
-              disabled={isAIGenerating || permanentlyDisabledButtons.has('addModuleAI')}
             >
               {isAIGenerating ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating...
+                  loading...
                 </>
-              ) : permanentlyDisabledButtons.has('addModuleAI') ? (
-                'Already Generated'
               ) : (
                 'AI Generate'
               )}
@@ -2178,7 +1678,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Course Dialog */}
+   
       <Dialog open={addCourseDialogOpen} onOpenChange={setAddCourseDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2192,13 +1692,7 @@ const LessonPlanPage: React.FC = () => {
               placeholder="Title"
               autoFocus
             />
-            <input
-              className="border rounded px-2 py-1 w-full"
-              value={courseForm.userid}
-              disabled
-              placeholder="User ID"
-            />
-            {/* Remove JoditEditor here */}
+       
             <input
               className="border rounded px-2 py-1 w-full"
               value={courseForm.description}
@@ -2227,11 +1721,11 @@ const LessonPlanPage: React.FC = () => {
                 if (!res.ok) throw new Error('Failed to add course');
                 await fetchCoursesFromAPI();
                 setSelectedCourse(courseForm.title);
-                toast({ title: "Success", description: "Course added!" });
+                toast.success("Course added!");
                 setAddCourseDialogOpen(false);
                 setCourseForm({ title: "", userid: "", description: "", status: "" });
               } catch (err) {
-                toast({ title: "Error", description: "Could not add course", variant: "destructive" });
+                toast.error("Could not add course");
               }
             }}>Add</Button>
             <DialogClose asChild>
@@ -2241,7 +1735,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Lesson Dialog */}
+   
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2253,7 +1747,7 @@ const LessonPlanPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* title */}
+             
               <input
                 className="border rounded px-2 py-1 w-full"
                 value={addWeeksForm.title}
@@ -2277,7 +1771,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Weeks Dialog */}
+    
       <Dialog open={addWeeksDialogOpen} onOpenChange={setAddWeeksDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2304,7 +1798,6 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2336,7 +1829,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Module Confirmation Dialog */}
+     
       <Dialog open={deleteModuleDialogOpen} onOpenChange={setDeleteModuleDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2352,14 +1845,11 @@ const LessonPlanPage: React.FC = () => {
                 if (deleteModuleTarget) {
                   const success = await handleDeleteModuleApi(deleteModuleTarget.moduleId);
                   if (success) {
-                    setWeeks(weeks => weeks.map(week =>
-                      week.id === deleteModuleTarget.weekId
-                        ? { ...week, modules: week.modules.filter((mod: any) => mod.id !== deleteModuleTarget.moduleId) }
-                        : week
-                    ));
-                    setDeleteModuleDialogOpen(false);
-                    setDeleteModuleTarget(null);
+                    // Refresh modules from API instead of manually updating state
+                    await fetchModulesFromAPI(selectedCourse);
                   }
+                  setDeleteModuleDialogOpen(false);
+                  setDeleteModuleTarget(null);
                 }
               }}
             >
@@ -2378,7 +1868,6 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Right Side Module Edit Dialog */}
       <Dialog open={rightSideEditDialogOpen} onOpenChange={setRightSideEditDialogOpen}>
       <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
@@ -2402,6 +1891,10 @@ const LessonPlanPage: React.FC = () => {
               <option value="seminar">Seminar</option>
               <option value="activity">Activity</option>
               <option value="case_study">Case Study</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="practical">Practical</option>
             </select>
             <div className="flex gap-2">
               <input
@@ -2420,7 +1913,7 @@ const LessonPlanPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            {/* AI Query and Reference Inputs */}
+
             <input
               className="border rounded px-2 py-1 w-full"
               placeholder="Ask your query"
@@ -2448,15 +1941,12 @@ const LessonPlanPage: React.FC = () => {
             <Button 
               variant="default" 
               onClick={handleRightSideAIGenerate}
-              disabled={isAIGenerating || permanentlyDisabledButtons.has('rightSideAI')}
             >
               {isAIGenerating ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating...
+                  loading...
                 </>
-              ) : permanentlyDisabledButtons.has('rightSideAI') ? (
-                'Already Generated'
               ) : (
                 'AI Generate'
               )}
@@ -2468,7 +1958,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Right Side Module Delete Dialog */}
+  
       <Dialog open={rightSideDeleteDialogOpen} onOpenChange={setRightSideDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2497,7 +1987,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Week Dialog */}
+      
       <Dialog open={editWeekDialogOpen} onOpenChange={setEditWeekDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2529,7 +2019,6 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Week Dialog */}
       <Dialog open={deleteWeekDialogOpen} onOpenChange={setDeleteWeekDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2543,9 +2032,14 @@ const LessonPlanPage: React.FC = () => {
               variant="destructive"
               onClick={async () => {
                 if (deleteWeekData?.id) {
-                  await deleteWeekById(deleteWeekData.id);
-                  setDeleteWeekDialogOpen(false);
-                  setDeleteWeekData(null);
+                  try {
+                    await deleteWeekById(deleteWeekData.id);
+                    toast.success("Week deleted successfully!");
+                    setDeleteWeekDialogOpen(false);
+                    setDeleteWeekData(null);
+                  } catch (err) {
+                    toast.error("Failed to delete week. Please try again.");
+                  }
                 }
               }}
             >
@@ -2564,7 +2058,7 @@ const LessonPlanPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add the delete confirmation dialog for week lesson */}
+     
       <Dialog open={deleteWeekLessonDialogOpen} onOpenChange={setDeleteWeekLessonDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -2602,186 +2096,22 @@ const LessonPlanPage: React.FC = () => {
   );
 };
 
-function DraggableModule({ content, setSelectedModuleForView }: { content: any, setSelectedModuleForView: (data: any) => void }) {
-  return (
-    <div
-      key={content.id}
-      className="border rounded-md p-3 bg-neutral-50 hover:shadow-sm transition-all cursor-move"
-      draggable
-      onDragStart={(e: React.DragEvent<HTMLDivElement>) => {
-        e.dataTransfer.setData('moduleId', content.id);
-      }}
-    >
-      <div className="flex justify-between mb-1">
-        <h6 className="font-medium">{content.title}</h6>
-        <span className="flex gap-1 items-center">
-          {(content.qaqfLevel || content.level || content.qaqf_level) && (
-            <span className={
-              (content.qaqfLevel || content.level || content.qaqf_level) <= 3 ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" :
-                (content.qaqfLevel || content.level || content.qaqf_level) <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
-                  "bg-violet-100 text-violet-800 px-2 py-1 rounded"
-            }>
-              QAQF {content.qaqfLevel || content.level || content.qaqf_level}: {QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}
-            </span>
-          )}
-          {/* 👁️ Eye icon for view */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 ml-1"
-            onClick={e => {
-              e.stopPropagation();
-              setSelectedModuleForView(content);
-            }}
-            title="View details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-xs text-neutral-500">
-        <span>{content.type}</span>
-        <span>{content.duration}</span>
-      </div>
-    </div>
-  );
-}
 
-function DroppableWeek({ week, children }: { week: any, children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: DROPPABLE_PREFIX + week.id,
-  });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`border rounded-md overflow-hidden ${isOver ? 'bg-green-100' : ''}`}
-    >
-      {children}
-    </div>
-  );
-}
+
+
 
 export default LessonPlanPage;
 
-// Add new component for assigned modules with edit/delete icons
-function AssignedModule({ module, onEdit, onDelete, setSelectedModuleForView }: {
-  module: any,
-  onEdit: (module: any) => void,
-  onDelete: (module: any) => void,
-  setSelectedModuleForView: (module: any) => void
-}) {
-  return (
-    <div className="border rounded p-2 bg-blue-50 text-xs relative group cursor-default">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="font-medium text-sm">{module.title}</div>
-          <div className="text-neutral-500 text-xs">
-            {module.type} • {module.duration} • QAQF {module.qaqfLevel || module.level || module.qaqf_level}: {QAQF_LEVELS[module.qaqfLevel || module.level || module.qaqf_level]}
-          </div>
-        </div>
-        {/* Remove icon buttons from here */}
-      </div>
-    </div>
-  );
-}
 
-// Fix linter errors for ModulePreviewContainer
-function ModulePreviewContainer({ summary, details }: { summary: React.ReactNode; details: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const detailsRef = useRef<HTMLDivElement>(null);
 
-  // Click outside to close
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        detailsRef.current &&
-        !detailsRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
 
-  return (
-    <div className="relative w-full max-w-2xl mx-auto my-4">
-      {/* Header/Summary (red box) */}
-      <div className="bg-white rounded-t-lg shadow p-4 flex items-center justify-between">
-        <div>{summary}</div>
-        <button
-          className="text-gray-500 hover:text-blue-600"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Show details"
-        >
-          <span className="material-icons">visibility</span>
-        </button>
-      </div>
-      {/* Details (yellow box) */}
-      {open && (
-        <div
-          ref={detailsRef}
-          className="absolute left-0 right-0 z-10 bg-white rounded-b-lg shadow-lg border-t border-gray-200 p-6 animate-slideDown"
-          style={{ top: "100%" }}
-        >
-          <button
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-          >
-            ×
-          </button>
-          {details}
-        </div>
-      )}
-      <style>
-        {`
-          @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px);}
-            to { opacity: 1; transform: translateY(0);}
-          }
-          .animate-slideDown {
-            animation: slideDown 0.2s ease;
-          }
-        `}
-      </style>
-    </div>
-  );
-}
 
-// Fix linter errors for SortableAssignedModule
-interface SortableAssignedModuleProps {
-  module: any;
-  onEdit: (module: any) => void;
-  onDelete: (module: any) => void;
-  setSelectedModuleForView: (module: any) => void;
-}
-function SortableAssignedModule({ module, onEdit, onDelete, setSelectedModuleForView }: SortableAssignedModuleProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: module.id });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        background: '#e9f1ff',
-        marginBottom: 8,
-      }}
-      {...attributes}
-      {...listeners}
-    >
-      <AssignedModule
-        module={module}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        setSelectedModuleForView={setSelectedModuleForView}
-      />
-    </div>
-  );
-}
 
-// 1. Add SortableLesson component near the bottom (if not already present)
+
+
+
+
+
 function SortableLesson({
   lesson,
   children,

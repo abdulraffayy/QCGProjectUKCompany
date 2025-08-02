@@ -1,4 +1,4 @@
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema.ts';
 
 /**
  * Calculates the distribution of QAQF characteristics across all content
@@ -35,8 +35,8 @@ export function calculateLevelDistribution(contents: Content[]): Record<number, 
   const distribution: Record<number, number> = {};
   
   contents.forEach(content => {
-    if (typeof content.qaqfLevel === 'number') {
-      distribution[content.qaqfLevel] = (distribution[content.qaqfLevel] || 0) + 1;
+    if (typeof content.qaqf_level === 'number') {
+      distribution[content.qaqf_level] = (distribution[content.qaqf_level] || 0) + 1;
     }
   });
   
@@ -56,8 +56,8 @@ export function calculateVerificationDistribution(contents: Content[]): Record<s
   };
   
   contents.forEach(content => {
-    if (content.verificationStatus && typeof content.verificationStatus === 'string') {
-      distribution[content.verificationStatus] = (distribution[content.verificationStatus] || 0) + 1;
+    if (content.verification_status && typeof content.verification_status === 'string') {
+      distribution[content.verification_status] = (distribution[content.verification_status] || 0) + 1;
     }
   });
   
@@ -91,12 +91,12 @@ export function analyzeContentOverTime(contents: Content[]): {month: string, cou
   
   // Sort contents by creation date
   const sortedContents = [...contents].sort((a, b) => 
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
   
   // Group by month
   sortedContents.forEach(content => {
-    const date = new Date(content.createdAt);
+    const date = new Date(content.created_at);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     monthsMap[monthKey] = (monthsMap[monthKey] || 0) + 1;
   });
@@ -125,7 +125,7 @@ export function calculateAverageQAQFLevel(contents: Content[]): number {
   if (contents.length === 0) return 0;
   
   const sum = contents.reduce((acc, content) => {
-    return acc + (typeof content.qaqfLevel === 'number' ? content.qaqfLevel : 0);
+    return acc + (typeof content.qaqf_level === 'number' ? content.qaqf_level : 0);
   }, 0);
   
   return Number((sum / contents.length).toFixed(1));
@@ -170,7 +170,7 @@ export function calculateVerificationSuccessRate(contents: Content[]): number {
   if (contents.length === 0) return 0;
   
   const verifiedCount = contents.filter(
-    content => content.verificationStatus === 'verified'
+    content => content.verification_status === 'verified'
   ).length;
   
   return Math.round((verifiedCount / contents.length) * 100);

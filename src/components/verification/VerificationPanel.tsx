@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Card, CardContent, CardTitle } from "../ui/card";
+import { Card, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { useToast } from "../../hooks/use-toast";
-import { Content } from "@shared/schema";
+import { Content } from "shared/schema";
 
 interface VerificationPanelProps {
   pendingContents?: Content[];
@@ -40,8 +40,8 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-neutral-800">Pending Verifications</h4>
             {pendingContents.length > 0 && (
-              <Badge variant="warning" className="text-sm font-medium">
-                {pendingContents.filter(c => c.verificationStatus === "pending").length} pending
+              <Badge variant="secondary" className="text-sm font-medium">
+                {pendingContents.filter(c => c.verification_status === "pending").length} pending
               </Badge>
             )}
           </div>

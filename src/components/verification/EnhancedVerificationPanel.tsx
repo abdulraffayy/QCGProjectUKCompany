@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Progress } from "../ui/progress";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "../../hooks/use-toast";
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema';
 
 interface VerificationCriterion {
   id: string;
@@ -64,7 +64,7 @@ const EnhancedVerificationPanel: React.FC<EnhancedVerificationPanelProps> = ({
     {
       id: "alignment",
       name: "QAQF Alignment",
-      description: `Aligns with QAQF Level ${content.qaqfLevel} requirements`,
+      description: `Aligns with QAQF Level ${content.qaqf_level} requirements`,
       score: 0,
       maxScore: 10,
       feedback: ""
@@ -437,7 +437,7 @@ const EnhancedVerificationPanel: React.FC<EnhancedVerificationPanelProps> = ({
         
         <TabsContent value="qaqf" className="mt-0 space-y-4">
           <p className="text-sm text-neutral-600 mb-4">
-            Evaluate how well the content aligns with QAQF framework requirements for level {content.qaqfLevel}.
+            Evaluate how well the content aligns with QAQF framework requirements for level {content.qaqf_level}.
           </p>
           {renderCriteria(qaqfCriteria, "qaqf")}
         </TabsContent>

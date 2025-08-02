@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,} from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -14,14 +14,11 @@ import { toast } from 'react-toastify';
 import { 
   Plus, 
   FileText, 
-  Download, 
   Edit, 
   Trash2, 
-  Upload,
   FolderPlus,
   Library,
   Layout,
-  File,
   Folder,
   Loader2
 } from 'lucide-react';
@@ -74,6 +71,8 @@ export default function StudyMaterial() {
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [pdfContent, setPdfContent] = useState<string>('');
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   
  
   const queryClient = useQueryClient();
@@ -147,12 +146,12 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({ title: 'Material updated successfully' });
+      toast.success('Material updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
     },
     onError: () => {
-      toast({ title: 'Failed to update material', variant: 'destructive' });
+      toast.error('Failed to update material');
     },
   });
 
@@ -169,15 +168,15 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({ title: 'Material deleted successfully' });
+      toast.success('Material deleted successfully');
     },
     onError: (error: any) => {
       if (error instanceof Error && error.message === 'Failed to delete material') {
-        toast({ title: 'Material not found or already deleted', variant: 'destructive' });
+        toast.error('Material not found or already deleted');
       } else if (error?.response?.status === 404) {
-        toast({ title: 'Material not found (404)', variant: 'destructive' });
+        toast.error('Material not found (404)');
       } else {
-        toast({ title: 'Failed to delete material', variant: 'destructive' });
+        toast.error('Failed to delete material');
       }
     },
   });
@@ -198,11 +197,11 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({ title: 'Collection created successfully' });
+      toast.success('Collection created successfully');
       setShowCreateDialog(false);
     },
     onError: () => {
-      toast ({ title: 'Failed to create collection', variant: 'destructive' });
+      toast.error('Failed to create collection');
     },
   });
 
@@ -219,12 +218,12 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      toast({ title: 'Collection updated successfully' });
+      toast.success('Collection updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
     },
     onError: () => {
-      toast({ title: 'Failed to update collection', variant: 'destructive' });
+      toast.error('Failed to update collection');
     },
   });
 
@@ -238,15 +237,15 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
-      toast({ title: 'Collection deleted successfully' });
+      toast.success('Collection deleted successfully');
     },
     onError: (error: any) => {
       if (error instanceof Error && error.message === 'Failed to delete collection') {
-        toast({ title: 'Collection not found or already deleted', variant: 'destructive' });
+        toast.error('Collection not found or already deleted');
       } else if (error?.response?.status === 404) {
-        toast({ title: 'Collection not found (404)', variant: 'destructive' });
+        toast.error('Collection not found (404)');
       } else {
-        toast({ title: 'Failed to delete collection', variant: 'destructive' });
+        toast.error('Failed to delete collection');
       }
     },
   });
@@ -264,11 +263,11 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast({ title: 'Template created successfully' });
+      toast.success('Template created successfully');
       setShowCreateDialog(false);
     },
     onError: () => {
-      toast({ title: 'Failed to create template', variant: 'destructive' });
+      toast.error('Failed to create template');
     },
   });
 
@@ -285,12 +284,12 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast({ title: 'Template updated successfully' });
+      toast.success('Template updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
     },
     onError: () => {
-      toast({ title: 'Failed to update template', variant: 'destructive' });
+      toast.error('Failed to update template');
     },
   });
 
@@ -304,15 +303,15 @@ export default function StudyMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast({ title: 'Template deleted successfully' });
+      toast.success('Template deleted successfully');
     },
     onError: (error: any) => {
       if (error instanceof Error && error.message === 'Failed to delete template') {
-        toast({ title: 'Template not found or already deleted', variant: 'destructive' });
+        toast.error('Template not found or already deleted');
       } else if (error?.response?.status === 404) {
-        toast({ title: 'Template not found (404)', variant: 'destructive' });
+        toast.error('Template not found (404)');
       } else {
-        toast({ title: 'Failed to delete template', variant: 'destructive' });
+        toast.error('Failed to delete template');
       }
     },
   });
@@ -331,10 +330,10 @@ export default function StudyMaterial() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
       queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast({ title: 'Material created from template successfully' });
+      toast.success('Material created from template successfully');
     },
     onError: () => {
-      toast({ title: 'Failed to create material from template', variant: 'destructive' });
+      toast.error('Failed to create material from template');
     },
   });
 
@@ -376,25 +375,32 @@ export default function StudyMaterial() {
     useTemplateMutation.mutate({ templateId: template.id, customizations });
   };
 
-  const handleDownload = (material: StudyMaterial) => {
-    if (material.filePath) {
-      // Create download link for file
-      const filename = material.filePath.split('/').pop() || material.fileName;
-      const link = document.createElement('a');
-      link.href = `/uploads/${filename}`;
-      link.download = material.fileName || filename || 'download';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      toast({ title: 'No file available for download', variant: 'destructive' });
-    }
-  };
 
-  const handleView = (item: any) => {
+  const handleView = async (item: any) => {
     if (activeTab === 'materials') {
       setSelectedItem(item);
       setShowViewDialog(true);
+      
+      // Extract PDF content if it's a PDF file
+      if (item.mimeType === 'application/pdf' && item.filePath) {
+        setIsExtractingPdf(true);
+        try {
+          const response = await fetch(`/api/extract-pdf-content?filePath=${encodeURIComponent(item.filePath)}`);
+          if (response.ok) {
+            const data = await response.json();
+            setPdfContent(data.content || '');
+          } else {
+            setPdfContent('Unable to extract PDF content');
+          }
+        } catch (error) {
+          console.error('Error extracting PDF content:', error);
+          setPdfContent('Error extracting PDF content');
+        } finally {
+          setIsExtractingPdf(false);
+        }
+      } else {
+        setPdfContent('');
+      }
     } else if (activeTab === 'collections') {
       // Navigate to collection view page or show materials in collection
       setSelectedItem(item);
@@ -915,6 +921,33 @@ export default function StudyMaterial() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* PDF Content Display */}
+                  {selectedItem.mimeType === 'application/pdf' && (
+                    <div>
+                      <Label className="font-semibold">PDF Content</Label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded max-h-60 overflow-y-auto">
+                        {isExtractingPdf ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                            <span>Extracting PDF content...</span>
+                          </div>
+                        ) : pdfContent ? (
+                          <div className="text-sm whitespace-pre-wrap">
+                            {pdfContent}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">No content extracted from PDF</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="font-semibold">Content</Label>
+                    <div className="mt-1 p-3 bg-gray-50 rounded max-h-40 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm">{selectedItem.content}</pre>
+                    </div>
+                  </div>
                 </>
               )}
 

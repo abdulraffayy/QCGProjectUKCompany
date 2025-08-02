@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Input } from "../components/ui/input";
-import { Content } from '../../shared/schema';
 import { useToast } from "../hooks/use-toast";
 import EnhancedVerificationPanel from "../components/verification/EnhancedVerificationPanel";
 import BritishStandardsVerifier from "../components/verification/BritishStandardsVerifier";
-import CourseWorkflowView from "../components/content/CourseWorkflowView";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
@@ -29,6 +27,7 @@ const VerificationPage: React.FC = () => {
   const [completenessScore, setCompletenessScore] = useState(0);
   const [accuracyScore, setAccuracyScore] = useState(0);
   const [alignmentScore, setAlignmentScore] = useState(0);
+  const [britishStandardValue, setBritishStandardValue] = useState('no');
 
   const getProgressPercent = (score: number) => (score / 4) * 100;
 
@@ -163,7 +162,53 @@ const VerificationPage: React.FC = () => {
     }
   }
 
+  const handleSaveChanges = async () => {
+    if (!selectedContent?.id) {
+      toast({
+        title: "Error",
+        description: "No content selected to save changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/lessons/${selectedContent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          britishStandard: britishStandardValue,
+          status: statusValue,
+          clarityScore,
+          completenessScore,
+          accuracyScore,
+          alignmentScore
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save changes');
+      }
+
+      toast({
+        title: "Changes Saved",
+        description: "All changes have been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save changes.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
+    <>
+    
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
@@ -271,6 +316,7 @@ const VerificationPage: React.FC = () => {
               </TabsList>
 
               <TabsContent value="content" className="mt-6">
+              
                 {selectedContent ? (
                   <div className="bg-neutral-50 border rounded shadow p-4 animate-slideDown relative w-full">
                     <div className="flex flex-col items-start mb-2">
@@ -297,40 +343,52 @@ const VerificationPage: React.FC = () => {
                         />
                       </div>
                       {/* Action Row: Button and Dropdowns */}
-                      <div className="flex items-end justify-end flex-wrap gap-4">
-                        <Button variant="outline">British Standard</Button>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">QAQF Level</span>
-                           <select
-                className="border rounded px-2 py-1 flex-1"
-                value={selectedContent.qaqfLevel}
-                onChange={e => (selectedContent.qaqfLevel = Number(e.target.value))}
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
-                ))}
-              </select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Status</span>
-                          <Select
-                            value={statusValue}
-                            onValueChange={(value) => {
-                              if (selectedContent?.id) {
-                                updateLessonStatus(selectedContent.id, value);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-36">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="verified">Verified</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="unverified">Unverified</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
+                      <div className="flex items-end justify-between flex-wrap gap-4">
+                        <Button 
+                          onClick={handleSaveChanges}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Save Changes
+                        </Button>
+                      
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">British Standard</span>
+                            <Select
+                              value={britishStandardValue}
+                              onValueChange={setBritishStandardValue}
+                            >
+                              <SelectTrigger className="w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Status</span>
+                            <Select
+                              value={statusValue}
+                              onValueChange={(value) => {
+                                if (selectedContent?.id) {
+                                  updateLessonStatus(selectedContent.id, value);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-36">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="verified">Verified</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="unverified">Unverified</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
 
@@ -530,6 +588,14 @@ const VerificationPage: React.FC = () => {
           ) : (
             <Card className="h-full">
               <CardContent className="flex flex-col items-center justify-center h-full py-16">
+              <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-neutral-800">Content Moderation</h2>
+            <p className="text-neutral-600 mt-1">Moderate and ensure content adheres to British standards and QAQF framework</p>
+          </div>
+        </div>
+      </div>
                 <div className="rounded-full bg-primary/10 p-4 mb-4">
                   <span className="material-icons text-4xl text-primary">fact_check</span>
                 </div>
@@ -543,6 +609,7 @@ const VerificationPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

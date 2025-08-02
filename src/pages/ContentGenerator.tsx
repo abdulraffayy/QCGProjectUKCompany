@@ -4,16 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import CourseWorkflowView from '../components/content/CourseWorkflowView';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { useToast } from '../hooks/use-toast';
-import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const ContentGeneratorPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create");
-  const [previewTemplate, setPreviewTemplate] = useState<any>(null);
+  const [previewTemplate,] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const { toast } = useToast();
+ 
   
   // Event listener to switch tabs when content is created
   React.useEffect(() => {
@@ -114,7 +112,7 @@ const ContentGeneratorPage: React.FC = () => {
                 
                 <TabsContent value="content" className="pt-4">
                   <div className="overflow-auto">
-                    <CourseWorkflowView showWorkflowButtons={false} limit={10} />
+                    <CourseWorkflowView limit={10} />
                   </div>
                 </TabsContent>
                 

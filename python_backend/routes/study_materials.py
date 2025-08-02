@@ -2,12 +2,14 @@
 Study Materials routes for Educational Content Platform
 Handles CRUD operations for study materials, collections, and templates
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import shutil
 from datetime import datetime
+import PyPDF2
+import io
 
 from database import get_db
 from models import StudyMaterial, Collection, Template, User
@@ -453,3 +455,48 @@ async def use_template(
     db.commit()
     
     return {"message": "Template usage recorded", "usage_count": template.usage_count}
+
+@router.get("/extract-pdf-content")
+async def extract_pdf_content(
+    filePath: str = Query(..., description="Path to the PDF file"),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Extract text content from a PDF file"""
+    try:
+        # Construct the full file path
+        full_path = os.path.join(UPLOAD_DIR, filePath.lstrip('/'))
+        
+        # Check if file exists
+        if not os.path.exists(full_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="PDF file not found"
+            )
+        
+        # Check if file is a PDF
+        if not full_path.lower().endswith('.pdf'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File is not a PDF"
+            )
+        
+        # Extract text from PDF
+        text_content = ""
+        with open(full_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text_content += page.extract_text() + "\n"
+        
+        return {
+            "content": text_content.strip(),
+            "pages": len(pdf_reader.pages),
+            "file_path": filePath
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error extracting PDF content: {str(e)}"
+        )

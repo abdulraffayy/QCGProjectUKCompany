@@ -7,7 +7,6 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { QAQFLevels, QAQFCharacteristics } from "../lib/qaqf";
 
@@ -46,6 +45,9 @@ const VideoGeneratorPage: React.FC = () => {
   const { data: videos, isLoading: isLoadingVideos } = useQuery({
     queryKey: ['/api/videos'],
   });
+
+  // Ensure videos is an array
+  const videosArray = Array.isArray(videos) ? videos : [];
 
   const handleCharacteristicToggle = (characteristicId: number) => {
     setSelectedCharacteristics(prev => 
@@ -127,7 +129,7 @@ const VideoGeneratorPage: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {QAQFLevels.map((level) => (
-                          <SelectItem key={level.id} value={level.id.toString()}>
+                          <SelectItem key={level.level} value={level.level.toString()}>
                             {level.name}
                           </SelectItem>
                         ))}
@@ -254,7 +256,7 @@ const VideoGeneratorPage: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
                   <h4 className="text-white font-medium">{title || "AI in Educational Technologies"}</h4>
                   <p className="text-white text-opacity-80 text-sm">
-                    {qaqfLevel ? QAQFLevels.find(l => l.id.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
+                    {qaqfLevel ? QAQFLevels.find(l => l.level.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
                   </p>
                 </div>
               </div>
@@ -323,11 +325,11 @@ const VideoGeneratorPage: React.FC = () => {
             <CardContent>
               {isLoadingVideos ? (
                 <div className="text-center py-4">Loading videos...</div>
-              ) : !videos || videos.length === 0 ? (
+              ) : !videosArray || videosArray.length === 0 ? (
                 <div className="text-center py-4 text-neutral-500">No videos generated yet</div>
               ) : (
                 <div className="space-y-4">
-                  {videos.slice(0, 3).map((video: any) => (
+                  {videosArray.slice(0, 3).map((video: any) => (
                     <div key={video.id} className="flex items-start space-x-3">
                       <div className="w-16 h-10 bg-neutral-200 rounded overflow-hidden flex-shrink-0">
                         {video.thumbnailUrl ? (

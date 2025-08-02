@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Content, Activity } from "shared/schema";
 
 import StatCard from "../components/dashboard/StatCard";
 import QAQFFramework from "../components/dashboard/QAQFFramework";
@@ -19,34 +20,6 @@ interface DashboardStats {
   videoCount: number;
 }
 
-// Define content interface
-interface Content {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  qaqfLevel: number;
-  moduleCode: string | null;
-  createdByUserId: number;
-  verificationStatus: string;
-  verifiedByUserId: number | null;
-  content: string;
-  characteristics: unknown;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Define activity interface
-interface Activity {
-  id: number;
-  createdAt: Date;
-  details: unknown;
-  userId: number;
-  action: string;
-  entityType: string;
-  entityId: number;
-}
-
 const Dashboard: React.FC = () => {
   // Dashboard stats query
   const { data: stats = { 
@@ -54,8 +27,7 @@ const Dashboard: React.FC = () => {
     verifiedContentCount: 0, 
     pendingVerificationCount: 0, 
     videoCount: 0 
-  } as DashboardStats, 
-    isLoading: isLoadingStats } = useQuery<DashboardStats>({
+  } as DashboardStats } = useQuery<DashboardStats>({
       queryKey: ['/api/dashboard/stats'],
   });
 
@@ -146,7 +118,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <ContentGeneratorSummary />
         <VerificationPanel 
-          pendingContents={contents.filter((c: any) => c.verificationStatus === "pending")}
+          pendingContents={contents.filter((c: any) => c.verification_status === "pending")}
           isLoading={isLoadingContents}
         />
       </div>

@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Textarea } from '../ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { CheckCircle, XCircle, AlertTriangle, Eye, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye,} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
@@ -40,7 +38,6 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [isLoadingLessons, setIsLoadingLessons] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [statusCache, setStatusCache] = useState<{ [lessonId: number]: string }>({});
   const [statusValue, setStatusValue] = useState('pending');
 
@@ -122,10 +119,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
     }
   }
 
-  const filteredLessons = lessons.filter(lesson =>
-    (lesson.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lesson.description && lesson.description.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
+  const filteredLessons = lessons;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -167,9 +161,9 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex gap-6">
         {/* Content List */}
-        <Card>
+        <Card className='w-[400px] flex-shrink-0'>
           <CardHeader>
             <CardTitle>Content Queue</CardTitle>
             <CardDescription>
@@ -293,7 +287,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
         </Card>
 
         {/* Content Review Panel */}
-        <Card>
+        <Card className='flex-1'>
           <CardHeader>
             <CardTitle>Content Review</CardTitle>
             <CardDescription>
@@ -323,6 +317,26 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                 {/* Action Row: Button and Dropdowns */}
                 <div className="flex flex-wrap items-center justify-end gap-4 mt-8">
                   <Button variant="outline">British Standard</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleRequestChanges(selectedContent)}
+                    disabled={!feedback.trim()}
+                  >
+                    Request Changes
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={() => handleApprove(selectedContent)}
+                  >
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleReject(selectedContent)}
+                    disabled={!rejectionReason.trim()}
+                  >
+                    Reject
+                  </Button>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">QAQF Level</span>
                     <Select>
@@ -358,6 +372,28 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                     </Select>
                         </div>
                   <div className="flex items-center gap-2">
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="feedback">Feedback for Changes</Label>
+                    <textarea
+                      id="feedback"
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      placeholder="Enter feedback for requested changes..."
+                      className="w-full mt-1 p-2 border rounded-md resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="rejection-reason">Rejection Reason</Label>
+                    <textarea
+                      id="rejection-reason"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter reason for rejection..."
+                      className="w-full mt-1 p-2 border rounded-md resize-none"
+                      rows={3}
+                    />
                   </div>
                   <div className="mt-8">
                     <h3 className="font-bold text-xl mb-4">Scoring</h3>

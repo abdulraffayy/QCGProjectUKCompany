@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { Link } from 'wouter';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, Shield, Users, BookOpen, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Download, Upload, Shield, BookOpen, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
 // Types for admin data
@@ -85,7 +85,7 @@ const QAQFAdmin: React.FC = () => {
     staleTime: 1 * 60 * 1000,
   });
 
-  const { data: contentStats } = useQuery({
+  useQuery({
     queryKey: ['/api/dashboard/qaqf-stats'],
     staleTime: 2 * 60 * 1000,
   });

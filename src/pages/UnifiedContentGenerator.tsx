@@ -2,21 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation,} from '@tanstack/react-query';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Separator } from '../components/ui/separator';
 import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
-  Loader2, BookOpen, FileText, Users, Target, CheckCircle,
-  GraduationCap, Settings, BarChart3, Lightbulb, Award, Plus, History,
-  Upload, Link, FileImage, Globe, Scan, Eye
+  Loader2, BookOpen, FileText, CheckCircle,
+  GraduationCap, Settings, Lightbulb, Award, Plus, History,
+  Upload, Link, FileImage, Globe, Scan, 
 } from 'lucide-react';
 import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
 import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
@@ -98,19 +97,18 @@ const UnifiedContentGenerator: React.FC = () => {
   const [extractedContent, setExtractedContent] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('newest');
+  const [sortBy] = useState<string>('newest');
   const [showLessonPlan, setShowLessonPlan] = useState(false);
   const [selectedContentForLesson, setSelectedContentForLesson] = useState<GeneratedItem | null>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedPDFs, setSelectedPDFs] = useState<number[]>([]);
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
-  const [openLessonId, setOpenLessonId] = useState<string | number | null>(null);
+  
 
   // Fetch QAQF data dynamically
-  const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
+  const { isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
     queryKey: ['/api/qaqf/levels'],
     staleTime: 5 * 60 * 1000,
   });
@@ -136,12 +134,7 @@ const UnifiedContentGenerator: React.FC = () => {
   console.log('studyMaterials:', materials);
 
   // 2. Filter for PDFs (covering both filename and fileName)
-  const uploadedPDFs = materials.filter(
-    (item: any) =>
-    ((item.filename && item.filename.toLowerCase().endsWith('.pdf')) ||
-      (item.fileName && item.fileName.toLowerCase().endsWith('.pdf')) ||
-      (item.mimeType && item.mimeType === 'application/pdf'))
-  );
+  
 
 
 
@@ -382,10 +375,7 @@ const UnifiedContentGenerator: React.FC = () => {
   };
 
   // Handle lesson plan creation
-  const handleCreateLessonPlan = (item: GeneratedItem) => {
-    setSelectedContentForLesson(item);
-    setShowLessonPlan(true);
-  };
+ 
 
   const handleSaveLessonPlan = (lessonPlanData: any) => {
     const lessonPlanItem: GeneratedItem = {
@@ -429,9 +419,6 @@ const UnifiedContentGenerator: React.FC = () => {
           file_name: pdf.file_name
         }));
 
-      // Get selected course information
-      const selectedCourseInfo = courses.find(course => course.id === selectedCourse);
-
       const requestData = {
         ...data,
         qaqf_characteristics: qaqfCharacteristics?.filter(c =>
@@ -472,7 +459,7 @@ const UnifiedContentGenerator: React.FC = () => {
       setActiveTab('processing');
       toast({ title: `${variables.generation_type === 'content' ? 'Content' : 'Course'} generated successfully!` });
     },
-    onError: (error, variables) => {
+    onError: (_, variables) => {
       toast({
         title: `Failed to generate ${variables.generation_type}`,
         variant: "destructive"
@@ -481,29 +468,11 @@ const UnifiedContentGenerator: React.FC = () => {
   });
 
   const onSubmit = (data: UnifiedGenerationData) => {
-    // Map selected_characteristics IDs to names for logging only
-    const selectedNames = (qaqfCharacteristics || [])
-      .filter(c => data.selected_characteristics.includes(c.id))
-      .map(c => c.name);
 
-    // Get selected PDF information
-    const selectedPDFInfo = materials
-      .filter(pdf => selectedPDFs.includes(pdf.id))
-      .map(pdf => ({
-        id: pdf.id,
-        title: pdf.title || pdf.file_name,
-        file_name: pdf.file_name
-      }));
+
 
     // Get selected course information
     const selectedCourseInfo = courses.find(course => String(course.id) === selectedCourse);
-
-    const dataForLog = {
-      ...data,
-      selected_characteristics: selectedNames,
-      selected_pdfs: selectedPDFInfo,
-      selected_course: selectedCourseInfo,
-    };
     setIsGenerating(true);
     console.log("Submit button clicked");
  
@@ -536,29 +505,12 @@ const UnifiedContentGenerator: React.FC = () => {
     'Research Projects'
   ];
 
-  const approveItem = (id: string) => {
-    setGeneratedItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, status: 'completed' } : item
-      )
-    );
-    toast({ title: "Content approved and ready for deployment" });
-  };
+  
 
-  const saveToLibrary = (item: GeneratedItem) => {
-    // This would integrate with your content API
-    toast({ title: `${item.type === 'content' ? 'Content' : 'Course'} saved to module library` });
-  };
 
-  const onView = (item: GeneratedItem) => {
-    setSelectedContentForLesson(item);
-    setShowLessonPlan(true);
-  };
 
-  const handleApplyCourse = () => {
-    // TODO: Implement what should happen when Apply is clicked
-    console.log("Applied course:", selectedCourse);
-  };
+  
+
 
   if (levelsLoading || characteristicsLoading) {
     return (
@@ -1360,6 +1312,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
                   {/* Content Items */}
                   <div>
+                    {/* Only show course lessons when a course is selected */}
                     {selectedCourse && courseLessons.length > 0 && courseLessons
                       .filter(lesson => {
                         // Apply status filter
@@ -1400,51 +1353,26 @@ const UnifiedContentGenerator: React.FC = () => {
                       />
                     ))}
 
-                    {/* Render generatedItems when no course is selected */}
-                    {!selectedCourse && getFilteredAndSortedItems().map((item) => (
-                      <ProcessingCenterItem
-                        key={item.id}
-                        item={{
-                          id: item.id,
-                          title: item.title,
-                          type: item.type,
-                          status: (item.status as any) as 'verified' | 'unverified' | 'rejected' | 'pending',
-                          createdAt: item.createdAt,
-                          createdBy: item.createdBy,
-                          description: item.description,
-                          qaqfLevel: item.qaqfLevel,
-                          progress: item.progress,
-                          estimatedTime: item.estimatedTime,
-                          content: item.content,
-                          metadata: item.metadata,
-                        }}
-                        onAction={async (action, itemId) => {
-                          if (action === 'deleted') {
-                            setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                          } else if (action === 'status_changed') {
-                            // Refresh the data or update the item status
-                            // For now, we'll just trigger a re-render
-                            setGeneratedItems(prev => [...prev]);
-                          } else if (action === 'updated') {
-                            // For generated items, refresh the list
-                            setGeneratedItems(prev => [...prev]);
-                          }
-                        }}
-                      />
-                    ))}
-
-                    {/* Show message when no items to display */}
-                    {((selectedCourse && courseLessons.filter(lesson => 
-                      filterStatus === 'all' ? true : lesson.status === filterStatus
-                    ).length === 0) || 
-                    (!selectedCourse && getFilteredAndSortedItems().length === 0)) && (
+                    {/* Show message when no course is selected */}
+                    {!selectedCourse && (
                       <div className="text-center py-8 text-gray-500">
                         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">No items found</p>
+                        <p className="text-lg font-medium">Please select a course</p>
+                        <p className="text-sm">Select a course from the dropdown above to view its lessons.</p>
+                      </div>
+                    )}
+
+                    {/* Show message when course is selected but no lessons found */}
+                    {selectedCourse && courseLessons.filter(lesson => 
+                      filterStatus === 'all' ? true : lesson.status === filterStatus
+                    ).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No lessons found</p>
                         <p className="text-sm">
                           {filterStatus !== 'all' 
-                            ? `No items with status "${filterStatus}" found.` 
-                            : 'No content to display.'}
+                            ? `No lessons with status "${filterStatus}" found for this course.` 
+                            : 'No lessons found for this course.'}
                         </p>
                       </div>
                     )}

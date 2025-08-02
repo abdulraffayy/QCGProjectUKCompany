@@ -3,8 +3,13 @@ import ContentModerator from "../components/moderation/ContentModerator";
 
 const ModerationPage: React.FC = () => {
   // Get content query for moderation
-  const { data: contents, isLoading: isLoadingContents } = useQuery({
+  const { data: contents } = useQuery({
     queryKey: ['/api/content'],
+    queryFn: async () => {
+      const response = await fetch('/api/content');
+      if (!response.ok) throw new Error('Failed to fetch content');
+      return response.json();
+    },
   });
 
   return (
@@ -21,7 +26,6 @@ const ModerationPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-6">
         <ContentModerator 
           contents={contents || []}
-          isLoading={isLoadingContents}
         />
       </div>
 

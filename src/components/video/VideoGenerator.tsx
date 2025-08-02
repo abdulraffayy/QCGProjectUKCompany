@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Card, CardContent, CardTitle } from "../ui/card";
+import { Card, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
@@ -109,7 +108,7 @@ const VideoGenerator: React.FC = () => {
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
                 <h4 className="text-white font-medium">{title || "AI in Educational Technologies"}</h4>
                 <p className="text-white text-opacity-80 text-sm">
-                  {qaqfLevel ? QAQFLevels.find(l => l.id.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
+                  {qaqfLevel ? QAQFLevels.find(l => l.level.toString() === qaqfLevel)?.name : "Level 8 - Innovative content"} Implementation
                 </p>
               </div>
             </div>
@@ -165,7 +164,7 @@ const VideoGenerator: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {QAQFLevels.map((level) => (
-                    <SelectItem key={level.id} value={level.id.toString()}>
+                    <SelectItem key={level.level} value={level.level.toString()}>
                       {level.name}
                     </SelectItem>
                   ))}

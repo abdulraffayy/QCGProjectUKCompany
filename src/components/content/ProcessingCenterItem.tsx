@@ -7,12 +7,9 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Textarea } from "../ui/textarea";
+
 import JoditEditor from "jodit-react";
 import {
-  Play,
-  Pause,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -22,18 +19,11 @@ import {
   BookOpen,
   Settings,
   Eye,
-  Download,
   X,
   User,
   Save,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import {
@@ -42,7 +32,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from "../ui/dialog";
 
 interface ProcessingCenterItemProps {
@@ -56,6 +45,8 @@ interface ProcessingCenterItemProps {
     createdBy: string;
     description?: string;
     qaqfLevel?: number;
+    level?: number;
+    qaqf_level?: number;
     estimatedTime?: string;
     content?: string;
     metadata?: any;
@@ -67,13 +58,12 @@ interface ProcessingCenterItemProps {
 
 const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   item,
-  lessons = [],
   onAction,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [status, setStatus] = useState(item.status || "pending");
-  const [statusLoading, setStatusLoading] = useState(false);
+
+  const [status] = useState(item.status || "pending");
+ 
   
   // Add state for editable fields
   const [editableData, setEditableData] = useState({
@@ -85,7 +75,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     courseid: (item.metadata && item.metadata.courseid) || "",
     description: item.description || (item.metadata && item.metadata.description) || "",
   });
-  const [isEditing, setIsEditing] = useState(false);
+
   const [saveLoading, setSaveLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -100,7 +90,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const isResizing = React.useRef(false);
-  const [buttonDisabled, setButtonDisabled] = useState(false);
   // Track permanently disabled buttons after first click
   const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
 
@@ -133,31 +122,9 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     };
   }, []);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "verified":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "unverified":
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "rejected":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "verified":
-        return "bg-green-100 text-green-800";
-      case "unverified":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+
+ 
 
   // Add verification status functions
   const getVerificationStatusIcon = (verificationStatus: string | undefined) => {
@@ -218,11 +185,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  const handleAction = (action: string) => {
-    if (onAction) {
-      onAction(action, item.id);
-    }
-  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -234,29 +197,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     });
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    if (newStatus === status) return;
-    setStatusLoading(true);
-    try {
-      const res = await fetch(`/api/lessons_status/${item.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      setStatus(
-        newStatus as "verified" | "unverified" | "rejected"
-      );
-      // Notify parent component about status change
-      if (onAction) {
-        onAction("status_changed", item.id);
-      }
-    } catch (err) {
-      console.error("Failed to update status:", err);
-    } finally {
-      setStatusLoading(false);
-    }
-  };
+
 
   const handleDeleteLesson = async () => {
     setDeleteLoading(true);
@@ -283,7 +224,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
   const handleEditClick = () => {
     setIsEditDialogOpen(true);
-    setIsEditing(true);
   };
 
   const handleSaveChanges = async () => {
@@ -316,7 +256,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           duration: editableData.duration
         }
       });
-      setIsEditing(false);
       setIsEditDialogOpen(false); // <-- Close dialog after update
       if (onAction) {
         onAction("updated", item.id);
@@ -330,19 +269,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditableData({
-      title: item.title || "",
-      type: item.type || "",
-      duration: (item.metadata && item.metadata.duration) || "",
-      qaqfLevel: item.qaqfLevel ? String(item.qaqfLevel) : "",
-      userid: (item.metadata && item.metadata.userid) || "",
-      courseid: (item.metadata && item.metadata.courseid) || "",
-      description: item.description || (item.metadata && item.metadata.description) || "",
-    });
-    setIsEditing(false);
-    setIsEditDialogOpen(false);
-  };
+  
 
   const handleAiGenerate = async () => {
     // Permanently disable this button after first click
@@ -384,7 +311,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       const data = await response.json();
       
       if (data.generated_content && data.generated_content.length > 0) {
-        setEditableData(prev => ({ ...prev, description: data.generated_content[0] }));
+        setEditableData(prev => ({ ...prev, description: data.generated_content}));
         // Store in localStorage to remember the disabled state
         localStorage.setItem(`processingCenterAiGenerateDisabled_${item.id}`, 'true');
       } else {
@@ -399,12 +326,8 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  // Temporary function to reset localStorage for testing
-  const resetAiGenerateState = () => {
-    localStorage.removeItem(`processingCenterAiGenerateDisabled_${item.id}`);
-    setPermanentlyDisabledButtons(new Set());
-    setAiGenerateLoading(false);
-  };
+  
+
 
   // useEffect to handle deletion state
   useEffect(() => {
@@ -546,11 +469,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       </div>
                       <div>
                         <b>QAQF Level:</b>{" "}
-                        {typeof item.qaqfLevel === "number"
-                          ? item.qaqfLevel
-                          : typeof (item as any).qaqflevel === "number"
-                          ? (item as any).qaqflevel
-                          : "N/A"}
+                        {(() => {
+                          const qaqfLevel = item.level || item.qaqfLevel || item.qaqf_level;
+                          if (qaqfLevel) {
+                            return qaqfLevel;
+                          } else {
+                            return "N/A";
+                          }
+                        })()}
                       </div>
                       <div>
                         <b>User ID:</b>{" "}
@@ -594,7 +520,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       {/* Fullscreen Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
         setIsEditDialogOpen(open);
-        if (!open) setIsEditing(false);
       }}>
         <DialogContent className="w-[100%] h-screen max-w-full max-h-full p-0 flex flex-col mx-auto">
           <DialogHeader className="p-6">
@@ -772,16 +697,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                           <Button 
                 variant="default" 
                 onClick={handleAiGenerate}
-                disabled={aiGenerateLoading || permanentlyDisabledButtons.has('aiGenerate')}
+                disabled={aiGenerateLoading}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {aiGenerateLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generating...
+                    loading...
                   </>
-                ) : permanentlyDisabledButtons.has('aiGenerate') ? (
-                  'Already Generated'
                 ) : (
                   'AI Generate'
                 )}

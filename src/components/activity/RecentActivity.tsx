@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
-import { Activity } from "@shared/schema";
+import { Activity } from "shared/schema";
 
 interface RecentActivityProps {
   activities: Activity[];
@@ -76,9 +76,9 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ activities, isLoading }
                 </div>
                 <div className="ml-3">
                   <p className="text-sm">
-                    <span className="font-medium">{activity.details?.user?.name || "A user"}</span> {activity.action} {activity.entityType} <span className="text-primary">{activity.details?.title || ""}</span>
+                    <span className="font-medium">{activity.details?.user?.name || "A user"}</span> {activity.action} {activity.entity_type} <span className="text-primary">{activity.details?.title || ""}</span>
                   </p>
-                  <p className="text-xs text-neutral-500 mt-1">{formatActivityTime(activity.createdAt)}</p>
+                  <p className="text-xs text-neutral-500 mt-1">{formatActivityTime(activity.created_at)}</p>
                 </div>
               </div>
             ))}

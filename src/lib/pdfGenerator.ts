@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema';
 import { QAQFLevels, QAQFCharacteristics } from './qaqf';
 
 /**
@@ -23,18 +23,18 @@ export function generateContentPDF(content: Content): jsPDF {
   // Module code and QAQF level
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text(`Module: ${content.moduleCode || 'N/A'}`, margin, 30);
-  doc.text(`QAQF Level: ${content.qaqfLevel}`, margin, 38);
+  doc.text(`Module: ${content.module_code || 'N/A'}`, margin, 30);
+  doc.text(`QAQF Level: ${content.qaqf_level}`, margin, 38);
   
   // Find QAQF level name
-  const qaqfLevel = QAQFLevels.find(level => level.id === content.qaqfLevel);
+  const qaqfLevel = QAQFLevels.find(level => level.level === content.qaqf_level);
   if (qaqfLevel) {
     doc.text(`(${qaqfLevel.name})`, margin + 50, 38);
   }
   
   // Status and dates
-  doc.text(`Status: ${content.verificationStatus}`, margin, 46);
-  doc.text(`Created: ${new Date(content.createdAt).toLocaleDateString()}`, margin, 54);
+  doc.text(`Status: ${content.verification_status}`, margin, 46);
+  doc.text(`Created: ${new Date(content.created_at).toLocaleDateString()}`, margin, 54);
   
   // Divider
   doc.setDrawColor(200, 200, 200);
@@ -51,7 +51,7 @@ export function generateContentPDF(content: Content): jsPDF {
   let characteristicsY = 80;
   
   if (content.characteristics && Array.isArray(content.characteristics)) {
-    content.characteristics.forEach((charId: number, index: number) => {
+    content.characteristics.forEach((charId: number) => {
       const char = QAQFCharacteristics.find(c => c.id === charId);
       if (char) {
         doc.text(`• ${char.name}: ${char.description}`, margin, characteristicsY);
@@ -62,7 +62,7 @@ export function generateContentPDF(content: Content): jsPDF {
       }
     });
   } else if (content.characteristics && typeof content.characteristics === 'object') {
-    Object.entries(content.characteristics).forEach(([key, value], index) => {
+    Object.entries(content.characteristics).forEach(([key]) => {
       doc.text(`• ${key}`, margin, characteristicsY);
       characteristicsY += 8;
     });
@@ -112,7 +112,7 @@ export function generateContentPDF(content: Content): jsPDF {
   doc.text(splitText, margin, characteristicsY);
   
   // Add footer
-  const totalPages = doc.internal.getNumberOfPages();
+  const totalPages = doc.internal.pages.length;
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(10);

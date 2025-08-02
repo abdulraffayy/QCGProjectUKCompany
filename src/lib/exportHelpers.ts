@@ -1,5 +1,4 @@
-import { Content } from '@shared/schema';
-import { jsPDF } from 'jspdf';
+import { Content } from 'shared/schema';
 import { saveContentAsPDF } from './pdfGenerator';
 
 /**
@@ -80,10 +79,10 @@ export function exportAsHTML(content: Content): string {
     <h1>${content.title}</h1>
     
     <div class="metadata">
-      <p><strong>Module Code:</strong> ${content.moduleCode || 'N/A'}</p>
-      <p><strong>QAQF Level:</strong> ${content.qaqfLevel}</p>
+      <p><strong>Module Code:</strong> ${content.module_code || 'N/A'}</p>
+      <p><strong>QAQF Level:</strong> ${content.qaqf_level}</p>
       <p><strong>Type:</strong> ${content.type.replace('_', ' ')}</p>
-      <p><strong>Created:</strong> ${new Date(content.createdAt).toLocaleDateString()}</p>
+              <p><strong>Created:</strong> ${new Date(content.created_at).toLocaleDateString()}</p>
       <p><strong>QAQF Characteristics:</strong></p>
       <div class="characteristics">
         ${Array.isArray(content.characteristics) 
@@ -101,7 +100,7 @@ export function exportAsHTML(content: Content): string {
     
     <div class="footer">
       <p>Generated from QAQF Academic Content Platform</p>
-      <p>Document ID: ${content.id} | Verification Status: ${content.verificationStatus}</p>
+      <p>Document ID: ${content.id} | Verification Status: ${content.verification_status}</p>
     </div>
   </body>
   </html>
@@ -139,11 +138,11 @@ export function exportAsMarkdown(content: Content): string {
   const markdown = `# ${content.title}
 
 ## Metadata
-- **Module Code:** ${content.moduleCode || 'N/A'}
-- **QAQF Level:** ${content.qaqfLevel}
+- **Module Code:** ${content.module_code || 'N/A'}
+- **QAQF Level:** ${content.qaqf_level}
 - **Type:** ${content.type.replace('_', ' ')}
-- **Created:** ${new Date(content.createdAt).toLocaleDateString()}
-- **Verification Status:** ${content.verificationStatus}
+- **Created:** ${new Date(content.created_at).toLocaleDateString()}
+- **Verification Status:** ${content.verification_status}
 
 ## QAQF Characteristics
 ${Array.isArray(content.characteristics) 
@@ -207,13 +206,13 @@ export function saveAsJSON(content: Content): void {
   const contentData = {
     id: content.id,
     title: content.title,
-    moduleCode: content.moduleCode,
-    qaqfLevel: content.qaqfLevel,
+    moduleCode: content.module_code,
+    qaqfLevel: content.qaqf_level,
     type: content.type,
     characteristics: content.characteristics,
     content: content.content,
-    verificationStatus: content.verificationStatus,
-    createdAt: content.createdAt
+    verificationStatus: content.verification_status,
+            createdAt: content.created_at
   };
   
   const jsonString = JSON.stringify(contentData, null, 2);
@@ -232,7 +231,7 @@ export function saveAsJSON(content: Content): void {
 export function exportMultipleToCSV(contents: Content[]): void {
   const headers = "ID,Title,Type,QAQF Level,Verification Status,Module Code,Created At\n";
   const rows = contents.map(content => 
-    `${content.id},"${content.title.replace(/"/g, '""')}",${content.type},${content.qaqfLevel},${content.verificationStatus},"${content.moduleCode || ''}","${new Date(content.createdAt).toISOString()}"`
+    `${content.id},"${content.title.replace(/"/g, '""')}",${content.type},${content.qaqf_level},${content.verification_status},"${content.module_code || ''}","${new Date(content.created_at).toISOString()}"`
   ).join('\n');
   
   const csvContent = `${headers}${rows}`;

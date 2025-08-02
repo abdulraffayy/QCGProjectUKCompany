@@ -14,7 +14,6 @@ import {
   Edit,
   Save,
   Download,
-  Share
 } from 'lucide-react';
 
 interface LessonPlanSection {
@@ -51,43 +50,6 @@ const LessonPlanTemplate: React.FC<LessonPlanTemplateProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
-  const defaultSections: LessonPlanSection[] = [
-    {
-      id: 'introduction',
-      title: 'Introduction & Warm-up',
-      content: 'Begin the lesson with an engaging activity to capture student interest and introduce the topic.',
-      duration: 10,
-      editable: true
-    },
-    {
-      id: 'presentation',
-      title: 'Main Content Presentation',
-      content: 'Present the core concepts and learning material through various teaching methods.',
-      duration: 20,
-      editable: true
-    },
-    {
-      id: 'practice',
-      title: 'Guided Practice',
-      content: 'Provide opportunities for students to practice new skills with teacher guidance.',
-      duration: 15,
-      editable: true
-    },
-    {
-      id: 'application',
-      title: 'Independent Application',
-      content: 'Allow students to apply their learning independently through activities or exercises.',
-      duration: 10,
-      editable: true
-    },
-    {
-      id: 'closure',
-      title: 'Closure & Review',
-      content: 'Summarize key points and check for understanding before ending the lesson.',
-      duration: 5,
-      editable: true
-    }
-  ];
 
   const updateSection = (sectionId: string, field: string, value: any) => {
     setLessonPlan(prev => ({

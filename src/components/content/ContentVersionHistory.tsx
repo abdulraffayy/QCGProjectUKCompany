@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
 import { useToast } from "../../hooks/use-toast";
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema';
 
 interface ContentVersion {
   id: number;

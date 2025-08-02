@@ -2,11 +2,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
-import { cn } from "../../lib/utils";
+
 import { Link } from "wouter";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ExternalLink, TrendingUp, Users, BookOpen } from "lucide-react";
+import { Loader2,} from "lucide-react";
 
 // Define icons for each characteristic
 const characteristicIcons: Record<string, string> = {
@@ -45,7 +45,6 @@ interface ContentStats {
 
 const QAQFFramework: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("all");
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   
   // Fetch dynamic QAQF levels from database
   const { data: qaqfLevels, isLoading: levelsLoading } = useQuery<QAQFLevel[]>({
@@ -89,12 +88,6 @@ const QAQFFramework: React.FC = () => {
     return contentStats?.levelDistribution?.[level] || 0;
   };
 
-  const getTotalContentForCategory = (category: string) => {
-    if (!contentStats?.levelDistribution) return 0;
-    const levels = category === 'basic' ? [1,2,3] : 
-                  category === 'intermediate' ? [4,5,6] : [7,8,9];
-    return levels.reduce((sum, level) => sum + getContentCountForLevel(level), 0);
-  };
 
   if (levelsLoading || characteristicsLoading) {
     return (
@@ -301,7 +294,7 @@ const QAQFFramework: React.FC = () => {
                     <div 
                       key={characteristic.id}
                       className="border p-3 rounded-md hover:bg-neutral-50 transition-colors cursor-pointer"
-                      onClick={() => setSelectedLevel(characteristic.id)}
+                      onClick={() => {}}
                     >
                       <div className="flex items-center mb-1">
                         <span className="material-icons text-sm mr-2 text-primary">

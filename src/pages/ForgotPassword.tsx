@@ -8,9 +8,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { useToast } from "../hooks/use-toast";
 import { KeyRound, ArrowLeft } from "lucide-react";
+import { useToast } from "../hooks/use-toast";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -30,7 +29,6 @@ type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<"request" | "reset">("request");
-  const [resetToken, setResetToken] = useState("");
   const { toast } = useToast();
 
   const {
@@ -75,7 +73,6 @@ export default function ForgotPassword() {
       
       // For development, auto-fill the token (remove in production)
       if (data.reset_token) {
-        setResetToken(data.reset_token);
         setResetValue("token", data.reset_token);
         setStep("reset");
       }

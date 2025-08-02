@@ -4,10 +4,9 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Progress } from "../ui/progress";
-import { Textarea } from "../ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useToast } from "../../hooks/use-toast";
-import { Content } from '@shared/schema';
+import { Content } from 'shared/schema';
 import { checkBritishStandardsCompliance } from '../../lib/qaqf';
 
 interface BritishStandardsVerifierProps {
@@ -29,7 +28,6 @@ const BritishStandardsVerifier: React.FC<BritishStandardsVerifierProps> = ({
   const { toast } = useToast();
   const [isChecking, setIsChecking] = useState(false);
   const [checkCompleted, setCheckCompleted] = useState(false);
-  const [complianceIssues, setComplianceIssues] = useState<string[]>([]);
   const [overallCompliance, setOverallCompliance] = useState(false);
   const [activeTab, setActiveTab] = useState("terminology");
   
@@ -218,9 +216,7 @@ const BritishStandardsVerifier: React.FC<BritishStandardsVerifierProps> = ({
             ? "Content follows correct formatting guidelines" 
             : `${newFormatIssues.length} formatting issues found`;
         } else if (standard.standard === "BS 8888") {
-          compliant = !standardsCheck.issues.some(issue => 
-            issue.includes("learning outcomes") || issue.includes("assessment")
-          );
+          compliant = standardsCheck.checks.curriculum_alignment && standardsCheck.checks.assessment_criteria;
           notes = compliant 
             ? "Content includes required educational elements" 
             : "Missing required educational structure elements";
@@ -244,7 +240,6 @@ const BritishStandardsVerifier: React.FC<BritishStandardsVerifierProps> = ({
       
       // Combine all issues
       const allIssues = [
-        ...standardsCheck.issues,
         ...newTerminologyIssues.map(issue => 
           `American spelling "${issue.americanTerm}" used instead of British "${issue.britishTerm}" (${issue.occurrences} occurrences)`
         ),
@@ -256,7 +251,6 @@ const BritishStandardsVerifier: React.FC<BritishStandardsVerifierProps> = ({
         )
       ];
       
-      setComplianceIssues(allIssues);
       setCheckCompleted(true);
       setIsChecking(false);
       

@@ -8,11 +8,9 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { useToast } from "../../hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Textarea } from "../ui/textarea";
-import { Switch } from "../ui/switch";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../ui/dialog";
-import { apiRequest } from "../lib/queryClient";
+
 import JoditEditor from "jodit-react";
 
 const ContentGenerator: React.FC = () => {
@@ -30,8 +28,8 @@ const ContentGenerator: React.FC = () => {
   const [secondarySourceMaterial, setSecondarySourceMaterial] = useState("");
   const [extractCharacteristics, setExtractCharacteristics] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [, setShowPreview] = useState(false);
+
   
   // Check if we're regenerating content (redirected from CourseWorkflowView)
   useEffect(() => {
@@ -75,7 +73,7 @@ const ContentGenerator: React.FC = () => {
         }
         
         // Set flag to show we're regenerating
-        setIsRegenerating(true);
+        setIsGenerating(true);
         
         // Show a toast notification to inform the user
         toast({
@@ -98,17 +96,17 @@ const ContentGenerator: React.FC = () => {
   }, [toast]);
   
   // Video specific options
-  const [animationStyle, setAnimationStyle] = useState("2D Animation");
-  const [videoDuration, setVideoDuration] = useState("3-5 minutes");
-  const [videoDescription, setVideoDescription] = useState("");
+  const [animationStyle] = useState("2D Animation");
+  const [videoDuration] = useState("3-5 minutes");
+  const [videoDescription] = useState("");
   
   // Verification and moderation options
-  const [verificationStatus, setVerificationStatus] = useState<string>("pending");
-  const [moderationStatus, setModerationStatus] = useState<string>("pending");
-  const [britishStandardsCompliance, setBritishStandardsCompliance] = useState<boolean>(false);
-  const [complianceIssues, setComplianceIssues] = useState<string[]>([]);
-  const [verifiedBy, setVerifiedBy] = useState<string>("");
-  const [verificationDate, setVerificationDate] = useState<string>("");
+  const [, setVerificationStatus] = useState<string>("pending");
+  const [, setModerationStatus] = useState<string>("pending");
+  const [, setBritishStandardsCompliance] = useState<boolean>(false);
+  const [, setComplianceIssues] = useState<string[]>([]);
+  const [, setVerifiedBy] = useState<string>("");
+  const [, setVerificationDate] = useState<string>("");
   
   // Handling toggling of QAQF characteristics
   const handleCharacteristicToggle = (characteristicId: number) => {
@@ -739,7 +737,7 @@ const ContentGenerator: React.FC = () => {
                     placeholder: "Enter any additional instructions or requirements"
                   }}
                   onBlur={(newContent) => setAdditionalInstructions(newContent)}
-                  onChange={(newContent) => {}}
+                  onChange={() => {}}
                 />
               </div>
               
@@ -977,7 +975,7 @@ const ContentGenerator: React.FC = () => {
                             placeholder: "Enter or paste primary source material content"
                           }}
                           onBlur={(newContent) => setPrimarySourceMaterial(newContent)}
-                          onChange={(newContent) => {}}
+                          onChange={() => {}}
                         />
                       </div>
                       <div>
@@ -1188,7 +1186,7 @@ const ContentGenerator: React.FC = () => {
                             placeholder: "Enter or paste secondary source material content"
                           }}
                           onBlur={(newContent) => setSecondarySourceMaterial(newContent)}
-                          onChange={(newContent) => {}}
+                          onChange={() => {}}
                         />
                       </div>
                     </div>

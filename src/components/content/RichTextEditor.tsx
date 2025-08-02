@@ -90,7 +90,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     showXPathInStatusbar: false,
     askBeforePasteHTML: true,
     askBeforePasteFromWord: true,
-    defaultActionOnPaste: "insert_clear_html",
+    defaultActionOnPaste: "insert_clear_html" as any,
     buttonsMD: [
       "source",
       "|",
@@ -203,7 +203,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         value={value}
         config={config}
         onBlur={(newContent) => onChange(newContent)}
-        onChange={(newContent) => {}}
+        onChange={() => {}}
       />
     </div>
   );

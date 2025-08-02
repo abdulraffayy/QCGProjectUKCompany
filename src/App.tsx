@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
+import { ToastContainer } from 'react-toastify';
 import NotFound from "./pages/not-found";
 import Layout from "./components/layout/Layout";
 
@@ -88,6 +89,7 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
+          <ToastContainer />
           <AuthenticatedRoutes />
         </TooltipProvider>
       </AuthProvider>

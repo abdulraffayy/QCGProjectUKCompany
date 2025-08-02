@@ -13,10 +13,7 @@ import {
   BookOpen, 
   PenTool, 
   BarChart3, 
-  Clock, 
-  Users, 
   Target,
-  AlertCircle
 } from 'lucide-react';
 
 interface AssessmentCriteria {
@@ -44,7 +41,7 @@ const AssessmentTool: React.FC<AssessmentToolProps> = ({
   qaqfLevel,
   onAssessmentComplete
 }) => {
-  const [selectedCriteria, setSelectedCriteria] = useState<string>('');
+
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState('criteria');
@@ -249,7 +246,7 @@ const AssessmentTool: React.FC<AssessmentToolProps> = ({
   };
 
   const generateRecommendations = () => {
-    const recommendations = [];
+    const recommendations: Array<{ criteria: string; suggestion: string }> = [];
     
     assessmentCriteria.forEach(criteria => {
       const score = scores[criteria.id] || 0;
@@ -290,8 +287,7 @@ const AssessmentTool: React.FC<AssessmentToolProps> = ({
         <TabsContent value="criteria" className="space-y-4">
           <div className="grid gap-4">
             {assessmentCriteria.map((criteria) => (
-              <Card key={criteria.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedCriteria(criteria.id)}>
+              <Card key={criteria.id} className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>

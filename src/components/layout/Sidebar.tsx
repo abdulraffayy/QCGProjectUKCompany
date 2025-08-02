@@ -12,7 +12,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const { user } = useAuth();
   const isVerifier = user?.role === 'verification';
   const isModerator = user?.role === 'moderation';
-  const isAdmin = user?.role === 'admin';
   const isRegularUser = user?.role === 'user';
 
   const isActiveRoute = (path: string) => {
@@ -70,10 +69,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               <span className="material-icons mr-3 text-inherit">auto_awesome</span>
               AI Content Studio
             </Link>
-            <Link href="/my-content" className={navItemClass("/my-content")}> 
+            {/* <Link href="/my-content" className={navItemClass("/my-content")}> 
               <span className="material-icons mr-3 text-inherit">history_edu</span>
               Module Library
-            </Link>
+            </Link> */}
             <Link href="/lesson-plan" className={navItemClass("/lesson-plan")}> 
               <span className="material-icons mr-3 text-inherit">event_note</span>
               Lesson Plan

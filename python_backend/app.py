@@ -15,7 +15,7 @@ from flask_cors import CORS
 import requests
 from werkzeug.utils import secure_filename
 from functools import wraps
-# import markdown
+import markdown
 import traceback
 import re
 import unicodedata
@@ -138,12 +138,13 @@ def init_complete_db():
         )
     ''')
     
-    # Study materials table
+     # Study materials table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS study_materials (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title VARCHAR(200) NOT NULL,
             description TEXT,
+            collectionid INTEGER,
             type VARCHAR(50) NOT NULL,
             qaqf_level INTEGER NOT NULL,
             created_by_user_id INTEGER NOT NULL,
@@ -155,7 +156,6 @@ def init_complete_db():
             FOREIGN KEY (created_by_user_id) REFERENCES users (id)
         )
     ''')
-    
     # Collections table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS collections (
@@ -163,8 +163,6 @@ def init_complete_db():
             name VARCHAR(100) NOT NULL,
             description TEXT,
             created_by_user_id INTEGER NOT NULL,
-            is_public BOOLEAN DEFAULT FALSE,
-            material_ids TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (created_by_user_id) REFERENCES users (id)
@@ -315,9 +313,29 @@ def init_complete_db():
             type TEXT,
             status TEXT DEFAULT 'pending',     
             createddate DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updateddate DATETIME DEFAULT CURRENT_TIMESTAMP
+            updateddate DATETIME DEFAULT CURRENT_TIMESTAMP,
+            verification_status TEXT DEFAULT 'unverified',
+            verification_clarity integer DEFAULT 0,
+            verification_completeness integer DEFAULT 0,
+            verification_accuracy integer DEFAULT 0,
+            verification_qaqf_alignment integer DEFAULT 0,
+            verification_comments TEXT,
+            verification_by text, 
+            verification_date DATETIME,
+            verification_british_standard text DEFAULT 'no',             
+            moderation_status TEXT DEFAULT 'unverified',
+            moderation_clarity integer DEFAULT 0,
+            moderation_completeness integer DEFAULT 0,
+            moderation_accuracy integer DEFAULT 0,
+            moderation_qaqf_alignment integer DEFAULT 0, 
+            moderation_comments TEXT,
+            moderation_by text,     
+            moderation_date DATETIME,
+            moderation_british_standard text DEFAULT 'no'     
+
         )
     ''')
+
     conn.execute('''
         CREATE TRIGGER IF NOT EXISTS trg_generatedlesson_updated
         AFTER UPDATE ON generatedlesson
@@ -831,8 +849,20 @@ This extracted content can now be used as source material for AI-powered content
 @token_required
 def generate_content_with_ollama(current_user_id):
     data = request.get_json()
-    print(data, current_user_id)
-    return jsonify({'error': 'AI content generation is not yet implemented.'}), 501
+    selected_pdfs = data.get('selected_pdfs')
+    selected_course_id = data.get('selected_course_id')
+    source_content = data.get('source_content', '')
+    db = get_db()
+    cur = db.cursor()
+    if selected_pdfs:
+        for pdf in selected_pdfs:
+            print(pdf)
+            booksid = pdf.get('id')
+            cur.execute(''' SELECT * FROM study_materials WHERE id = ?
+            ''', (booksid,))
+            pdf = cur.fetchone()
+            if pdf:
+                source_content = source_content +"\n" + pdf['content']
     try:
         contenttype = data.get('generation_type', 'content').lower()
         prompt = ""
@@ -848,7 +878,6 @@ def generate_content_with_ollama(current_user_id):
             module_code = data.get('module_code', 'GEN101')
             qaqf_level = data.get('qaqf_level', 5)
             additional_instructions = data.get('additional_instructions', '')
-            source_content = data.get('source_content', '')
             assessment_methods = data.get('assessment_methods', 'quizzes, assignments')
             characteristics = data.get('selected_characteristics', ['clarity', 'coherence', 'relevance'])
 
@@ -959,7 +988,7 @@ def generate_content_with_ollama(current_user_id):
             cur.execute('''
                 INSERT INTO generatedlesson (courseid, title, level, description, userid, duration, type)
                 VALUES (?, ?, ?, ?, ?, ?,?)
-            ''', (4, title, qaqf_level, finn , current_user_id, 20, content_type))
+            ''', (selected_course_id, title, qaqf_level, finn , current_user_id, 20, content_type))
             db.commit()
         return jsonify({
             'generated_content': finn,
@@ -1085,36 +1114,152 @@ def create_content(current_user_id):
         conn.close()
         return jsonify({'error': str(e)}), 500
 
+
+# === GET collections ===
+@app.route('/api/collection-study-materials', methods=['GET'])
+@token_required
+def get_collection_study_materials(current_user_id):
+    conn = get_db()
+    collections = conn.execute('''
+        SELECT collections.*, u.username as creator_name
+        FROM collections 
+        LEFT JOIN users u ON collections.created_by_user_id = u.id
+        WHERE collections.created_by_user_id = ?
+        ORDER BY collections.created_at DESC
+    ''', (current_user_id,)).fetchall()
+    conn.close()
+
+    result = [dict(row) for row in collections]
+    return jsonify(result), 200
+
+# === CREATE collection ===
+@app.route('/api/collection-study-materials', methods=['POST'])
+@token_required
+def createcollection_study_material(current_user_id):
+    title = request.form.get('title')
+    description = request.form.get('description')
+
+    if not title:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    conn = get_db()
+    try:
+        cursor = conn.execute('''
+            INSERT INTO collections 
+            (title, description, created_by_user_id) 
+            VALUES (?, ?, ?)
+        ''', (
+            title,
+            description,
+            current_user_id,
+        ))
+        collections_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'message': 'Collection created successfully',
+            'id': collections_id
+        }), 201
+
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/deletecollection-study-materials', methods=['POST'])
+@token_required
+def delete_collection_study_material(current_user_id):
+    collection_id = request.form.get('id')
+
+    if not collection_id:
+        return jsonify({'error': 'Missing collection ID'}), 400
+
+    conn = get_db()
+    try:
+        # Optional: Check if the collection exists and belongs to the current user
+        existing = conn.execute('''
+            SELECT id FROM collections 
+            WHERE id = ? AND created_by_user_id = ?
+        ''', (collection_id, current_user_id)).fetchone()
+
+        if not existing:
+            conn.close()
+            return jsonify({'error': 'Collection not found or not owned by user'}), 404
+
+        conn.execute('DELETE FROM collections WHERE id = ? AND created_by_user_id = ?', (
+            collection_id,
+            current_user_id
+        ))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Collection deleted successfully'}), 200
+
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+# === UPDATE collection ===
+@app.route('/api/updatecollection-study-materials', methods=['POST'])
+@token_required
+def updatecollection_study_material(current_user_id):
+    id = request.form.get('id')
+    title = request.form.get('title')
+    description = request.form.get('description')
+
+    if not title or not id:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    conn = get_db()
+    try:
+        conn.execute('''
+            UPDATE collections 
+            SET title = ?, description = ?
+            WHERE id = ? AND created_by_user_id = ?
+        ''', (
+            title,
+            description,
+            id,
+            current_user_id  # ensure user can only update their own
+        ))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'message': 'Collection updated successfully',
+            'id': id
+        }), 200
+
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
 # STUDY MATERIALS ROUTES
 @app.route('/api/study-materials', methods=['GET'])
 @token_required
 def get_study_materials(current_user_id):
     conn = get_db()
     materials = conn.execute('''
-        SELECT sm.*, u.username as creator_name
+        SELECT sm.*, u.username as creator_name , c.title as collection_title , c.id as collection_id
         FROM study_materials sm
         LEFT JOIN users u ON sm.created_by_user_id = u.id
+        left join collections c on sm.collectionid = c.id
+        WHERE sm.created_by_user_id = ?
         ORDER BY sm.created_at DESC
     ''').fetchall()
     conn.close()
-    
     result = []
     for material in materials:
         material_dict = dict(material)
-        try:
-            material_dict['characteristics'] = json.loads(material_dict['characteristics']) if material_dict['characteristics'] else []
-            material_dict['tags'] = json.loads(material_dict['tags']) if material_dict['tags'] else []
-        except:
-            material_dict['characteristics'] = []
-            material_dict['tags'] = []
         result.append(material_dict)
-    
     return jsonify(result)
 
 @app.route('/api/study-materials', methods=['POST'])
 @token_required
 def create_study_material(current_user_id):
     title = request.form.get('title')
+    collectionid = request.form.get('collectionid')
     description = request.form.get('description')
     material_type = request.form.get('type')
     qaqf_level = request.form.get('qaqf_level')
@@ -1154,8 +1299,8 @@ def create_study_material(current_user_id):
     try:
         cursor = conn.execute('''
             INSERT INTO study_materials 
-            (title, description, type, qaqf_level, created_by_user_id, content, file_url, file_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (title, description, type, qaqf_level, created_by_user_id, content, file_url, file_name ,collectionid)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ? , ?)
         ''', (
             title,
             description,
@@ -1164,9 +1309,9 @@ def create_study_material(current_user_id):
             current_user_id,
             content,
             file_url,
-            file_name
+            file_name,
+            int(collectionid if collectionid else 0)  # Ensure collectionid is an integer, default to 0 if not provided
         ))
-        
         material_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -1181,6 +1326,316 @@ def create_study_material(current_user_id):
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/update-study-materials', methods=['POST'])
+@token_required
+def update_study_material(current_user_id):
+    id = request.form.get('id')
+    title = request.form.get('title')
+    description = request.form.get('description')
+    material_type = request.form.get('type')
+    qaqf_level = request.form.get('qaqf_level')
+    content = request.form.get('content')
+    collectionid = request.form.get('collectionid')
+
+    if not all([title, description, material_type, qaqf_level]):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    # file = request.files.get('file')
+    # file_url = None
+    # file_name = None
+    # UPLOAD_FOLDER = 'uploads'
+    # ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'md'}
+    # if file and allowed_file(file.filename):
+    #     print(file.filename)
+    #     filename = secure_filename(file.filename)
+    #     file_path = os.path.join(UPLOAD_FOLDER, filename)
+    #     file.save(file_path)
+
+    #     ext = filename.rsplit('.', 1)[1].lower()
+    #     file_name = filename
+    #     file_url = file_path
+
+    #     try:
+    #         if ext == 'pdf':
+    #             content = extract_pdf_content(file_path)
+    #         elif ext == 'txt':
+    #             content = extract_txt_content(file_path)
+    #         elif ext in ['doc', 'docx']:
+    #             content = extract_doc_content(file_path)
+    #         elif ext == 'md':
+    #             content = extract_txt_content(file_path)  # treat markdown as plain text
+    #     except Exception as e:
+    #         return jsonify({'error': 'Failed to extract file content', 'details': str(e)}), 500
+
+    conn = get_db()
+    try:
+        cursor = conn.execute('''
+            UPDATE study_materials 
+            SET title = ?, description = ?, type = ?, qaqf_level = ?, content = ? , collectionid = ?
+            WHERE id = ?
+        ''', (
+            title,
+            description,
+            material_type,
+            int(qaqf_level),
+            content,
+            int(collectionid if collectionid else 0),
+            id  # You must provide the ID of the row to update
+        ))
+        conn.commit()
+        conn.close()
+        return jsonify({
+            'message': 'Study material updated  successfully',
+            'id': id
+        }), 201
+
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/delete-study-materials', methods=['POST'])
+@token_required
+def delete_study_material(current_user_id):
+    material_id = request.form.get('id')
+
+    if not material_id:
+        return jsonify({'error': 'Missing study material ID'}), 400
+
+    conn = get_db()
+    try:
+        # Optional but important: Confirm material belongs to user
+        existing = conn.execute('''
+            SELECT id FROM study_materials 
+            WHERE id = ? AND created_by_user_id = ?
+        ''', (material_id, current_user_id)).fetchone()
+
+        if not existing:
+            conn.close()
+            return jsonify({'error': 'Study material not found or not owned by user'}), 404
+
+        conn.execute('DELETE FROM study_materials WHERE id = ? AND created_by_user_id = ?', (
+            material_id,
+            current_user_id
+        ))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Study material deleted successfully'}), 200
+
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/verification_lessons/<int:id>', methods=['PUT'])
+def verification_lesson(id):
+    data = request.json
+    db = get_db()
+
+    # Set the current system timestamp
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    try:
+        db.execute('''
+            UPDATE generatedlesson 
+            SET 
+                verification_status = ?,
+                verification_clarity = ?,
+                verification_completeness = ?,
+                verification_accuracy = ?,
+                verification_qaqf_alignment = ?,
+                verification_comments = ?,
+                verification_date = ?,
+                verification_british_standard = ?,
+                verification_by = ?
+            WHERE id = ?
+        ''', (
+            data.get('verification_status'),
+            data.get('verification_clarity'),
+            data.get('verification_completeness'),
+            data.get('verification_accuracy'),
+            data.get('verification_qaqf_alignment'),
+            data.get('verification_comments'),
+            current_time,  # <-- system timestamp here
+            data.get('verification_british_standard', 'no'),
+            data.get('verification_by'),
+            id
+        ))
+        db.commit()
+        return jsonify({'Saved changes successfully': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/autoverification_lessons', methods=['POST'])
+def autoverification_lesson():
+    data = request.json
+    print(data)
+    try:
+        # Build the prompt
+        prompt = f"""
+        You are an AI assistant that verifies educational content based on QAQF standards.
+
+        Your task is to evaluate the content and provide feedback on:
+        - Clarity
+        - Completeness
+        - Accuracy
+        - QAQF Alignment
+        - Whether it aligns with British standards
+        - Any other comments
+
+        Content:
+        \"\"\"{data.get('content')}\"\"\"
+
+        Return your evaluation strictly in the following JSON format:
+
+        {{
+            "verification_status": "approved" or "rejected",
+            "verification_clarity": 1 to 4,
+            "verification_completeness": 1 to 4,
+            "verification_accuracy": 1 to 4,
+            "verification_qaqf_alignment": 1 to 4,
+            "verification_british_standard": "yes" or "no",
+            "verification_comments": "Short, helpful comments about the content's strengths and weaknesses"
+        }}
+        """
+        print("Prompt:", prompt)
+        # Call Ollama
+        ollama_response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                'model': 'llama3.2',
+                'prompt': prompt,
+                'stream': False
+            },
+            timeout=600
+        )
+
+        if ollama_response.status_code != 200:
+            raise Exception("Ollama API returned an error.")
+        print("Ollama Response:", ollama_response.json())
+        raw_response = ollama_response.json().get('response', '').strip()
+        import re
+        match = re.search(r'{[\s\S]+}', raw_response)
+        if not match:
+            raise ValueError("AI response does not contain valid JSON")
+
+        response_json = json.loads(match.group())
+        print("AI Response:", response_json)
+        return jsonify({
+            'success': True,
+            'data': response_json
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+            
+@app.route('/api/automoderation_lessons', methods=['POST'])
+def automoderation_lessons():
+    data = request.json
+    print(data)
+    try:
+        # Build the prompt
+        prompt = f"""
+        You are an AI assistant that verifies educational content based on QAQF standards.
+
+        Your task is to evaluate the content and provide feedback on:
+        - Clarity
+        - Completeness
+        - Accuracy
+        - QAQF Alignment
+        - Whether it aligns with British standards
+        - Any other comments
+
+        Content:
+        \"\"\"{data.get('content')}\"\"\"
+
+        Return your evaluation strictly in the following JSON format:
+
+        {{
+            "moderation_status": "approved" or "rejected",
+            "moderation_clarity": 1 to 4,
+            "moderation_completeness": 1 to 4,
+            "moderation_accuracy": 1 to 4,
+            "moderation_qaqf_alignment": 1 to 4,
+            "moderation_british_standard": "yes" or "no",
+            "moderation_comments": "Short, helpful comments about the content's strengths and weaknesses"
+        }}
+        """
+        print(prompt)
+        # Call Ollama
+        ollama_response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                'model': 'llama3.2',
+                'prompt': prompt,
+                'stream': False
+            },
+            timeout=600
+        )
+
+        if ollama_response.status_code != 200:
+            raise Exception("Ollama API returned an error.")
+        print("Ollama Response:", ollama_response.json())
+        raw_response = ollama_response.json().get('response', '').strip()
+        import re
+        match = re.search(r'{[\s\S]+}', raw_response)
+        if not match:
+            raise ValueError("AI response does not contain valid JSON")
+
+        response_json = json.loads(match.group())
+        print("AI Response:", response_json)
+        return jsonify({
+            'success': True,
+            'data': response_json
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+
+@app.route('/api/moderation_lessons/<int:id>', methods=['PUT'])
+def moderation_lesson(id):
+    data = request.json
+    db = get_db()
+
+    # Use current timestamp for moderation_date
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    try:
+        db.execute('''
+            UPDATE generatedlesson 
+            SET 
+                moderation_status = ?,
+                moderation_clarity = ?,
+                moderation_completeness = ?,
+                moderation_accuracy = ?,
+                moderation_qaqf_alignment = ?,
+                moderation_comments = ?,
+                moderation_by = ?,
+                moderation_date = ?
+                moderation_british_standard = ?
+            WHERE id = ?
+        ''', (
+            data.get('moderation_status'),
+            data.get('moderation_clarity'),
+            data.get('moderation_completeness'),
+            data.get('moderation_accuracy'),
+            data.get('moderation_qaqf_alignment'),
+            data.get('moderation_comments'),
+            data.get('moderation_by'),
+            current_time,
+            data.get('moderation_british_standard', 'no'),
+            id
+        ))
+        db.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # ACTIVITIES ROUTES
 @app.route('/api/activities', methods=['GET'])

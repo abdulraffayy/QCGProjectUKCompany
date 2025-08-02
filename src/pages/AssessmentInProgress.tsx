@@ -6,9 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Separator } from '../components/ui/separator';
-import { Label } from '../components/ui/label';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogPortal, AlertDialogOverlay } from '../components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "../components/ui/dialog";
 import MarkingCriteria from '../components/assessment/MarkingCriteria';
 import MarkingCriteriaModule from '../components/assessment/MarkingCriteriaModule';
 import JoditEditor from 'jodit-react';
@@ -23,25 +21,13 @@ const AssessmentInProgressPage: React.FC = () => {
   const [courseAssessments, setCourseAssessments] = useState<any[]>([]);
   
   // State for assessment components
-  const [selectedContentType, setSelectedContentType] = useState<string>('assessment');
-  const [selectedSubject, setSelectedSubject] = useState<string>('General');
-  const [selectedQaqfLevel, setSelectedQaqfLevel] = useState<number>(3);
+  const [selectedContentType] = useState<string>('assessment');
+  const [selectedSubject] = useState<string>('General');
+  const [selectedQaqfLevel] = useState<number>(3);
 
-  // State for delete confirmation
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [assessmentToDelete, setAssessmentToDelete] = useState<any>(null);
 
-  // State for Add Lesson dialog
-  const [addLessonDialogOpen, setAddLessonDialogOpen] = useState(false);
-  const [newLessonForm, setNewLessonForm] = useState({
-    title: "",
-    type: "lecture",
-    duration: "",
-    qaqfLevel: 1,
-    description: "",
-    courseid: "",
-    userid: "",
-  });
+
+
 
   // State for Edit Lesson dialog
   const [editLessonDialogOpen, setEditLessonDialogOpen] = useState(false);
@@ -97,68 +83,11 @@ const AssessmentInProgressPage: React.FC = () => {
     }
   };
 
-  // Delete assessment function
-  const handleDeleteAssessment = async (assessmentId: number) => {
-    try {
-      const response = await fetch(`/api/lessons/${assessmentId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete assessment');
-      
-      // Refresh the assessments list
-      await fetchCourseAssessments();
-      
-      // Close the dialog
-      setDeleteDialogOpen(false);
-      setAssessmentToDelete(null);
-    } catch (error) {
-      console.error('Error deleting assessment:', error);
-      // You might want to show a toast notification here
-    }
-  };
 
-  // Open delete confirmation dialog
-  const openDeleteDialog = (assessment: any) => {
-    setAssessmentToDelete(assessment);
-    setDeleteDialogOpen(true);
-  };
 
-  // Handle adding new lesson
-  const handleAddLesson = async () => {
-    try {
-      const payload = {
-        ...newLessonForm,
-        courseid: selectedCourse,
-        userid: "1", // You might want to get this from user context
-      };
 
-      const response = await fetch('/api/lessons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
 
-      if (!response.ok) throw new Error('Failed to add lesson');
 
-      // Refresh the assessments list
-      await fetchCourseAssessments();
-      
-      // Reset form and close dialog
-      setNewLessonForm({
-        title: "",
-        type: "lecture",
-        duration: "",
-        qaqfLevel: 1,
-        description: "",
-        courseid: "",
-        userid: "",
-      });
-      setAddLessonDialogOpen(false);
-    } catch (error) {
-      console.error('Error adding lesson:', error);
-      // You might want to show a toast notification here
-    }
-  };
 
   // Handle editing lesson
   const handleEditLesson = async () => {
@@ -229,97 +158,15 @@ const AssessmentInProgressPage: React.FC = () => {
     fetchCourseAssessments();
   }, [selectedCourse]);
 
-  // Sample assessment data (fallback when no course is selected)
-  const sampleAssessments = [
-    {
-      id: 1,
-      title: "Healthcare Ethics Quiz",
-      type: "quiz",
-      qaqfLevel: 3,
-      progress: 80,
-      deadline: "June 10, 2025",
-      questionsCount: 15,
-      status: "in_review"
-    },
-    {
-      id: 2,
-      title: "Patient Care Assessment",
-      type: "practical",
-      qaqfLevel: 4,
-      progress: 65,
-      deadline: "June 15, 2025",
-      questionsCount: 8,
-      status: "draft"
-    },
-    {
-      id: 3,
-      title: "Research Methods Final Exam",
-      type: "exam",
-      qaqfLevel: 6,
-      progress: 45,
-      deadline: "June 20, 2025",
-      questionsCount: 30,
-      status: "draft"
-    },
-    {
-      id: 4,
-      title: "Clinical Case Analysis",
-      type: "assignment",
-      qaqfLevel: 5,
-      progress: 90,
-      deadline: "June 8, 2025",
-      questionsCount: 5,
-      status: "pending_approval"
-    },
-    {
-      id: 5,
-      title: "Basic Anatomy Quiz",
-      type: "quiz",
-      qaqfLevel: 1,
-      progress: 95,
-      deadline: "June 5, 2025",
-      questionsCount: 10,
-      status: "in_review"
-    },
-    {
-      id: 6,
-      title: "Advanced Surgical Techniques",
-      type: "practical",
-      qaqfLevel: 8,
-      progress: 30,
-      deadline: "June 25, 2025",
-      questionsCount: 12,
-      status: "draft"
-    },
-    {
-      id: 7,
-      title: "Medical Research Thesis",
-      type: "assignment",
-      qaqfLevel: 9,
-      progress: 20,
-      deadline: "July 1, 2025",
-      questionsCount: 1,
-      status: "draft"
-    },
-    {
-      id: 8,
-      title: "Intermediate Pharmacology",
-      type: "exam",
-      qaqfLevel: 2,
-      progress: 75,
-      deadline: "June 12, 2025",
-      questionsCount: 25,
-      status: "pending_approval"
-    }
-  ];
+
 
   // Filter and get assessments to display
   const getFilteredAssessments = () => {
-    let assessments = selectedCourse ? courseAssessments : sampleAssessments;
+    let assessments = courseAssessments;
 
     // Apply search filter
     if (searchTerm) {
-      assessments = assessments.filter(assessment => 
+      assessments = assessments.filter((assessment: any) => 
         assessment.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         assessment.type?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -327,12 +174,12 @@ const AssessmentInProgressPage: React.FC = () => {
 
     // Apply type filter
     if (filterType && filterType !== 'all') {
-      assessments = assessments.filter(assessment => assessment.type === filterType);
+      assessments = assessments.filter((assessment: any) => assessment.type === filterType);
     }
 
     // Apply level filter
     if (filterLevel && filterLevel !== 'all') {
-      assessments = assessments.filter(assessment => {
+      assessments = assessments.filter((assessment: any) => {
         const level = assessment.qaqfLevel || assessment.level;
         switch (filterLevel) {
           case '1-3':
@@ -463,6 +310,10 @@ const AssessmentInProgressPage: React.FC = () => {
                       <SelectItem value="exam">Exam</SelectItem>
                       <SelectItem value="assignment">Assignment</SelectItem>
                       <SelectItem value="practical">Practical</SelectItem>
+                      <SelectItem value="lecture">Lecture</SelectItem>
+                      <SelectItem value="seminar">Seminar</SelectItem>
+                      <SelectItem value="activity">Activity</SelectItem>
+                      <SelectItem value="case_study">Case Study</SelectItem>
                     </SelectContent>
                   </Select>
                   
@@ -499,7 +350,7 @@ const AssessmentInProgressPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {getFilteredAssessments().length > 0 ? (
-                  getFilteredAssessments().map((assessment) => (
+                  getFilteredAssessments().map((assessment: any) => (
                     <Card key={assessment.id} className="overflow-hidden">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">

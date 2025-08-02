@@ -28,7 +28,6 @@ interface MarkingCriteriaModuleProps {
 }
 
 const MarkingCriteriaModule: React.FC<MarkingCriteriaModuleProps> = ({
-  contentId,
   contentType,
   subject,
   qaqfLevel,
@@ -36,7 +35,6 @@ const MarkingCriteriaModule: React.FC<MarkingCriteriaModuleProps> = ({
   onClose
 }) => {
   const [activeTab, setActiveTab] = useState('rubrics');
-  const [selectedContent, setSelectedContent] = useState<any>(null);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
   const [marketingPlan, setMarketingPlan] = useState('');
   

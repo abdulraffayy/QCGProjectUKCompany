@@ -64,7 +64,7 @@ export default function Signup() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Account Signup successful");
 
       // Redirect to login page immediately
