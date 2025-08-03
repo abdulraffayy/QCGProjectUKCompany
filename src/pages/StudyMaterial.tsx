@@ -41,7 +41,7 @@ interface StudyMaterial {
 
 interface Collection {
   id: number;
-  title: string;
+  name: string;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -79,7 +79,7 @@ export default function StudyMaterial() {
 
   // Fetch study materials
   const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
-    queryKey: ['http://38.29.145.85:8000/api/study-materials'],
+    queryKey: ['study-materials'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
       console.log('Token used for /api/study-materials:', token);
@@ -93,12 +93,30 @@ export default function StudyMaterial() {
 
   // Fetch collections
   const { data: collections = [], isLoading: collectionsLoading } = useQuery<Collection[]>({
-    queryKey: ['http://38.29.145.85:8000/api/collection-study-materials'],
+    queryKey: ['collections'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      console.log('Token used for /api/collection-study-materials:', token);
+      const response = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error('Failed to fetch collections');
+      return response.json();
+    },
   });
 
   // Fetch material templates
   const { data: templates = [], isLoading: templatesLoading } = useQuery<MaterialTemplate[]>({
-    queryKey: ['/api/material-templates'],
+    queryKey: ['material-templates'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      console.log('Token used for /api/material-templates:', token);
+      const response = await fetch('http://38.29.145.85:8000/api/material-templates', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error('Failed to fetch material templates');
+      return response.json();
+    },
   });
 
   // Create material mutation
@@ -121,12 +139,12 @@ export default function StudyMaterial() {
       
       // Invalidate the correct query key that matches the GET request
       await queryClient.invalidateQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       
       // Also refetch the data immediately to update the UI
       await queryClient.refetchQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       
       toast.success("PDF successfully uploaded");
@@ -156,10 +174,10 @@ export default function StudyMaterial() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       await queryClient.refetchQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       toast.success('Material updated successfully');
       setShowEditDialog(false);
@@ -183,10 +201,10 @@ export default function StudyMaterial() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       await queryClient.refetchQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       toast.success('Material deleted successfully');
     },
@@ -226,7 +244,7 @@ export default function StudyMaterial() {
       return responseData;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
       toast.success('Collection created successfully');
       setShowCreateDialog(false);
     },
@@ -237,14 +255,20 @@ export default function StudyMaterial() {
 
   // Update collection mutation
   const updateCollectionMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; description: string } }) => {
       const token = localStorage.getItem('token');
       console.log('API Token:', token); // Console log the token
+      console.log('Update Collection Data:', { id, data }); // Debug the data being sent
       
       const formData = new FormData();
       formData.append('id', id.toString());
-      formData.append('title', data.title);
+      formData.append('name', data.name);
       formData.append('description', data.description || '');
+      
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       
       const response = await fetch('http://38.29.145.85:8000/api/updatecollection-study-materials', {
         method: 'POST',
@@ -261,7 +285,7 @@ export default function StudyMaterial() {
       return responseData;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['http://38.29.145.85:8000/api/collection-study-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
       toast.success('Collection updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
@@ -274,8 +298,10 @@ export default function StudyMaterial() {
   // Delete collection mutation
   const deleteCollectionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/collections/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`http://38.29.145.85:8000/api/deletecollection-study-materials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
       });
       if (!response.ok) throw new Error('Failed to delete collection');
     },
@@ -397,22 +423,9 @@ export default function StudyMaterial() {
     setShowDeleteConfirmDialog(true);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      if (activeTab === 'materials') {
-        deleteStudyMaterial(itemToDelete.id);
-      } else if (activeTab === 'collections') {
-        deleteCollectionMutation.mutate(itemToDelete.id);
-      } else if (activeTab === 'templates') {
-        deleteTemplateMutation.mutate(itemToDelete.id);
-      }
-      setShowDeleteConfirmDialog(false);
-      setItemToDelete(null);
-    }
-  };
 
   // New delete function using /api/delete-study-materials endpoint with try-catch
-  const deleteStudyMaterial = async (id: number) => {
+  const confirmDeletecollection = async (id: number) => {
     try {
       const token = localStorage.getItem('token');
       console.log('Deleting study material with ID:', id, 'Token:', token);
@@ -436,10 +449,10 @@ export default function StudyMaterial() {
 
       // Success - invalidate and refetch the study materials
       await queryClient.invalidateQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       await queryClient.refetchQueries({ 
-        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+        queryKey: ['study-materials'] 
       });
       
       toast.success('Study material deleted successfully');
@@ -540,6 +553,11 @@ export default function StudyMaterial() {
     formData.set('characteristics', JSON.stringify([])); // Assuming empty array for now
     formData.set('tags', JSON.stringify([])); // Assuming empty array for now
 
+    // Add collectionId to formData if it exists in selectedItem
+    if (selectedItem && selectedItem.collectionId) {
+      formData.set('collection_id', selectedItem.collectionId.toString());
+    }
+
     // Remove qaqfLevel form field name if it exists, as we use qaqf_level
     formData.delete('qaqfLevel');
     
@@ -547,7 +565,7 @@ export default function StudyMaterial() {
       formData.append('file', selectedFile);
     }
 
-    if (selectedItem) {
+    if (selectedItem && selectedItem.id) {
       // Add the ID to form data for update
       formData.set('id', selectedItem.id.toString());
       updateMaterialMutation.mutate({ id: selectedItem.id, formData });
@@ -561,15 +579,24 @@ export default function StudyMaterial() {
   const handleSubmitCollection = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const data = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-    };
+    const name = formData.get('name') as string;
+    const description = formData.get('description') as string;
     
     if (selectedItem) {
-      updateCollectionMutation.mutate({ id: selectedItem.id, data });
+      // For update, send name and description directly
+      updateCollectionMutation.mutate({ 
+        id: selectedItem.id, 
+        data: {
+          name: name,
+          description: description
+        }
+      });
     } else {
-      createCollectionMutation.mutate(data);
+      // For create, use name field as expected by create API
+      createCollectionMutation.mutate({
+        name: name,
+        description: description
+      });
     }
   };
 
@@ -720,15 +747,12 @@ export default function StudyMaterial() {
                       <div className="flex items-start justify-between">
                         <Folder className="h-8 w-8 text-purple-500 mb-2" />
                       </div>
-                      <CardTitle className="text-lg">{collection.title}</CardTitle>
+                      <CardTitle className="text-lg">{collection.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <p className="text-sm text-gray-600 line-clamp-2">{collection.description}</p>
+                      
                       <div className="text-xs text-gray-500">
-                        <div className="flex justify-between">
-                          <span>Created:</span>
-                          <span>{new Date(collection.createdAt).toLocaleDateString()}</span>
-                        </div>
+                       
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
@@ -875,6 +899,21 @@ export default function StudyMaterial() {
                 <Textarea name="content" placeholder="Text content if no file is uploaded" />
               </div>
               <div>
+                <Label htmlFor="collection">Material Collection</Label>
+                <Select name="collection" value={selectedItem?.collectionId?.toString() || ''} onValueChange={(value) => setSelectedItem((prev: any) => ({ ...prev, collectionId: parseInt(value) }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a collection (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="file">File (optional)</Label>
                 <Input 
                   type="file" 
@@ -992,8 +1031,8 @@ export default function StudyMaterial() {
           {selectedItem && (
             <div className="space-y-4">
               <div>
-                <Label className="font-semibold">Title</Label>
-                <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.title}</p>
+                <Label className="font-semibold">Name</Label>
+                <p className="mt-1 p-2 bg-gray-50 rounded">{activeTab === 'collections' ? selectedItem.name : selectedItem.title}</p>
               </div>
               
               <div>
@@ -1101,7 +1140,7 @@ export default function StudyMaterial() {
           {selectedItem && activeTab === 'materials' && (
             <form onSubmit={handleSubmitMaterial} className="space-y-4">
               <div>
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="name">Title</Label>
                 <Input name="title" defaultValue={selectedItem.title} required />
               </div>
               <div>
@@ -1145,6 +1184,21 @@ export default function StudyMaterial() {
                   rows={6}
                 />
               </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" defaultValue={selectedItem.type} required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="article">Article</SelectItem>
+                    <SelectItem value="worksheet">Worksheet</SelectItem>
+                    <SelectItem value="handout">Handout</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                    <SelectItem value="glossary">Glossary</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
                 {updateMaterialMutation.isPending ? 'Updating...' : 'Update Material'}
               </Button>
@@ -1154,8 +1208,8 @@ export default function StudyMaterial() {
           {selectedItem && activeTab === 'collections' && (
             <form onSubmit={handleSubmitCollection} className="space-y-4">
               <div>
-                <Label htmlFor="title">Title</Label>
-                <Input name="title" defaultValue={selectedItem.title} required />
+                <Label htmlFor="name">Name</Label>
+                <Input name="name" defaultValue={selectedItem.name} required />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -1228,15 +1282,20 @@ export default function StudyMaterial() {
       <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
+            <DialogTitle>Material collection</DialogTitle>
           </DialogHeader>
           <DialogDescription>
-            Are you sure you want to delete this Study Material item? 
-            {itemToDelete && <p className='text-red-600 '>Item ID: {itemToDelete.id}</p>}
+            Are you sure you want to delete this PDF that was opened?
           </DialogDescription>
-          <div className="mt-4 space-x-2 flex justify-end">
-            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
-            <Button variant="outline" onClick={() => setShowDeleteConfirmDialog(false)}>Cancel</Button>
-          </div>
+                     <div className="mt-4 space-x-2 flex justify-end">
+             <Button variant="destructive" onClick={() => {
+               if (itemToDelete && itemToDelete.id) {
+                 confirmDeletecollection(itemToDelete.id);
+                 setShowDeleteConfirmDialog(false);
+               }
+             }}>Yes</Button>
+             <Button variant="outline" onClick={() => setShowDeleteConfirmDialog(false)}>No</Button>
+           </div>
         </DialogContent>
       </Dialog>
     </div>

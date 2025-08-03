@@ -20,7 +20,43 @@ const VerificationPage: React.FC = () => {
   // Use only React state for statusCache (no localStorage)
   const [statusCache, setStatusCache] = useState<{ [lessonId: number]: string }>({});
   const [statusValue, setStatusValue] = useState('pending');
-  // Add these states at the top inside VerificationPage component
+  // Add scoring data cache for each lesson with localStorage persistence
+  const [scoringCache, setScoringCache] = useState<{ 
+    [lessonId: number]: {
+      clarity: number;
+      completeness: number;
+      accuracy: number;
+      alignment: number;
+      britishStandard: string;
+      comments: string;
+      completed: boolean;
+    }
+  }>(() => {
+    // Load from localStorage on component mount
+    try {
+      const cached = localStorage.getItem('verificationScoringCache');
+      return cached ? JSON.parse(cached) : {};
+    } catch (error) {
+      console.error('Error loading scoring cache from localStorage:', error);
+      return {};
+    }
+  });
+  
+  // Custom setter for scoringCache that also saves to localStorage
+  const updateScoringCache = (updater: (prev: any) => any) => {
+    setScoringCache(prev => {
+      const newCache = updater(prev);
+      // Save to localStorage
+      try {
+        localStorage.setItem('verificationScoringCache', JSON.stringify(newCache));
+      } catch (error) {
+        console.error('Error saving scoring cache to localStorage:', error);
+      }
+      return newCache;
+    });
+  };
+  
+  // Current lesson scoring states
   const [clarityScore, setClarityScore] = useState(0);
   const [completenessScore, setCompletenessScore] = useState(0);
   const [accuracyScore, setAccuracyScore] = useState(0);
@@ -30,7 +66,38 @@ const VerificationPage: React.FC = () => {
   const [verificationCompleted, setVerificationCompleted] = useState(false);
   const [verificationComments, setVerificationComments] = useState('');
 
+
   const getProgressPercent = (score: number) => (score / 4) * 100;
+
+  // Function to map API response data to UI state and cache it
+  const mapApiResponseToUI = (apiData: any) => {
+    if (!apiData || !selectedContent?.id) return;
+    
+    const newScoringData = {
+      clarity: apiData.verification_clarity !== undefined ? apiData.verification_clarity : clarityScore,
+      completeness: apiData.verification_completeness !== undefined ? apiData.verification_completeness : completenessScore,
+      accuracy: apiData.verification_accuracy !== undefined ? apiData.verification_accuracy : accuracyScore,
+      alignment: apiData.verification_qaqf_alignment !== undefined ? apiData.verification_qaqf_alignment : alignmentScore,
+      britishStandard: apiData.verification_british_standard !== undefined ? apiData.verification_british_standard : britishStandardValue,
+      comments: apiData.verification_comments !== undefined ? apiData.verification_comments : verificationComments,
+      completed: true
+    };
+    
+    // Update UI state
+    setClarityScore(newScoringData.clarity);
+    setCompletenessScore(newScoringData.completeness);
+    setAccuracyScore(newScoringData.accuracy);
+    setAlignmentScore(newScoringData.alignment);
+    setBritishStandardValue(newScoringData.britishStandard);
+    setVerificationComments(newScoringData.comments);
+    setVerificationCompleted(true);
+    
+    // Cache the scoring data for this lesson
+    updateScoringCache(prev => ({
+      ...prev,
+      [selectedContent.id]: newScoringData
+    }));
+  };
 
   // QAQF_LEVELS for lesson detail card
   const QAQF_LEVELS: { [key: number]: string } = {
@@ -68,14 +135,43 @@ const VerificationPage: React.FC = () => {
     }
   }, [selectedContent]);
 
-  // When a lesson is selected, set the dropdown to its cached status (or 'pending')
+  // When a lesson is selected, set the dropdown to its cached status and load cached scoring data
   React.useEffect(() => {
     if (selectedContent && selectedContent.id) {
       setStatusValue(statusCache[selectedContent.id] || 'pending');
+      
+      // Load cached scoring data for this lesson
+      const cachedScoring = scoringCache[selectedContent.id];
+      if (cachedScoring) {
+        setClarityScore(cachedScoring.clarity);
+        setCompletenessScore(cachedScoring.completeness);
+        setAccuracyScore(cachedScoring.accuracy);
+        setAlignmentScore(cachedScoring.alignment);
+        setBritishStandardValue(cachedScoring.britishStandard);
+        setVerificationComments(cachedScoring.comments);
+        setVerificationCompleted(cachedScoring.completed);
+      } else {
+        // Reset scoring data for new lesson
+        setClarityScore(0);
+        setCompletenessScore(0);
+        setAccuracyScore(0);
+        setAlignmentScore(0);
+        setBritishStandardValue('no');
+        setVerificationComments('');
+        setVerificationCompleted(false);
+      }
     } else {
       setStatusValue('pending');
+      // Reset scoring data
+      setClarityScore(0);
+      setCompletenessScore(0);
+      setAccuracyScore(0);
+      setAlignmentScore(0);
+      setBritishStandardValue('no');
+      setVerificationComments('');
+      setVerificationCompleted(false);
     }
-  }, [selectedContent, statusCache]);
+  }, [selectedContent, statusCache, scoringCache]);
 
   // When lessons are loaded for a course, set all their statuses to the backend value (or 'pending' if missing)
   React.useEffect(() => {
@@ -194,8 +290,8 @@ const VerificationPage: React.FC = () => {
         comments: verificationComments,
       };
 
-      const response = await fetch('/api/verification/save', {
-        method: 'POST',
+      const response = await fetch(`http://38.29.145.85:8000/api/verification_lessons/${selectedContent.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -227,6 +323,99 @@ const VerificationPage: React.FC = () => {
     }
   };
 
+  const runAutoVerificationForSelectedLesson = async () => {
+    if (!selectedContent || !selectedContent.description) {
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationCompleted(false);
+    setVerificationComments('');
+
+    try {
+      const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: selectedContent.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Auto-verification failed');
+      }
+
+      const result = await response.json();
+      
+      // Debug: Log the AI response
+      console.log('Auto-Verification AI Response:', result);
+      
+      // Check if the response has the expected structure
+      if (result.success && result.data) {
+        const data = result.data;
+        console.log('Auto-Verification Data:', data);
+        
+        // Map API response data to UI components using the helper function
+        mapApiResponseToUI(data);
+        
+        // Only set verification comments if it exists in the API response
+        if (data.verification_comments !== undefined) {
+          setVerificationComments(data.verification_comments);
+        } else {
+          setVerificationComments(''); // Clear any previous content
+        }
+      } else {
+        console.log('Unexpected API response structure:', result);
+        setVerificationComments('');
+      }
+      
+      // Calculate average score using the mapped values
+      const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
+      const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      
+      // Determine final status based on API response or scores
+      let finalStatus = 'pending';
+      
+      // First try to use the verification_status from API response
+      if (result.success && result.data && result.data.verification_status) {
+        finalStatus = result.data.verification_status;
+      } else {
+        // Fallback to calculating based on average score
+        if (averageScore >= 3.5) {
+          finalStatus = 'verified';
+        } else if (averageScore >= 2.5) {
+          finalStatus = 'pending';
+        } else {
+          finalStatus = 'unverified';
+        }
+      }
+
+      // Update status
+      setStatusValue(finalStatus);
+      if (selectedContent?.id) {
+        updateLessonStatus(selectedContent.id, finalStatus);
+      }
+
+      setVerificationCompleted(true);
+      setIsVerifying(false);
+
+      toast({
+        title: "Auto-Verification Complete",
+        description: `Content verification completed with average score: ${averageScore.toFixed(1)}/4`,
+      });
+
+    } catch (error) {
+      setIsVerifying(false);
+      toast({
+        title: "Auto-Verification Failed",
+        description: "Failed to complete auto-verification process.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const runAutoVerification = async () => {
     if (!selectedContent) {
       toast({
@@ -242,17 +431,15 @@ const VerificationPage: React.FC = () => {
     setVerificationComments('');
 
     try {
-      const response = await fetch('/api/verification/auto', {
+      const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lessonId: selectedContent.id,
-          title: selectedContent.title,
-          description: selectedContent.description,
-          type: selectedContent.type,
-          level: selectedContent.level || selectedContent.qaqfLevel || selectedContent.qaqf_level,
+         
+          content: selectedContent.description,
+         
         }),
       });
 
@@ -262,30 +449,49 @@ const VerificationPage: React.FC = () => {
 
       const result = await response.json();
       
-      // Set scores based on AI analysis
-      setClarityScore(result.scores?.clarity || 0);
-      setCompletenessScore(result.scores?.completeness || 0);
-      setAccuracyScore(result.scores?.accuracy || 0);
-      setAlignmentScore(result.scores?.alignment || 0);
+      // Debug: Log the AI response
+      console.log('Auto-Verification AI Response:', result);
       
-      // Set British standard compliance
-      setBritishStandardValue(result.britishStandardCompliant ? 'yes' : 'no');
+              // Check if the response has the expected structure
+        if (result.success && result.data) {
+          const data = result.data;
+          console.log('Auto-Verification Data:', data);
+          
+          // Map API response data to UI components using the helper function
+          mapApiResponseToUI(data);
+          
+          // Only set verification comments if it exists in the API response
+          // If not found, leave the textarea empty
+          if (data.verification_comments !== undefined) {
+            setVerificationComments(data.verification_comments);
+            } else {
+            setVerificationComments(''); // Clear any previous content
+          }
+        } else {
+          console.log('Unexpected API response structure:', result);
+          // Don't show any JSON in the comments field
+          setVerificationComments('');
+        }
       
-      // Set comments
-      setVerificationComments(result.feedback || 'Auto-verification completed.');
-      
-      // Calculate average score
-      const scores = [result.scores?.clarity || 0, result.scores?.completeness || 0, result.scores?.accuracy || 0, result.scores?.alignment || 0];
+      // Calculate average score using the mapped values
+      const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
       const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
       
-      // Determine final status based on scores
+      // Determine final status based on API response or scores
       let finalStatus = 'pending';
-      if (averageScore >= 3.5) {
-        finalStatus = 'verified';
-      } else if (averageScore >= 2.5) {
-        finalStatus = 'pending';
+      
+      // First try to use the verification_status from API response
+      if (result.success && result.data && result.data.verification_status) {
+        finalStatus = result.data.verification_status;
       } else {
-        finalStatus = 'unverified';
+        // Fallback to calculating based on average score
+        if (averageScore >= 3.5) {
+          finalStatus = 'verified';
+        } else if (averageScore >= 2.5) {
+          finalStatus = 'pending';
+        } else {
+          finalStatus = 'unverified';
+        }
       }
 
       // Update status
@@ -321,6 +527,15 @@ const VerificationPage: React.FC = () => {
     setVerificationCompleted(false);
     setVerificationComments('');
     setIsVerifying(false);
+    
+    // Clear cached scoring data for current lesson
+    if (selectedContent?.id) {
+      updateScoringCache(prev => {
+        const updated = { ...prev };
+        delete updated[selectedContent.id];
+        return updated;
+      });
+    }
   };
 
   const handleVerify = async () => {
@@ -345,7 +560,7 @@ const VerificationPage: React.FC = () => {
         body: JSON.stringify({
           lessonId: selectedContent.id,
           title: selectedContent.title,
-          description: selectedContent.description,
+          description: selectedContent.content,
           type: selectedContent.type,
           level: selectedContent.level || selectedContent.qaqfLevel || selectedContent.qaqf_level,
           scores: {
@@ -364,11 +579,38 @@ const VerificationPage: React.FC = () => {
 
       const result = await response.json();
       
-      // Set comments
-      setVerificationComments(result.feedback || 'Verification completed.');
+      // Debug: Log the AI response
+      console.log('AI Response:', result);
+      console.log('AI Scores:', result.scores);
+      console.log('British Standard Compliant:', result.britishStandardCompliant);
       
-      // Calculate average score
-      const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
+      // Set scores based on AI analysis (if available in response)
+      if (result.scores) {
+        console.log('Setting scores from AI response:', result.scores);
+        setClarityScore(result.scores.clarity || 0);
+        setCompletenessScore(result.scores.completeness || 0);
+        setAccuracyScore(result.scores.accuracy || 0);
+        setAlignmentScore(result.scores.alignment || 0);
+      } else {
+        console.log('No scores found in AI response');
+      }
+      
+      // Set British standard compliance (if available in response)
+      if (result.britishStandardCompliant !== undefined) {
+        console.log('Setting British Standard:', result.britishStandardCompliant ? 'yes' : 'no');
+        setBritishStandardValue(result.britishStandardCompliant ? 'yes' : 'no');
+      } else {
+        console.log('No British Standard compliance found in AI response');
+      }
+      
+      // Set comments with full AI response
+      const aiResponse = JSON.stringify(result, null, 2);
+      setVerificationComments(aiResponse);
+      
+      // Calculate average score using AI scores if available, otherwise use current scores
+      const scores = result.scores ? 
+        [result.scores.clarity || 0, result.scores.completeness || 0, result.scores.accuracy || 0, result.scores.alignment || 0] :
+        [clarityScore, completenessScore, accuracyScore, alignmentScore];
       const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
       
       // Determine final status based on scores
@@ -482,18 +724,23 @@ const VerificationPage: React.FC = () => {
                       >
                         <div className="flex justify-between items-center">
                           <h3 className={`font-medium ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-800'}`}>{lesson.title}</h3>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 ml-1"
-                            onClick={e => {
-                              e.stopPropagation();
-                              setSelectedContent(lesson);
-                            }}
-                            title="View details"
-                          >
-                            <span className="material-icons text-base">visibility</span>
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            {selectedContent?.id === lesson.id && isVerifying && (
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 ml-1"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setSelectedContent(lesson);
+                              }}
+                              title="View details"
+                            >
+                              <span className="material-icons text-base">visibility</span>
+                            </Button>
+                          </div>
                         </div>
                         <p className={`text-sm mt-1 ${selectedContent?.id === lesson.id ? 'text-primary-foreground' : 'text-neutral-500'}`}>{lesson.type ? lesson.type.replace('_', ' ') : ''}</p>
                         <div className="flex items-center mt-2">
@@ -515,7 +762,14 @@ const VerificationPage: React.FC = () => {
               <div className="mt-6">
                 <div className="bg-neutral-50 border rounded shadow p-4 animate-slideDown relative w-full">
                   <div className="flex flex-col items-start mb-4">
-                    <div className="text-lg font-semibold mb-2">{selectedContent.title}</div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="text-lg font-semibold">{selectedContent.title}</div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Auto-Verify {isVerifying ? "Running..." : verificationCompleted ? "Complete" : "Ready"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm mb-4">
                     <div><b>Type:</b> {selectedContent.type}</div>
@@ -559,14 +813,23 @@ const VerificationPage: React.FC = () => {
                         Reset
                       </Button>
                       <Button 
-                        variant="outline" 
-                        onClick={runAutoVerification}
-                        disabled={isVerifying || verificationCompleted}
+                        variant="default"
+                        onClick={() => {
+                          if (selectedContent && selectedContent.description) {
+                            runAutoVerificationForSelectedLesson();
+                          } else {
+                            toast({
+                              title: "No Content Selected",
+                              description: "Please select a lesson with content to auto-verify",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
                         size="sm"
                       >
-                        <span className="material-icons text-sm mr-1">auto_fix_high</span>
                         Auto-Verify
                       </Button>
+                     
                       <Button 
                         onClick={handleVerify}
                         disabled={isVerifying || verificationCompleted}
