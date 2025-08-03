@@ -313,6 +313,20 @@ const VerificationPage: React.FC = () => {
         [selectedContent.id]: statusValue
       }));
 
+      // Update scoring cache to persist the saved data
+      updateScoringCache(prev => ({
+        ...prev,
+        [selectedContent.id]: {
+          clarity: clarityScore,
+          completeness: completenessScore,
+          accuracy: accuracyScore,
+          alignment: alignmentScore,
+          britishStandard: britishStandardValue,
+          comments: verificationComments,
+          completed: true
+        }
+      }));
+
     } catch (error) {
       console.error('Error saving changes:', error);
       toast({
