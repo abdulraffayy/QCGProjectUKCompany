@@ -79,11 +79,11 @@ export default function StudyMaterial() {
 
   // Fetch study materials
   const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
-    queryKey: ['/api/study-materials'],
+    queryKey: ['http://38.29.145.85:8000/api/study-materials'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
       console.log('Token used for /api/study-materials:', token);
-      const response = await fetch('/api/study-materials', {
+      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
@@ -93,7 +93,7 @@ export default function StudyMaterial() {
 
   // Fetch collections
   const { data: collections = [], isLoading: collectionsLoading } = useQuery<Collection[]>({
-    queryKey: ['/api/collections'],
+    queryKey: ['http://38.29.145.85:8000/api/collection-study-materials'],
   });
 
   // Fetch material templates
@@ -106,7 +106,7 @@ export default function StudyMaterial() {
     mutationFn: async (formData: FormData) => {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('/api/study-materials', {
+      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -116,9 +116,19 @@ export default function StudyMaterial() {
       if (!response.ok) throw new Error('Failed to create material');
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Material created successfully:', data);
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      
+      // Invalidate the correct query key that matches the GET request
+      await queryClient.invalidateQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      
+      // Also refetch the data immediately to update the UI
+      await queryClient.refetchQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      
       toast.success("PDF successfully uploaded");
       setShowCreateDialog(false);
       setSelectedFile(null);
@@ -135,17 +145,22 @@ export default function StudyMaterial() {
   const updateMaterialMutation = useMutation({
     mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
       const token = localStorage.getItem('token');
-      console.log('Token used for update /api/study-materials:', token);
-      const response = await fetch(`/api/study-materials/${id}`, {
-        method: 'PATCH',
+      console.log('Token used for update /api/update-study-materials:', token);
+      const response = await fetch('http://38.29.145.85:8000/api/update-study-materials', {
+        method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         body: formData,
       });
       if (!response.ok) throw new Error('Failed to update material');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
       toast.success('Material updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
@@ -166,8 +181,13 @@ export default function StudyMaterial() {
       });
       if (!response.ok) throw new Error('Failed to delete material');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
       toast.success('Material deleted successfully');
     },
     onError: (error: any) => {
@@ -183,17 +203,27 @@ export default function StudyMaterial() {
 
   // Create collection mutation
   const createCollectionMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string }) => {
+    mutationFn: async (data: { name: string; description: string }) => {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/study-materials', {
+      console.log('API Token:', token); // Console log the token
+      
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('description', data.description || '');
+      
+      const response = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
         method: 'POST',
         headers: token
-          ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-          : { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+          ? { 'Authorization': `Bearer ${token}` }
+          : {},
+        body: formData,
       });
+      
+      const responseData = await response.json();
+      console.log('API Response:', responseData); // Console log the response
+      
       if (!response.ok) throw new Error('Failed to create collection');
-      return response.json();
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
@@ -208,16 +238,30 @@ export default function StudyMaterial() {
   // Update collection mutation
   const updateCollectionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string } }) => {
-      const response = await fetch(`/api/study-materials${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+      const token = localStorage.getItem('token');
+      console.log('API Token:', token); // Console log the token
+      
+      const formData = new FormData();
+      formData.append('id', id.toString());
+      formData.append('title', data.title);
+      formData.append('description', data.description || '');
+      
+      const response = await fetch('http://38.29.145.85:8000/api/updatecollection-study-materials', {
+        method: 'POST',
+        headers: token
+          ? { 'Authorization': `Bearer ${token}` }
+          : {},
+        body: formData,
       });
+      
+      const responseData = await response.json();
+      console.log('API Response:', responseData); // Console log the response
+      
       if (!response.ok) throw new Error('Failed to update collection');
-      return response.json();
+      return responseData;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['http://38.29.145.85:8000/api/collection-study-materials'] });
       toast.success('Collection updated successfully');
       setShowEditDialog(false);
       setSelectedItem(null);
@@ -356,7 +400,7 @@ export default function StudyMaterial() {
   const confirmDelete = () => {
     if (itemToDelete) {
       if (activeTab === 'materials') {
-        deleteMaterialMutation.mutate(itemToDelete.id);
+        deleteStudyMaterial(itemToDelete.id);
       } else if (activeTab === 'collections') {
         deleteCollectionMutation.mutate(itemToDelete.id);
       } else if (activeTab === 'templates') {
@@ -364,6 +408,59 @@ export default function StudyMaterial() {
       }
       setShowDeleteConfirmDialog(false);
       setItemToDelete(null);
+    }
+  };
+
+  // New delete function using /api/delete-study-materials endpoint with try-catch
+  const deleteStudyMaterial = async (id: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Deleting study material with ID:', id, 'Token:', token);
+      
+      // Create form data to match backend expectation
+      const formData = new FormData();
+      formData.append('id', id.toString());
+      
+      const response = await fetch('http://38.29.145.85:8000/api/delete-study-materials', {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          // Remove Content-Type header to let browser set it automatically for FormData
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Success - invalidate and refetch the study materials
+      await queryClient.invalidateQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['http://38.29.145.85:8000/api/study-materials'] 
+      });
+      
+      toast.success('Study material deleted successfully');
+      console.log('Study material deleted successfully');
+      
+    } catch (error) {
+      console.error('Error deleting study material:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('404')) {
+          toast.error('Study material not found or already deleted');
+        } else if (error.message.includes('401')) {
+          toast.error('Unauthorized - Please login again');
+        } else if (error.message.includes('403')) {
+          toast.error('Access denied - You do not have permission to delete this material');
+        } else {
+          toast.error(`Failed to delete study material: ${error.message}`);
+        }
+      } else {
+        toast.error('An unexpected error occurred while deleting the study material');
+      }
     }
   };
 
@@ -451,6 +548,8 @@ export default function StudyMaterial() {
     }
 
     if (selectedItem) {
+      // Add the ID to form data for update
+      formData.set('id', selectedItem.id.toString());
       updateMaterialMutation.mutate({ id: selectedItem.id, formData });
     } else {
       // For creation, pass the FormData directly to the mutation
@@ -463,7 +562,7 @@ export default function StudyMaterial() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const data = {
-      title: formData.get('title') as string,
+      name: formData.get('name') as string,
       description: formData.get('description') as string,
     };
     
@@ -788,6 +887,10 @@ export default function StudyMaterial() {
                   </p>
                 )}
               </div>
+              
+             
+             
+              
               <Button type="submit" className="w-full" disabled={isUploading}>
                 {isUploading ? (
                   <span className="flex items-center justify-center">
@@ -807,8 +910,8 @@ export default function StudyMaterial() {
           {createType === 'collection' && (
             <form onSubmit={handleSubmitCollection} className="space-y-4">
               <div>
-                <Label htmlFor="title">Collection Name</Label>
-                <Input name="title" required />
+                <Label htmlFor="name">Collection Name</Label>
+                <Input name="name" required />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -986,7 +1089,7 @@ export default function StudyMaterial() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {activeTab === 'materials' && 'Edit Study Material'}
@@ -1007,16 +1110,16 @@ export default function StudyMaterial() {
               </div>
               <div>
                 <Label htmlFor="type">Type</Label>
-                <Select name="type" defaultValue={selectedItem.type}>
+                <Select name="type" defaultValue={selectedItem.type} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="document">Document</SelectItem>
-                    <SelectItem value="presentation">Presentation</SelectItem>
+                    <SelectItem value="article">Article</SelectItem>
                     <SelectItem value="worksheet">Worksheet</SelectItem>
-                    <SelectItem value="reference">Reference Material</SelectItem>
-                    <SelectItem value="guide">Study Guide</SelectItem>
+                    <SelectItem value="handout">Handout</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                    <SelectItem value="glossary">Glossary</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1033,10 +1136,15 @@ export default function StudyMaterial() {
                   </SelectContent>
                 </Select>
               </div>
-              {/* <div>
-                <Label htmlFor="file">Replace File (optional)</Label>
-                <Input type="file" onChange={handleFileSelect} accept=".pdf,.doc,.docx,.txt" />
-              </div> */}
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea 
+                  name="content" 
+                  defaultValue={selectedItem?.content || ''} 
+                  placeholder="Enter content here..."
+                  rows={6}
+                />
+              </div>
               <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
                 {updateMaterialMutation.isPending ? 'Updating...' : 'Update Material'}
               </Button>

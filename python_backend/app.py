@@ -1328,7 +1328,7 @@ def create_study_material(current_user_id):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/update-study-materials', methods=['POST'])
+@app.route('/api/update-study-materials', methods=['PATCH'])
 @token_required
 def update_study_material(current_user_id):
     id = request.form.get('id')
@@ -1396,7 +1396,7 @@ def update_study_material(current_user_id):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/delete-study-materials', methods=['POST'])
+@app.route('/api/delete-study-materials', methods=['DELETE'])
 @token_required
 def delete_study_material(current_user_id):
     material_id = request.form.get('id')
@@ -1472,7 +1472,11 @@ def verification_lesson(id):
 @app.route('/api/autoverification_lessons', methods=['POST'])
 def autoverification_lesson():
     data = request.json
-    print(data)
+    print("Received data:", data)
+    
+    if not data or 'content' not in data:
+        return jsonify({'success': False, 'error': 'Content field is required'}), 400
+    
     try:
         # Build the prompt
         prompt = f"""

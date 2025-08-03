@@ -978,13 +978,13 @@ const LessonPlanPage: React.FC = () => {
         return;
       }
   
-      const generation_type = newModuleType || "quiz";
+            const generation_type = newModuleType || "quiz";
       const material = newModuleAiReference || "";
       const qaqf_level = String(newModuleQAQF || "1");
       const subject = newModuleTitle || "";
       const userquery = newModuleAiQuery || "";
-  
-      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
+
+      const response = await fetch('/api/ai/assessment-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

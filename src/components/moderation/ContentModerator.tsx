@@ -315,41 +315,18 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                     </div>
                     </div>
                 {/* Action Row: Button and Dropdowns */}
+                      
                 <div className="flex flex-wrap items-center justify-end gap-4 mt-8">
-                  <Button variant="outline">British Standard</Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleRequestChanges(selectedContent)}
-                    disabled={!feedback.trim()}
-                  >
-                    Request Changes
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    onClick={() => handleApprove(selectedContent)}
-                  >
-                    Approve
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => handleReject(selectedContent)}
-                    disabled={!rejectionReason.trim()}
-                  >
-                    Reject
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">QAQF Level</span>
-                    <Select>
-                      <SelectTrigger className="w-28">
-                        <SelectValue placeholder="1–3" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                        <SelectItem value="3">3</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="flex flex-start">
+                  <div className="div">
+                    <Button variant="outline">Save Changes</Button>
+                    
                   </div>
+                </div>
+                  <Button variant="outline">British Standard</Button>
+                  
+                  
+                 
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Status</span>
                     <Select
@@ -373,28 +350,8 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                         </div>
                   <div className="flex items-center gap-2">
                   </div>
-                  <div className="mt-4">
-                    <Label htmlFor="feedback">Feedback for Changes</Label>
-                    <textarea
-                      id="feedback"
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="Enter feedback for requested changes..."
-                      className="w-full mt-1 p-2 border rounded-md resize-none"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <Label htmlFor="rejection-reason">Rejection Reason</Label>
-                    <textarea
-                      id="rejection-reason"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Enter reason for rejection..."
-                      className="w-full mt-1 p-2 border rounded-md resize-none"
-                      rows={3}
-                    />
-                  </div>
+                 
+                  
                   <div className="mt-8">
                     <h3 className="font-bold text-xl mb-4">Scoring</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
