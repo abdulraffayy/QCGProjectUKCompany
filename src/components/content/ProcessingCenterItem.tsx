@@ -47,6 +47,7 @@ interface ProcessingCenterItemProps {
     qaqfLevel?: number;
     level?: number;
     qaqf_level?: number;
+    qaqfComplianceScore?: number;
     estimatedTime?: string;
     content?: string;
     metadata?: any;
@@ -202,8 +203,17 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const handleDeleteLesson = async () => {
     setDeleteLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+
       const res = await fetch(`/api/lessons/${item.id}`, {
         method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
       if (!res.ok) throw new Error("Failed to delete lesson");
       
@@ -229,9 +239,18 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const handleSaveChanges = async () => {
     setSaveLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('User token is missing!');
+        return;
+      }
+
       const res = await fetch(`/api/lessons/${item.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           title: editableData.title,
           type: editableData.type,
@@ -289,7 +308,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       const subject = editableData.title || "";
       const userquery = aiQuery || "";
       
-      const response = await fetch('/api/ai/assessment-content', {
+      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

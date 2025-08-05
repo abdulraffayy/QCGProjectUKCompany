@@ -119,10 +119,10 @@ const UnifiedContentGenerator: React.FC = () => {
   });
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
-    queryKey: ['/api/study-materials'],
+    queryKey: ['http://38.29.145.85:8000/api/study-materials'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/study-materials', {
+      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
@@ -168,63 +168,8 @@ const UnifiedContentGenerator: React.FC = () => {
     const saved = localStorage.getItem('generatedItems');
     if (saved) {
       setGeneratedItems(JSON.parse(saved));
-    } else {
-      // Add some sample data for testing
-      const sampleItems: GeneratedItem[] = [
-        {
-          id: '1',
-          type: 'content',
-          title: 'Sample Processing Content',
-          description: 'This is a sample content that is currently processing',
-          qaqfLevel: 1,
-          qaqfComplianceScore: 85,
-          content: 'Sample content for testing',
-          createdAt: new Date().toISOString(),
-          createdBy: 'User',
-          status: 'processing',
-          progress: 45,
-          estimatedTime: '2 minutes',
-        },
-        {
-          id: '2',
-          type: 'course',
-          title: 'Sample Completed Course',
-          description: 'This is a sample course that has been completed',
-          qaqfLevel: 2,
-          qaqfComplianceScore: 92,
-          content: 'Sample course content for testing',
-          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          createdBy: 'User',
-          status: 'completed',
-        },
-        {
-          id: '3',
-          type: 'content',
-          title: 'Sample Failed Content',
-          description: 'This is a sample content that failed to process',
-          qaqfLevel: 1,
-          qaqfComplianceScore: 0,
-          content: 'Sample failed content for testing',
-          createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          createdBy: 'User',
-          status: 'failed',
-        },
-        {
-          id: '4',
-          type: 'course',
-          title: 'Sample Pending Course',
-          description: 'This is a sample course that is pending',
-          qaqfLevel: 3,
-          qaqfComplianceScore: 78,
-          content: 'Sample pending course content for testing',
-          createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-          createdBy: 'User',
-          status: 'pending',
-        },
-      ];
-      setGeneratedItems(sampleItems);
-      localStorage.setItem('generatedItems', JSON.stringify(sampleItems));
     }
+    // No dummy data - start with empty array
   }, []);
 
   useEffect(() => {
@@ -401,7 +346,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
   const generationMutation = useMutation({
     mutationFn: async (data: UnifiedGenerationData) => {
-      const endpoint = data.generation_type === 'content' ? '/api/ai/generate-content' : '/api/ai/generate-content';
+      const endpoint = data.generation_type === 'content' ? 'http://38.29.145.85:8000/api/ai/generate-content' : 'http://38.29.145.85:8000/api/ai/generate-content';
       const token = localStorage.getItem('token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -441,23 +386,34 @@ const UnifiedContentGenerator: React.FC = () => {
       return response.json();
     },
     onSuccess: (data, variables) => {
+      console.log("API Response Data:", data);
+      
       const newItem: GeneratedItem = {
         id: Date.now().toString(),
         type: variables.generation_type,
         title: variables.title,
-        description: data.description || 'Generated content',
+        description: data.description || data.generated_content?.substring(0, 100) || 'Generated content',
         qaqfLevel: variables.qaqf_level || 1,
-        qaqfComplianceScore: data.qaqf_compliance_score || 85,
+        qaqfComplianceScore: data.qaqf_compliance_score || data.compliance_score || 85,
         content: typeof data === 'string'
           ? data
-          : (data.generated_content || data.content || JSON.stringify(data)),
+          : (data.generated_content || data.content || data.lesson_content || JSON.stringify(data)),
         createdAt: new Date().toISOString(),
         createdBy: 'User',
         status: 'completed',
+        metadata: {
+          ...data,
+          original_response: data
+        }
       };
+      
+      console.log("Created new item:", newItem);
       setGeneratedItems(prev => [newItem, ...prev]);
       setActiveTab('processing');
-      toast({ title: `${variables.generation_type === 'content' ? 'Content' : 'Course'} generated successfully!` });
+      toast({ 
+        title: `${variables.generation_type === 'content' ? 'Content' : 'Course'} generated successfully!`,
+        description: `Added to processing center for review.`
+      });
     },
     onError: (_, variables) => {
       toast({
@@ -1237,7 +1193,7 @@ const UnifiedContentGenerator: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className=''>
-              {generatedItems.length === 0 ? (
+              {generatedItems.length === 0 && courseLessons.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">No generated content to review yet</p>
@@ -1259,6 +1215,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           <SelectItem value="unverified">Unverified</SelectItem>
                           <SelectItem value="rejected">Rejected</SelectItem>
                           <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1272,6 +1229,7 @@ const UnifiedContentGenerator: React.FC = () => {
                           <SelectItem value="all">All Types</SelectItem>
                           <SelectItem value="content">Content</SelectItem>
                           <SelectItem value="course">Course</SelectItem>
+                          <SelectItem value="lesson">Lesson</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1306,84 +1264,143 @@ const UnifiedContentGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-
-
                   </div>
 
-                  {/* Content Items */}
-                  <div>
-                    {/* Only show course lessons when a course is selected */}
-                    {selectedCourse && courseLessons.length > 0 && courseLessons
-                      .filter(lesson => {
-                        // Apply status filter
-                        if (filterStatus !== 'all') {
-                          return lesson.status === filterStatus;
-                        }
-                        return true;
-                      })
-                      .map((lesson) => (
-                      <ProcessingCenterItem
-                        key={lesson.id}
-                        item={{
-                          id: lesson.id,
-                          title: lesson.title,
-                          type: lesson.type || '',
-                          status: lesson.status || 'pending',
-                          createdAt: lesson.createddate || '',
-                          createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
-                          description: lesson.description || '',
-                          qaqfLevel: lesson.level || undefined,
-                          progress: undefined,
-                          estimatedTime: undefined,
-                          content: JSON.stringify(lesson, null, 2), // for Content Preview
-                          metadata: lesson,
-                        }}
-                        onAction={async (action, itemId) => {
-                          if (action === 'deleted') {
-                            setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                          } else if (action === 'status_changed') {
-                            // Refresh the data or update the item status
-                            // For now, we'll just trigger a re-render
-                            setGeneratedItems(prev => [...prev]);
-                          } else if (action === 'updated') {
-                            // Refresh the lessons data when an item is updated
-                            await fetchLessons();
+                 
+                  {selectedCourse && generatedItems.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                        Recently Generated Content ({generatedItems.length})
+                      </h3>
+                      {generatedItems
+                        .filter(item => {
+                          // Apply status filter
+                          if (filterStatus !== 'all') {
+                            return item.status === filterStatus;
                           }
-                        }}
-                      />
-                    ))}
+                          // Apply type filter
+                          if (filterType !== 'all') {
+                            return item.type === filterType;
+                          }
+                          return true;
+                        })
+                        .map((item) => (
+                        <ProcessingCenterItem
+                          key={item.id}
+                          item={{
+                            id: item.id,
+                            title: item.title,
+                            type: item.type,
+                            status: (['verified', 'unverified', 'rejected', 'pending'].includes(item.status) ? item.status : 'pending') as 'verified' | 'unverified' | 'rejected' | 'pending',
+                            createdAt: item.createdAt,
+                            createdBy: item.createdBy,
+                            description: item.description,
+                            qaqfLevel: item.qaqfLevel,
+                            qaqfComplianceScore: item.qaqfComplianceScore,
+                            content: item.content,
+                            metadata: item.metadata,
+                          }}
+                          onAction={async (action, itemId) => {
+                            if (action === 'deleted') {
+                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                            } else if (action === 'status_changed') {
+                              // Refresh the data or update the item status
+                              setGeneratedItems(prev => [...prev]);
+                            } else if (action === 'updated') {
+                              // Refresh the data when an item is updated
+                              setGeneratedItems(prev => [...prev]);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-                    {/* Show message when no course is selected */}
-                    {!selectedCourse && (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Please select a course</p>
-                        <p className="text-sm">Select a course from the dropdown above to view its lessons.</p>
-                      </div>
-                    )}
+                  {/* Course Lessons Section */}
+                  {selectedCourse && courseLessons.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                        Course Lessons ({courseLessons.filter(lesson => 
+                          filterStatus === 'all' ? true : lesson.status === filterStatus
+                        ).length})
+                      </h3>
+                      {courseLessons
+                        .filter(lesson => {
+                          // Apply status filter
+                          if (filterStatus !== 'all') {
+                            return lesson.status === filterStatus;
+                          }
+                          // Apply type filter
+                          if (filterType !== 'all') {
+                            return lesson.type === filterType;
+                          }
+                          return true;
+                        })
+                        .map((lesson) => (
+                        <ProcessingCenterItem
+                          key={lesson.id}
+                          item={{
+                            id: lesson.id,
+                            title: lesson.title,
+                            type: lesson.type || 'lesson',
+                            status: lesson.status || 'pending',
+                            createdAt: lesson.createddate || '',
+                            createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
+                            description: lesson.description || '',
+                            qaqfLevel: lesson.level || undefined,
+                            progress: undefined,
+                            estimatedTime: undefined,
+                            content: JSON.stringify(lesson, null, 2), // for Content Preview
+                            metadata: lesson,
+                          }}
+                          onAction={async (action, itemId) => {
+                            if (action === 'deleted') {
+                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                            } else if (action === 'status_changed') {
+                              // Refresh the data or update the item status
+                              setGeneratedItems(prev => [...prev]);
+                            } else if (action === 'updated') {
+                              // Refresh the lessons data when an item is updated
+                              await fetchLessons();
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-                    {/* Show message when course is selected but no lessons found */}
-                    {selectedCourse && courseLessons.filter(lesson => 
-                      filterStatus === 'all' ? true : lesson.status === filterStatus
-                    ).length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">No lessons found</p>
-                        <p className="text-sm">
-                          {filterStatus !== 'all' 
-                            ? `No lessons with status "${filterStatus}" found for this course.` 
-                            : 'No lessons found for this course.'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {/* Show message when no course is selected */}
+                  {!selectedCourse && generatedItems.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">Please select a course</p>
+                      <p className="text-sm">Select a course from the dropdown above to view its lessons.</p>
+                    </div>
+                  )}
+
+                  {/* Show message when course is selected but no lessons found */}
+                  {selectedCourse && courseLessons.filter(lesson => 
+                    filterStatus === 'all' ? true : lesson.status === filterStatus
+                  ).length === 0 && generatedItems.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No lessons found</p>
+                      <p className="text-sm">
+                        {filterStatus !== 'all' 
+                          ? `No lessons with status "${filterStatus}" found for this course.` 
+                          : 'No lessons found for this course.'}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Summary Stats */}
-                  {getFilteredAndSortedItems().length > 0 && (
+                  {(getFilteredAndSortedItems().length > 0 || courseLessons.length > 0) && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">{getFilteredAndSortedItems().length}</p>
-                        <p className="text-sm text-gray-600">Items Shown</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {getFilteredAndSortedItems().length + courseLessons.length}
+                        </p>
+                        <p className="text-sm text-gray-600">Total Items</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-yellow-600">
@@ -1392,8 +1409,14 @@ const UnifiedContentGenerator: React.FC = () => {
                         <p className="text-sm text-gray-600">Processing</p>
                       </div>
                       <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">
+                          {getFilteredAndSortedItems().filter(i => i.status === 'completed').length}
+                        </p>
+                        <p className="text-sm text-gray-600">Completed</p>
+                      </div>
+                      <div className="text-center">
                         <p className="text-2xl font-bold text-gray-600">
-                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / getFilteredAndSortedItems().length)}%
+                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(getFilteredAndSortedItems().length, 1))}%
                         </p>
                         <p className="text-sm text-gray-600">Avg. Compliance</p>
                       </div>

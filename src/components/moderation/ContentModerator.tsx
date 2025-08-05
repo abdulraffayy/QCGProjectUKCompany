@@ -687,7 +687,11 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                         Save Changes
                       </Button>
 
-                      <Button 
+                     
+                    </div>
+                  
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                    <Button 
                         variant="default"
                         onClick={() => {
                           if (selectedContent && selectedContent.description) {
@@ -718,9 +722,6 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                           </>
                         )}
                       </Button>
-                    </div>
-                  
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">British Standard</span>
                         <Select

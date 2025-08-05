@@ -817,16 +817,12 @@ const VerificationPage: React.FC = () => {
                       >
                         Save Changes
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={resetVerification}
-                        disabled={isVerifying || !verificationCompleted}
-                        size="sm"
-                      >
-                        <span className="material-icons text-sm mr-1">refresh</span>
-                        Reset
-                      </Button>
-                      <Button 
+                     
+                    
+                    </div>
+                  
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                    <Button 
                         variant="default"
                         onClick={() => {
                           if (selectedContent && selectedContent.description) {
@@ -861,9 +857,6 @@ const VerificationPage: React.FC = () => {
                           </>
                         )}
                       </Button>
-                    </div>
-                  
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">British Standard</span>
                         <Select

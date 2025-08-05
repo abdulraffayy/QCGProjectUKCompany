@@ -1,4 +1,4 @@
-import { useState,} from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -69,7 +69,9 @@ export default function StudyMaterial() {
   const [createType, setCreateType] = useState<'material' | 'collection' | 'template'>('material');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [showDeleteCollectionDialog, setShowDeleteCollectionDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [collectionToDelete, setCollectionToDelete] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [pdfContent, setPdfContent] = useState<string>('');
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
@@ -96,14 +98,23 @@ export default function StudyMaterial() {
     queryKey: ['collections'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
+      console.log('=== Fetching collections ===');
       console.log('Token used for /api/collection-study-materials:', token);
       const response = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
+      console.log('Collections response status:', response.status);
       if (!response.ok) throw new Error('Failed to fetch collections');
-      return response.json();
+      const data = await response.json();
+      console.log('Collections data received:', data);
+      return data;
     },
   });
+
+  // Monitor collections data changes
+  useEffect(() => {
+    console.log('Collections data changed:', collections.length, 'items:', collections);
+  }, [collections]);
 
   // Fetch material templates
   const { data: templates = [], isLoading: templatesLoading } = useQuery<MaterialTemplate[]>({
@@ -419,8 +430,13 @@ export default function StudyMaterial() {
   };
 
   const handleDelete = (item: any) => {
-    setItemToDelete(item);
-    setShowDeleteConfirmDialog(true);
+    if (activeTab === 'collections') {
+      setCollectionToDelete(item);
+      setShowDeleteCollectionDialog(true);
+    } else {
+      setItemToDelete(item);
+      setShowDeleteConfirmDialog(true);
+    }
   };
 
 
@@ -473,6 +489,90 @@ export default function StudyMaterial() {
         }
       } else {
         toast.error('An unexpected error occurred while deleting the study material');
+      }
+    }
+  };
+
+  // New delete function for collections using /api/deletecollection-study-materials endpoint
+  const confirmDeleteCollection = async (id: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('=== Starting collection deletion ===');
+      console.log('Collection ID:', id);
+      console.log('Token available:', !!token);
+      
+      // Create form data to match backend expectation (similar to study material deletion)
+      const formData = new FormData();
+      formData.append('id', id.toString());
+      console.log('FormData created with id:', id.toString());
+      
+      const response = await fetch('http://38.29.145.85:8000/api/deletecollection-study-materials', {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          // Removed Content-Type header to let browser set it automatically for FormData
+        },
+        body: formData,
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      // Get response text first to see what we're actually getting
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      console.log('FormData sent:', Array.from(formData.entries())); // Added this logging
+
+      if (!response.ok) {
+        console.error('HTTP error response:', responseText);
+        throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);
+      }
+
+      // Try to parse response as JSON
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('Parsed response data:', responseData);
+      } catch (parseError) {
+        console.log('Response is not JSON, treating as plain text');
+        responseData = { message: responseText };
+      }
+
+      console.log('=== Query invalidation starting ===');
+      
+      // Success - invalidate and refetch the collections
+      await queryClient.invalidateQueries({ 
+        queryKey: ['collections'] 
+      });
+      console.log('Query invalidated successfully');
+      
+      await queryClient.refetchQueries({ 
+        queryKey: ['collections'] 
+      });
+      console.log('Query refetched successfully');
+      
+      toast.success('Collection deleted successfully');
+      console.log('=== Collection deletion completed successfully ===');
+      
+    } catch (error) {
+      console.error('=== Error in collection deletion ===');
+      console.error('Error details:', error);
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        
+        if (error.message.includes('404')) {
+          toast.error('Collection not found or already deleted');
+        } else if (error.message.includes('401')) {
+          toast.error('Unauthorized - Please login again');
+        } else if (error.message.includes('403')) {
+          toast.error('Access denied - You do not have permission to delete this collection');
+        } else {
+          toast.error(`Failed to delete collection: ${error.message}`);
+        }
+      } else {
+        console.error('Non-Error object:', error);
+        toast.error('An unexpected error occurred while deleting the collection');
       }
     }
   };
@@ -1184,21 +1284,7 @@ export default function StudyMaterial() {
                   rows={6}
                 />
               </div>
-              <div>
-                <Label htmlFor="type">Type</Label>
-                <Select name="type" defaultValue={selectedItem.type} required>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="article">Article</SelectItem>
-                    <SelectItem value="worksheet">Worksheet</SelectItem>
-                    <SelectItem value="handout">Handout</SelectItem>
-                    <SelectItem value="guide">Guide</SelectItem>
-                    <SelectItem value="glossary">Glossary</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+             
               <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
                 {updateMaterialMutation.isPending ? 'Updating...' : 'Update Material'}
               </Button>
@@ -1282,20 +1368,71 @@ export default function StudyMaterial() {
       <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Material collection</DialogTitle>
+            <DialogTitle>Delete Material</DialogTitle>
           </DialogHeader>
-          <DialogDescription>
-            Are you sure you want to delete this PDF that was opened?
+          <DialogDescription className="space-y-2">
+            <p>Are you sure you want to delete this item from the Material Library?</p>
+            {itemToDelete && (
+              <p className="text-sm text-muted-foreground">
+                ID: {itemToDelete.id}
+              </p>
+            )}
           </DialogDescription>
-                     <div className="mt-4 space-x-2 flex justify-end">
-             <Button variant="destructive" onClick={() => {
-               if (itemToDelete && itemToDelete.id) {
-                 confirmDeletecollection(itemToDelete.id);
-                 setShowDeleteConfirmDialog(false);
-               }
-             }}>Yes</Button>
-             <Button variant="outline" onClick={() => setShowDeleteConfirmDialog(false)}>No</Button>
-           </div>
+          <div className="mt-6 flex justify-center space-x-3">
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (itemToDelete && itemToDelete.id) {
+                  confirmDeletecollection(itemToDelete.id);
+                  setShowDeleteConfirmDialog(false);
+                }
+              }}
+            >
+              Yes
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirmDialog(false)}
+            >
+              No
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Collection Confirmation Dialog */}
+      <Dialog open={showDeleteCollectionDialog} onOpenChange={setShowDeleteCollectionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Collection</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="space-y-2">
+            <p>Are you sure you want to delete this collection?</p>
+            {collectionToDelete && (
+              <p className="text-sm text-muted-foreground">
+                ID: {collectionToDelete.id}
+              </p>
+            )}
+          </DialogDescription>
+          <div className="mt-6 flex justify-end space-x-3">
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (collectionToDelete && collectionToDelete.id) {
+                  confirmDeleteCollection(collectionToDelete.id);
+                  setShowDeleteCollectionDialog(false);
+                }
+              }}
+            >
+              Yes
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteCollectionDialog(false)}
+            >
+              No
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

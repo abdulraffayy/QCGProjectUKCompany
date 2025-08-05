@@ -930,7 +930,7 @@ const LessonPlanPage: React.FC = () => {
       const qaqf_level = String(rightSideEditForm.qaqfLevel || "1");
       const subject = rightSideEditForm.title || "";
       const userquery = rightSideAiQuery || "";
-      const response = await fetch('/api/ai/assessment-content', {
+      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
