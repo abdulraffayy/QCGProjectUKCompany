@@ -30,12 +30,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   return (
     <aside 
       className={cn(
-        "bg-white w-64 h-full shadow-md flex-shrink-0 overflow-y-auto z-50 transition-all duration-300 ease-in-out",
-        "fixed md:static top-0 left-0",
+        "bg-white w-64 h-screen shadow-md flex-shrink-0 z-50 transition-all duration-300 ease-in-out sticky top-0",
+        "sticky top-0 left-0 flex flex-col",
         open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
-      <div className="p-4 border-b border-neutral-200">
+      <div className="p-4 border-b border-neutral-200 bg-white flex-shrink-0">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
             Q
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         </div>
       </div>
       
-      <nav className="py-4">
+      <nav className="py-4 flex-1 overflow-y-auto">
         <div className="px-4 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           Dashboard
         </div>

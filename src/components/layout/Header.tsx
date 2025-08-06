@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { user, } = useAuth();
 
   return (
-    <header className="bg-white border-b border-neutral-200 flex items-center justify-between p-4 h-16">
+    <header className="bg-white border-b border-neutral-200 flex items-center justify-between p-4 h-16 sticky top-0">
       <div className="flex items-center md:hidden">
         <button 
           onClick={toggleSidebar} 

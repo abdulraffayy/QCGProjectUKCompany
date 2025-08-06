@@ -93,6 +93,20 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const isResizing = React.useRef(false);
   // Track permanently disabled buttons after first click
   const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
+  
+  // Force re-render when description changes
+  const [descriptionUpdateTrigger, setDescriptionUpdateTrigger] = useState(0);
+
+  // Helper function to convert large timestamp IDs to smaller integers
+  const getApiId = (id: string): number => {
+    // If ID is already a small number (1-3 digits), return it
+    if (/^\d{1,3}$/.test(id)) {
+      return parseInt(id);
+    }
+    // For larger IDs, take the last 3 digits and convert to integer
+    const last3Digits = id.slice(-3);
+    return parseInt(last3Digits);
+  };
 
   // Check localStorage on mount to see if AI Generate should be disabled for this item
   useEffect(() => {
@@ -102,6 +116,26 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       setPermanentlyDisabledButtons(prev => new Set([...prev, 'aiGenerate']));
     }
   }, [item.id]);
+
+  // Log description changes for debugging
+  useEffect(() => {
+    console.log(`Item ${item.id} description:`, item.description);
+    console.log(`Item ${item.id} metadata description:`, item.metadata?.description);
+  }, [item.description, item.metadata?.description, item.id]);
+
+  // Update editableData when item prop changes (e.g., after API update)
+  useEffect(() => {
+    setEditableData(prev => ({
+      ...prev,
+      title: item.title || prev.title,
+      type: item.type || prev.type,
+      description: item.description || (item.metadata && item.metadata.description) || prev.description,
+      qaqfLevel: item.qaqfLevel ? String(item.qaqfLevel) : prev.qaqfLevel,
+      userid: (item.metadata && item.metadata.userid) || prev.userid,
+      courseid: (item.metadata && item.metadata.courseid) || prev.courseid,
+      duration: (item.metadata && item.metadata.duration) || prev.duration,
+    }));
+  }, [item.title, item.type, item.description, item.qaqfLevel, item.metadata]);
 
   // Mouse event handlers for resizing (vertical only)
   useEffect(() => {
@@ -209,7 +243,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         return;
       }
 
-      const res = await fetch(`/api/lessons/${item.id}`, {
+      // Convert large ID to smaller integer for API
+      const apiId = getApiId(item.id);
+      console.log(`Original ID: ${item.id}, API ID: ${apiId}`);
+
+      const res = await fetch(`/api/lessons/${apiId}`, {
         method: "DELETE",
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -245,7 +283,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         return;
       }
 
-      const res = await fetch(`/api/lessons/${item.id}`, {
+      // Convert large ID to smaller integer for API
+      const apiId = getApiId(item.id);
+      console.log(`Original ID: ${item.id}, API ID: ${apiId}`);
+
+      const res = await fetch(`/api/lessons/${apiId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -262,23 +304,28 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         }),
       });
       if (!res.ok) throw new Error("Failed to update lesson");
-      // Update the local item data with the new values
-      Object.assign(item, {
+      
+      // Update the local editable data to reflect the saved changes
+      setEditableData(prev => ({
+        ...prev,
         title: editableData.title,
         type: editableData.type,
         description: editableData.description,
-        qaqfLevel: parseInt(editableData.qaqfLevel) || null,
-        metadata: {
-          ...item.metadata,
-          userid: editableData.userid,
-          courseid: editableData.courseid,
-          duration: editableData.duration
-        }
-      });
+        qaqfLevel: editableData.qaqfLevel,
+        userid: editableData.userid,
+        courseid: editableData.courseid,
+        duration: editableData.duration
+      }));
+      
+      // Force re-render to update the view section
+      setDescriptionUpdateTrigger(prev => prev + 1);
       setIsEditDialogOpen(false); // <-- Close dialog after update
+      
+      // Notify parent component about the update
       if (onAction) {
         onAction("updated", item.id);
       }
+      
       alert("Changes saved successfully!");
     } catch (err) {
       console.error("Failed to update lesson:", err);
@@ -331,14 +378,21 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       
       if (data.generated_content && data.generated_content.length > 0) {
         setEditableData(prev => ({ ...prev, description: data.generated_content}));
+        console.log('AI generated content updated editableData.description:', data.generated_content);
+        // Force re-render to update the view section
+        setDescriptionUpdateTrigger(prev => prev + 1);
         // Store in localStorage to remember the disabled state
         localStorage.setItem(`processingCenterAiGenerateDisabled_${item.id}`, 'true');
       } else {
         setEditableData(prev => ({ ...prev, description: "No content generated." }));
+        // Force re-render to update the view section
+        setDescriptionUpdateTrigger(prev => prev + 1);
       }
     } catch (error) {
       console.error('AI Generate error:', error);
       setEditableData(prev => ({ ...prev, description: "AI generation failed." }));
+      // Force re-render to update the view section
+      setDescriptionUpdateTrigger(prev => prev + 1);
     } finally {
       setAiGenerateLoading(false);
       // Button stays permanently disabled - no re-enabling
@@ -355,6 +409,12 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       // This useEffect ensures the deletion state is properly managed
     }
   }, [isDeleted]);
+
+  // Debug useEffect to track description changes
+  useEffect(() => {
+    console.log(`Item ${item.id} description:`, item.description);
+    console.log(`Item ${item.id} metadata description:`, item.metadata?.description);
+  }, [item.description, item.metadata?.description, item.id]);
 
   // Don't render if deleted
   if (isDeleted) {
@@ -519,12 +579,20 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       </div>
                       <div>
                         <b>Description:</b>
-                        <div 
-                          className="mt-2 p-3 bg-white border rounded-md"
-                          dangerouslySetInnerHTML={{ 
-                            __html: item.description || (item.metadata && item.metadata.description) || "" 
-                          }}
-                        />
+                        {(() => {
+                          // Use editableData.description if available (for AI-generated content), otherwise fall back to item.description
+                          const descriptionContent = editableData.description || item.description || (item.metadata && item.metadata.description) || "";
+                          console.log(`Rendering description for item ${item.id}:`, descriptionContent);
+                          return (
+                            <div 
+                              key={`description-${item.id}-${descriptionUpdateTrigger}`}
+                              className="mt-2 p-3 bg-white border rounded-md"
+                              dangerouslySetInnerHTML={{ 
+                                __html: descriptionContent
+                              }}
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -716,7 +784,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                           <Button 
                 variant="default" 
                 onClick={handleAiGenerate}
-                disabled={aiGenerateLoading}
+                disabled={aiGenerateLoading || permanentlyDisabledButtons.has('aiGenerate')}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {aiGenerateLoading ? (

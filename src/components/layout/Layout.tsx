@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAuthPage = location === '/login' || location === '/signup' || location === '/forgot-password';
   if (isAuthPage) {
     return (
-      <div className="bg-neutral-100 text-neutral-800 font-sans min-h-screen">
+      <div className="bg-neutral-100 text-neutral-800 font-sans">
         <main className="min-h-screen">
           {children}
         </main>
@@ -27,11 +27,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="bg-neutral-100 text-neutral-800 font-sans flex h-screen overflow-hidden">
+    <div className="bg-neutral-100 text-neutral-800 font-sans flex ">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col">
         <Header toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-y-auto p-6 bg-neutral-100">
+        <main className="flex-1  p-6 bg-neutral-100">
           {children}
         </main>
       </div>

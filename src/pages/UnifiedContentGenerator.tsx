@@ -87,6 +87,12 @@ interface GeneratedItem {
 }
 
 const UnifiedContentGenerator: React.FC = () => {
+  // Helper function to generate smaller IDs
+  const generateSmallId = (): string => {
+    // Generate a random 1-3 digit number (1-999)
+    return Math.floor(1 + Math.random() * 999).toString();
+  };
+
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('processing');
@@ -324,7 +330,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
   const handleSaveLessonPlan = (lessonPlanData: any) => {
     const lessonPlanItem: GeneratedItem = {
-      id: `lesson-${Date.now()}`,
+      id: `lesson-${generateSmallId()}`,
       type: 'content',
       title: `Lesson Plan: ${lessonPlanData.title}`,
       description: `${lessonPlanData.duration} lesson for ${lessonPlanData.subject}`,
@@ -389,7 +395,7 @@ const UnifiedContentGenerator: React.FC = () => {
       console.log("API Response Data:", data);
       
       const newItem: GeneratedItem = {
-        id: Date.now().toString(),
+        id: generateSmallId(),
         type: variables.generation_type,
         title: variables.title,
         description: data.description || data.generated_content?.substring(0, 100) || 'Generated content',
@@ -652,15 +658,16 @@ const UnifiedContentGenerator: React.FC = () => {
                         )}
                       />
                     </div>
-
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="module_code">Module Code (Optional)</Label>
                       <Input
                         id="module_code"
                         {...form.register('module_code')}
                         placeholder="DS-101"
+                        className="w-full"
                       />
                     </div>
+
                   </>
                 )}
 
@@ -1269,9 +1276,7 @@ const UnifiedContentGenerator: React.FC = () => {
                  
                   {selectedCourse && generatedItems.length > 0 && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                        Recently Generated Content ({generatedItems.length})
-                      </h3>
+                      
                       {generatedItems
                         .filter(item => {
                           // Apply status filter
@@ -1307,8 +1312,41 @@ const UnifiedContentGenerator: React.FC = () => {
                               // Refresh the data or update the item status
                               setGeneratedItems(prev => [...prev]);
                             } else if (action === 'updated') {
-                              // Refresh the data when an item is updated
-                              setGeneratedItems(prev => [...prev]);
+                              // Fetch the updated item data from the API
+                              try {
+                                const token = localStorage.getItem('token');
+                                if (token) {
+                                  // Convert large ID to smaller integer for API
+                                  const apiId = itemId.length > 3 ? parseInt(itemId.slice(-3)) : parseInt(itemId);
+                                  const response = await fetch(`/api/lessons/${apiId}`, {
+                                    headers: {
+                                      'Authorization': `Bearer ${token}`,
+                                    },
+                                  });
+                                  if (response.ok) {
+                                    const updatedItem = await response.json();
+                                    setGeneratedItems(prev => prev.map(item => 
+                                      item.id === itemId 
+                                        ? {
+                                            ...item,
+                                            title: updatedItem.title || item.title,
+                                            description: updatedItem.description || item.description,
+                                            type: updatedItem.type || item.type,
+                                            qaqfLevel: updatedItem.level || item.qaqfLevel,
+                                            metadata: {
+                                              ...item.metadata,
+                                              ...updatedItem
+                                            }
+                                          }
+                                        : item
+                                    ));
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Failed to fetch updated item:', error);
+                                // Fallback to just refreshing the list
+                                setGeneratedItems(prev => [...prev]);
+                              }
                             }
                           }}
                         />
@@ -1319,11 +1357,7 @@ const UnifiedContentGenerator: React.FC = () => {
                   {/* Course Lessons Section */}
                   {selectedCourse && courseLessons.length > 0 && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                        Course Lessons ({courseLessons.filter(lesson => 
-                          filterStatus === 'all' ? true : lesson.status === filterStatus
-                        ).length})
-                      </h3>
+                    
                       {courseLessons
                         .filter(lesson => {
                           // Apply status filter
