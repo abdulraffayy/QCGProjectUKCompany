@@ -1305,48 +1305,24 @@ const UnifiedContentGenerator: React.FC = () => {
                             content: item.content,
                             metadata: item.metadata,
                           }}
-                          onAction={async (action, itemId) => {
+                          onAction={async (action, itemId, newDescription) => {
                             if (action === 'deleted') {
                               setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
                             } else if (action === 'status_changed') {
-                              // Refresh the data or update the item status
                               setGeneratedItems(prev => [...prev]);
                             } else if (action === 'updated') {
-                              // Fetch the updated item data from the API
-                              try {
-                                const token = localStorage.getItem('token');
-                                if (token) {
-                                  // Convert large ID to smaller integer for API
-                                  const apiId = itemId.length > 3 ? parseInt(itemId.slice(-3)) : parseInt(itemId);
-                                  const response = await fetch(`/api/lessons/${apiId}`, {
-                                    headers: {
-                                      'Authorization': `Bearer ${token}`,
-                                    },
-                                  });
-                                  if (response.ok) {
-                                    const updatedItem = await response.json();
-                                    setGeneratedItems(prev => prev.map(item => 
-                                      item.id === itemId 
-                                        ? {
-                                            ...item,
-                                            title: updatedItem.title || item.title,
-                                            description: updatedItem.description || item.description,
-                                            type: updatedItem.type || item.type,
-                                            qaqfLevel: updatedItem.level || item.qaqfLevel,
-                                            metadata: {
-                                              ...item.metadata,
-                                              ...updatedItem
-                                            }
-                                          }
-                                        : item
-                                    ));
-                                  }
-                                }
-                              } catch (error) {
-                                console.error('Failed to fetch updated item:', error);
-                                // Fallback to just refreshing the list
-                                setGeneratedItems(prev => [...prev]);
+                              setGeneratedItems(prev => prev.map(item =>
+                                item.id === itemId
+                                  ? { ...item, description: newDescription }
+                                  : item
+                              ));
+                              if (selectedCourse) {
+                                fetchLessons();
                               }
+                              toast({
+                                title: "Content updated successfully!",
+                                description: "Your changes have been saved."
+                              });
                             }
                           }}
                         />
@@ -1380,7 +1356,7 @@ const UnifiedContentGenerator: React.FC = () => {
                             status: lesson.status || 'pending',
                             createdAt: lesson.createddate || '',
                             createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
-                            description: lesson.description || '',
+                            description: lesson.description || lesson.content || (lesson.metadata && lesson.metadata.description) || '',
                             qaqfLevel: lesson.level || undefined,
                             progress: undefined,
                             estimatedTime: undefined,

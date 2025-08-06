@@ -54,7 +54,7 @@ interface ProcessingCenterItemProps {
     verificationStatus?: "verified" | "unverified" | "rejected" | "pending"; // Add verification status
   };
   lessons?: any[];
-  onAction?: (action: string, itemId: string) => void;
+  onAction?: (action: string, itemId: string, newDescription?: string) => void;
 }
 
 const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
@@ -91,8 +91,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [cardHeight, setCardHeight] = useState<number | undefined>(undefined);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const isResizing = React.useRef(false);
-  // Track permanently disabled buttons after first click
-  const [permanentlyDisabledButtons, setPermanentlyDisabledButtons] = useState<Set<string>>(new Set());
+
   
   // Force re-render when description changes
   const [descriptionUpdateTrigger, setDescriptionUpdateTrigger] = useState(0);
@@ -105,15 +104,19 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
     // For larger IDs, take the last 3 digits and convert to integer
     const last3Digits = id.slice(-3);
-    return parseInt(last3Digits);
+    const apiId = parseInt(last3Digits);
+    console.log(`ID conversion: ${id} -> ${apiId}`);
+    return apiId;
   };
 
-  // Check localStorage on mount to see if AI Generate should be disabled for this item
+  // Restore AI-generated content from localStorage if available
   useEffect(() => {
-    const isDisabled = localStorage.getItem(`processingCenterAiGenerateDisabled_${item.id}`) === 'true';
-    console.log(`Item ${item.id} disabled state:`, isDisabled);
-    if (isDisabled) {
-      setPermanentlyDisabledButtons(prev => new Set([...prev, 'aiGenerate']));
+    const savedContent = localStorage.getItem(`processingCenterContent_${item.id}`);
+    if (savedContent) {
+      setEditableData(prev => ({
+        ...prev,
+        description: savedContent
+      }));
     }
   }, [item.id]);
 
@@ -317,14 +320,20 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         duration: editableData.duration
       }));
       
+      // Also update the item prop to reflect changes immediately
+      // This ensures the preview shows updated data
+      if (onAction) {
+        onAction("updated", item.id, editableData.description);
+      }
+      
       // Force re-render to update the view section
       setDescriptionUpdateTrigger(prev => prev + 1);
       setIsEditDialogOpen(false); // <-- Close dialog after update
       
-      // Notify parent component about the update
-      if (onAction) {
-        onAction("updated", item.id);
-      }
+      // Clear localStorage content since it's now saved to database
+      localStorage.removeItem(`processingCenterContent_${item.id}`);
+      
+
       
       alert("Changes saved successfully!");
     } catch (err) {
@@ -338,8 +347,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   
 
   const handleAiGenerate = async () => {
-    // Permanently disable this button after first click
-    setPermanentlyDisabledButtons(prev => new Set([...prev, 'aiGenerate']));
     setAiGenerateLoading(true);
     
     try {
@@ -381,8 +388,8 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         console.log('AI generated content updated editableData.description:', data.generated_content);
         // Force re-render to update the view section
         setDescriptionUpdateTrigger(prev => prev + 1);
-        // Store in localStorage to remember the disabled state
-        localStorage.setItem(`processingCenterAiGenerateDisabled_${item.id}`, 'true');
+        // Store in localStorage to remember the content
+        localStorage.setItem(`processingCenterContent_${item.id}`, data.generated_content);
       } else {
         setEditableData(prev => ({ ...prev, description: "No content generated." }));
         // Force re-render to update the view section
@@ -580,8 +587,8 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       <div>
                         <b>Description:</b>
                         {(() => {
-                          // Use editableData.description if available (for AI-generated content), otherwise fall back to item.description
-                          const descriptionContent = editableData.description || item.description || (item.metadata && item.metadata.description) || "";
+                          // Always use item.description for preview
+                          const descriptionContent = item.description || (item.metadata && item.metadata.description) || "";
                           console.log(`Rendering description for item ${item.id}:`, descriptionContent);
                           return (
                             <div 
@@ -784,7 +791,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                           <Button 
                 variant="default" 
                 onClick={handleAiGenerate}
-                disabled={aiGenerateLoading || permanentlyDisabledButtons.has('aiGenerate')}
+                disabled={aiGenerateLoading}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {aiGenerateLoading ? (
