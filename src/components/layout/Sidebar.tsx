@@ -166,6 +166,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         )}
 
 
+<Link href="/rafay" className={navItemClass("/rafay")}>
+              <span className="material-icons mr-3 text-inherit">rafay</span>
+              Rafay
+            </Link>
+
       </nav>
     </aside>
   );

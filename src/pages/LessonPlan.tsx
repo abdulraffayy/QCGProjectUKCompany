@@ -34,9 +34,29 @@ import {
 import JoditEditor from 'jodit-react';
 // import { Skeleton } from '../components/ui/skeleton';
 
+// Import Rafay component
+import RafayComponent from './Rafay';
 
+// Wrapper component for Rafay to use in dialog
+const RafayWrapper: React.FC<{ onContentGenerated: (content: string) => void }> = ({ onContentGenerated }) => {
+  const [generatedContent, setGeneratedContent] = useState<string>("");
 
+  // Function to extract content from Rafay component
+  const handleContentExtraction = (content: string) => {
+    setGeneratedContent(content);
+    onContentGenerated(content);
+  };
 
+  return (
+    <div className="max-h-[500px] overflow-y-auto">
+      <RafayComponent 
+        onContentGenerated={handleContentExtraction}
+        compact={true}
+      />
+     
+    </div>
+  );
+};
 
 const QAQF_LEVELS: { [key: number]: string } = {
   1: 'Entry',
@@ -963,6 +983,7 @@ const LessonPlanPage: React.FC = () => {
   // Add state for AI query and reference for Add Lesson dialog
   const [newModuleAiQuery, setNewModuleAiQuery] = useState("");
   const [newModuleAiReference, setNewModuleAiReference] = useState("");
+  const [rafayKey, setRafayKey] = useState(0); // For forcing re-render of Rafay component
   
 
   // Add AI Generate handler for Add Lesson dialog
@@ -1638,13 +1659,9 @@ const LessonPlanPage: React.FC = () => {
             />
             
             <div className="overflow-auto" style={{ maxHeight: 400 }}>
-              <JoditEditor
-                ref={editor}
-                value={newModuleDescription}
-                config={{ readonly: false, height: 350, width: '100%' }}
-                tabIndex={1}
-                onBlur={newContent => setNewModuleDescription(newContent)}
-                onChange={() => { }}
+              <RafayWrapper 
+                key={rafayKey}
+                onContentGenerated={(content) => setNewModuleDescription(content)}
               />
             </div>
           </div>
@@ -1662,6 +1679,7 @@ const LessonPlanPage: React.FC = () => {
                 'AI Generate'
               )}
             </Button>
+           
             <Button variant="outline" onClick={() => handleAddModule({
               title: newModuleTitle,
               type: newModuleType,

@@ -1773,6 +1773,29 @@ This {assessment_type} assesses your understanding of {subject} concepts at QAQF
     except Exception as e:
         return jsonify({'error': f'Assessment generation failed: {str(e)}'}), 500
 
+@app.route('/api/ai/test', methods=['GET'])
+def test_ai_assessment():
+    data = {
+    "content_type": "storytelling lecture",
+    "generated_content": "{\n  \"title\": \"The Animal Race\",\n  \"module_code\": \"GEN101\",\n  \"qaqf_level\": \"Pre-Primary\",\n  \"content_type\": \"storytelling lecture\",\n  \"subject\": \"General Education\",\n  \"target_audience\": \"Kindergarten students\",\n  \"learning_objectives\": \"Engage students with a fun and simple story about animals racing, while teaching basic moral values like patience, fairness, and teamwork.\",\n  \"assessment_methods\": \"Oral Q\\&A, drawing favorite animal from the story, group retelling\",\n  \"extra_sections\": \"\n- Additional Instructions: Use simple language suitable for 4–6 year olds. Make it engaging and fun with animal characters. End with a simple moral lesson.\n- Story Structure: Keep the narrative brief, using vivid descriptions to help students visualize the action.\",\n  \"source_content\": \"\",\n  \"sections\": [\n    {\n      \"heading\": \"Section Heading 1\",\n      \"content\": \"Once upon a time, in a forest filled with tall trees and winding streams, animals from different habitats gathered for their annual race. The fast and agile cheetah took the lead, followed closely by the speedy deer and the steady tortoise. But as they ran, each animal forgot about the rule – to work together as a team – and focused only on winning.\n- Key Concept: Focus on teamwork and collaboration.\",\n      \"key_points\": [\n        \"Encourage students to think about how different skills and strengths can be used together to achieve a common goal.\"\n      ],\n      \"practical_application\": \"In class, divide the students into teams and ask them to work together to complete a simple task, such as building a bridge with blocks or creating a collaborative drawing.\"\n    },\n    {\n      \"heading\": \"Section Heading 2\",\n      \"content\": \"As the animals crossed the finish line, they realized that they had all learned something valuable. The cheetah discovered that speed alone wasn't enough to win; teamwork made it possible. The deer understood that kindness and compassion went a long way in helping others succeed. And the tortoise found out that perseverance and determination were essential for overcoming obstacles.\n- Key Concept: Focus on individual strengths and weaknesses.\",\n      \"key_points\": [\n        \"Explain to students how everyone has unique abilities and qualities, and how embracing these differences can lead to greater success.\"\n      ],\n      \"practical_application\": \"In class, ask each student to draw a picture of their favorite animal and write a short paragraph about what makes that animal special.\"\n    }\n  ],\n  \"summary\": \"The animals learned an important lesson: that together, we are stronger. When we work as a team and appreciate our unique strengths, we can achieve great things and help one another grow. Remember, kindness, perseverance, and teamwork are essential for overcoming challenges and achieving success in life.\"",
+    "qaqf_level": "Pre-Primary",
+    "status": "success"
+}
+    return jsonify({
+        'message': 'AI assessment test successful',
+        'data': data
+    })
+
+
+@app.route("/api/askquery", methods=["POST"])
+def askquery():
+    data = request.get_json()
+    return jsonify({
+        "response": {
+    "response": "<p>Here's Quiz 3 for Animal Race:</p>\n<p><strong>Quiz 3: Animal Speed Showdown</strong></p>\n<p><strong>Instructions:</strong> Read each question carefully and choose the correct answer. Good luck!</p>\n<p><strong>Question 1:</strong> Which of the following animals is known for its incredible speed, reaching up to 70 mph (113 km/h)?</p>\n<p>A) Cheetah\nB) Lion\nC) Elephant\nD) Giraffe</p>\n<p><strong>Answer:</strong> A) Cheetah</p>\n<p><strong>Question 2:</strong> How fast can a cheetah run over short distances?</p>\n<p>A) Up to 40 mph (64 km/h)\nB) Up to 50 mph (80 km/h)\nC) Up to 60 mph (97 km/h)\nD) Up to 70 mph (113 km/h)</p>\n<p><strong>Answer:</strong> D) Up to 70 mph (113 km/h)</p>\n<p><strong>Question 3:</strong> Which of the following animals is a good swimmer and can swim at speeds of up to 25 miles per hour?</p>\n<p>A) Dolphin\nB) Seal\nC) Sea Lion\nD) Penguin</p>\n<p><strong>Answer:</strong> A) Dolphin</p>\n<p><strong>Question 4:</strong> How fast can a dolphin swim when chasing prey?</p>\n<p>A) Up to 5 mph (8 km/h)\nB) Up to 10 mph (16 km/h)\nC) Up to 20 mph (32 km/h)\nD) Up to 25 mph (40 km/h)</p>\n<p><strong>Answer:</strong> D) Up to 25 mph (40 km/h)</p>\n<p><strong>Question 5:</strong> Which of the following animals is a good runner and can run at speeds of up to 30 miles per hour?</p>\n<p>A) Pronghorn\nB) Thomson's Gazelle\nC) Springbok\nD) Impala</p>\n<p><strong>Answer:</strong> B) Thomson's Gazelle</p>\n<p>Let me know if you need anything else!</p>"
+}
+    })
+
 if __name__ == '__main__':
     init_complete_db()
     print("🚀 Starting QAQF Platform API Server...")

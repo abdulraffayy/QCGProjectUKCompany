@@ -98,7 +98,7 @@ const SettingsPage: React.FC = () => {
      
 
       if (variables.role === "admin" || variables.role === "verification") {
-        setLocation("/login")
+        setLocation("/dashboard")
       }
     },
     onError: (error: Error, variables) => {

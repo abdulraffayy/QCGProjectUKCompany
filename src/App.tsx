@@ -25,6 +25,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";
+import rafay from "./pages/Rafay";
 
 function AuthenticatedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -77,6 +78,7 @@ function AuthenticatedRoutes() {
           <Route path="/assessment-in-progress" component={AssessmentInProgress} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
+          <Route path="/rafay" component={rafay} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
