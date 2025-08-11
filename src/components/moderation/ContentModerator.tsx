@@ -27,13 +27,9 @@ interface ContentModeratorProps {
 
 const ContentModerator: React.FC<ContentModeratorProps> = ({
   contents = [],
-  onApprove,
-  onReject,
-  onRequestChanges
+ 
 }) => {
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
@@ -209,26 +205,6 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
     }
   };
 
-  const handleApprove = (content: Content) => {
-    if (onApprove) {
-      onApprove(content.id);
-    }
-  };
-
-  const handleReject = (content: Content) => {
-    if (onReject && rejectionReason.trim()) {
-      onReject(content.id, rejectionReason);
-      setRejectionReason('');
-    }
-  };
-
-  const handleRequestChanges = (content: Content) => {
-    if (onRequestChanges && feedback.trim()) {
-      onRequestChanges(content.id, feedback);
-      setFeedback('');
-    }
-  };
-
   const handleSaveChanges = async () => {
     try {
       if (!selectedContent?.id) {
@@ -285,25 +261,6 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
     }
   };
 
-  const resetVerification = () => {
-    setClarityScore(0);
-    setCompletenessScore(0);
-    setAccuracyScore(0);
-    setAlignmentScore(0);
-    setBritishStandardValue('no');
-    setVerificationCompleted(false);
-    setVerificationComments('');
-    setIsVerifying(false);
-    
-    // Clear cached verification data for current lesson
-    if (selectedContent?.id) {
-      updateVerificationCache(prev => {
-        const updated = { ...prev };
-        delete updated[selectedContent.id];
-        return updated;
-      });
-    }
-  };
 
   const runAutoVerification = async () => {
     if (!selectedContent) {

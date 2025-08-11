@@ -172,7 +172,7 @@ export default function StudyMaterial() {
 
   // Update material mutation
   const updateMaterialMutation = useMutation({
-    mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
+    mutationFn: async ({formData }: { id: number; formData: FormData }) => {
       const token = localStorage.getItem('token');
       console.log('Token used for update /api/update-study-materials:', token);
       const response = await fetch('http://38.29.145.85:8000/api/update-study-materials', {
@@ -196,37 +196,6 @@ export default function StudyMaterial() {
     },
     onError: () => {
       toast.error('Failed to update material');
-    },
-  });
-
-  // Delete material mutation
-  const deleteMaterialMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const token = localStorage.getItem('token');
-      console.log('Deleting material id:', id, 'Token:', token);
-      const response = await fetch(`/api/study-materials/${id}`, {
-        method: 'DELETE',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
-      });
-      if (!response.ok) throw new Error('Failed to delete material');
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ 
-        queryKey: ['study-materials'] 
-      });
-      await queryClient.refetchQueries({ 
-        queryKey: ['study-materials'] 
-      });
-      toast.success('Material deleted successfully');
-    },
-    onError: (error: any) => {
-      if (error instanceof Error && error.message === 'Failed to delete material') {
-        toast.error('Material not found or already deleted');
-      } else if (error?.response?.status === 404) {
-        toast.error('Material not found (404)');
-      } else {
-        toast.error('Failed to delete material');
-      }
     },
   });
 
@@ -307,29 +276,29 @@ export default function StudyMaterial() {
   });
 
   // Delete collection mutation
-  const deleteCollectionMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`http://38.29.145.85:8000/api/deletecollection-study-materials`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      if (!response.ok) throw new Error('Failed to delete collection');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
-      toast.success('Collection deleted successfully');
-    },
-    onError: (error: any) => {
-      if (error instanceof Error && error.message === 'Failed to delete collection') {
-        toast.error('Collection not found or already deleted');
-      } else if (error?.response?.status === 404) {
-        toast.error('Collection not found (404)');
-      } else {
-        toast.error('Failed to delete collection');
-      }
-    },
-  });
+  // const deleteCollectionMutation = useMutation({
+  //   mutationFn: async (id: number) => {
+  //     const response = await fetch(`http://38.29.145.85:8000/api/deletecollection-study-materials`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ id }),
+  //     });
+  //     if (!response.ok) throw new Error('Failed to delete collection');
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+  //     toast.success('Collection deleted successfully');
+  //   },
+  //   onError: (error: any) => {
+  //     if (error instanceof Error && error.message === 'Failed to delete collection') {
+  //       toast.error('Collection not found or already deleted');
+  //     } else if (error?.response?.status === 404) {
+  //       toast.error('Collection not found (404)');
+  //     } else {
+  //       toast.error('Failed to delete collection');
+  //     }
+  //   },
+  // });
 
   // Create template mutation
   const createTemplateMutation = useMutation({
@@ -375,27 +344,7 @@ export default function StudyMaterial() {
   });
 
   // Delete template mutation
-  const deleteTemplateMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/material-templates/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete template');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast.success('Template deleted successfully');
-    },
-    onError: (error: any) => {
-      if (error instanceof Error && error.message === 'Failed to delete template') {
-        toast.error('Template not found or already deleted');
-      } else if (error?.response?.status === 404) {
-        toast.error('Template not found (404)');
-      } else {
-        toast.error('Failed to delete template');
-      }
-    },
-  });
+ 
 
   // Use template mutation
   const useTemplateMutation = useMutation({

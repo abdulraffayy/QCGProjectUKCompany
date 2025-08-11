@@ -1,4 +1,4 @@
-// import drag drop function 
+
 
 import {
   DndContext,
@@ -32,43 +32,18 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import JoditEditor from 'jodit-react';
-// import { Skeleton } from '../components/ui/skeleton';
 
-// Import Rafay component
-import RafayComponent from './Rafay';
+// Import centralized types
+import { 
+  QAQF_LEVELS, 
+  MODULE_TYPE_OPTIONS,
+  ModuleType 
+} from '../types';
 
 // Wrapper component for Rafay to use in dialog
-const RafayWrapper: React.FC<{ onContentGenerated: (content: string) => void }> = ({ onContentGenerated }) => {
-  const [generatedContent, setGeneratedContent] = useState<string>("");
 
-  // Function to extract content from Rafay component
-  const handleContentExtraction = (content: string) => {
-    setGeneratedContent(content);
-    onContentGenerated(content);
-  };
 
-  return (
-    <div className="max-h-[500px] overflow-y-auto">
-      <RafayComponent 
-        onContentGenerated={handleContentExtraction}
-        compact={true}
-      />
-     
-    </div>
-  );
-};
-
-const QAQF_LEVELS: { [key: number]: string } = {
-  1: 'Entry',
-  2: 'Basic',
-  3: 'Foundation',
-  4: 'Intermediate',
-  5: 'Advanced',
-  6: 'Specialist',
-  7: 'Professional',
-  8: 'Expert',
-  9: 'Master',
-};
+// QAQF_LEVELS is now imported from centralized types
 
 export interface SimpleCourse {
   id: string;
@@ -84,14 +59,7 @@ export interface SimpleLesson {
 }
 
 const LessonPlanPage: React.FC = () => {
-  const editor = useRef(null);
-
-  const stripHtml = (html: string) => {
-    if (!html) return '';
-    return html.replace(/<[^>]*>/g, '').trim();
-  };
-
-
+ 
 
 
 
@@ -350,10 +318,18 @@ const LessonPlanPage: React.FC = () => {
   // Intra-week drag handlers - REMOVED since we only allow left-to-right dragging
 
   const handleAddModule = async (newModule: any) => {
-    // Prepare the module data with courseid and stripped description
+    // Use the current description from the form (which already contains combined content)
+    const finalDescription = newModuleDescription || newModule.description || "";
+    
+    // Debug: Log what we're saving
+    console.log("Adding module with description:", {
+      finalDescription: finalDescription
+    });
+    
+    // Prepare the module data with courseid and preserve HTML content
     const moduleWithCourseId = {
       ...newModule,
-      description: stripHtml(newModule.description), // Strip HTML tags
+      description: finalDescription, // Preserve HTML content instead of stripping it
       courseid: selectedCourse,
       level: newModule.qaqfLevel, // Send as 'level' to match backend field name
     };
@@ -378,20 +354,14 @@ const LessonPlanPage: React.FC = () => {
     }
     // Close the dialog and reset form
     setAddModuleDialogOpen(false);
-    setNewModuleTitle("");
-    setNewModuleType("lecture");
-    setNewModuleDuration("");
-    setNewModuleQAQF(1);
-    setNewModuleDescription("");
-    setNewModuleUserId("");
-    setNewModuleCourseId("");
+    resetAddModuleForm();
   };
 
   const handleEditModuleApi = async (id: number) => {
     const updatedModule = {
       title: editModuleDialogTitle,
       script: editModuleDialogScript,
-      description: stripHtml(editModuleDialogDescription), // Strip HTML tags
+      description: editModuleDialogDescription, // Preserve HTML content instead of stripping it
       courseid: editModuleDialogCourseId,
       userid: editModuleDialogUserId,
       type: editModuleDialogType,
@@ -595,11 +565,20 @@ const LessonPlanPage: React.FC = () => {
     setRightSideDeleteDialogOpen(true);
   };
 
+
+
   // Function to save right side module edit
   const handleSaveRightSideModuleEdit = async () => {
     if (!rightSideEditModule) return;
 
     try {
+      // Debug: Log what we're about to save
+      console.log("Saving module with description:", {
+        newModuleDescription: newModuleDescription,
+        rightSideEditFormDescription: rightSideEditForm.description,
+        finalDescription: newModuleDescription || rightSideEditForm.description
+      });
+
       // Build payload with all required fields, including description and level
       const payload = {
         title: rightSideEditForm.title,
@@ -607,7 +586,7 @@ const LessonPlanPage: React.FC = () => {
         duration: rightSideEditForm.duration,
         qaqfLevel: rightSideEditForm.qaqfLevel,
         level: rightSideEditForm.qaqfLevel, // Send qaqfLevel as level to match backend
-        description: stripHtml(rightSideEditForm.description), // Strip HTML tags
+        description: newModuleDescription || rightSideEditForm.description, // Preserve HTML formatting
         courseid: rightSideEditForm.courseid,
         userid: rightSideEditForm.userid,
         // script: rightSideEditForm.script, // Do NOT include script
@@ -737,8 +716,6 @@ const LessonPlanPage: React.FC = () => {
 
 
   // Add state for view module dialog
-
-
   const [selectedModuleForView, setSelectedModuleForView] = useState<any>(null);
 
 
@@ -825,8 +802,8 @@ const LessonPlanPage: React.FC = () => {
 
   useEffect(() => {
     if (editModuleDialogOpen && editModuleDialogDescription) {
-      // Remove HTML tags for textarea
-      setEditModuleDialogDescription(editModuleDialogDescription.replace(/<[^>]+>/g, ''));
+      // Preserve HTML content for rich text editor
+      // Don't strip HTML tags as we want to preserve formatting
     }
   }, [editModuleDialogOpen]);
 
@@ -967,7 +944,23 @@ const LessonPlanPage: React.FC = () => {
       if (!response.ok) throw new Error('Failed to generate content');
       const data = await response.json();
       if (data.generated_content && data.generated_content.length > 0) {
-        setRightSideEditForm(f => ({ ...f, description: data.generated_content}));
+        // Get existing description
+        const existingDescription = rightSideEditForm.description || "";
+        const newGeneratedContent = data.generated_content;
+        
+        // Append new content to existing content
+        const combinedDescription = existingDescription 
+          ? `${existingDescription}\n\n--- NEW AI GENERATED CONTENT ---\n\n${newGeneratedContent}`
+          : newGeneratedContent;
+        
+        // Debug: Log what we're combining
+        console.log("AI Generate - Appending content:", {
+          existingDescription: existingDescription,
+          newGeneratedContent: newGeneratedContent,
+          combinedDescription: combinedDescription
+        });
+        
+        setRightSideEditForm(f => ({ ...f, description: combinedDescription}));
       } else {
         setRightSideEditForm(f => ({ ...f, description: "No content generated." }));
       }
@@ -983,13 +976,30 @@ const LessonPlanPage: React.FC = () => {
   // Add state for AI query and reference for Add Lesson dialog
   const [newModuleAiQuery, setNewModuleAiQuery] = useState("");
   const [newModuleAiReference, setNewModuleAiReference] = useState("");
-  const [rafayKey, setRafayKey] = useState(0); // For forcing re-render of Rafay component
-  
+
+
+  // Reset form function for Add Lesson dialog
+  const resetAddModuleForm = () => {
+    setNewModuleTitle("");
+    setNewModuleType("lecture");
+    setNewModuleDuration("");
+    setNewModuleQAQF(1);
+    setNewModuleDescription("");
+    setNewModuleUserId("");
+    setNewModuleCourseId("");
+    setNewModuleAiQuery("");
+    setNewModuleAiReference("");
+  };
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (addModuleDialogOpen) {
+      resetAddModuleForm();
+    }
+  }, [addModuleDialogOpen]);
 
   // Add AI Generate handler for Add Lesson dialog
   const handleAddModuleAIGenerate = async () => {
-    // Permanently disable this button after first click
-    
     setIsAIGenerating(true);
   
     try {
@@ -999,7 +1009,7 @@ const LessonPlanPage: React.FC = () => {
         return;
       }
   
-            const generation_type = newModuleType || "quiz";
+      const generation_type = newModuleType || "quiz";
       const material = newModuleAiReference || "";
       const qaqf_level = String(newModuleQAQF || "1");
       const subject = newModuleTitle || "";
@@ -1023,16 +1033,38 @@ const LessonPlanPage: React.FC = () => {
       const data = await response.json();
   
       if (data.generated_content?.length > 0) {
-        setNewModuleDescription(data.generated_content);
+        // Get existing content
+        const existingContent = newModuleDescription || "";
+        
+        // Append new AI generated content to existing content
+        const combinedContent = existingContent 
+          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${data.generated_content}`
+          : data.generated_content;
+        
+        setNewModuleDescription(combinedContent);
       } else {
-        setNewModuleDescription("No content generated.");
+        // If no content generated, append a message to existing content
+        const existingContent = newModuleDescription || "";
+        const message = "No content generated.";
+        const combinedContent = existingContent 
+          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${message}`
+          : message;
+        
+        setNewModuleDescription(combinedContent);
       }
     } catch (error) {
       console.error("AI Generate error:", error);
-      setNewModuleDescription("AI generation failed.");
+      
+      // Append error message to existing content
+      const existingContent = newModuleDescription || "";
+      const errorMessage = "AI generation failed.";
+      const combinedContent = existingContent 
+        ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${errorMessage}`
+        : errorMessage;
+      
+      setNewModuleDescription(combinedContent);
     } finally {
       setIsAIGenerating(false);
-      // Button stays permanently disabled - no re-enabling
     }
   };
   
@@ -1196,7 +1228,7 @@ const LessonPlanPage: React.FC = () => {
                                 {(() => {
                                   const qaqfLevel = content.qaqfLevel || content.level || content.qaqf_level;
                                   if (qaqfLevel && QAQF_LEVELS[qaqfLevel]) {
-                                    return `QAQF ${qaqfLevel}: ${QAQF_LEVELS[qaqfLevel]}`;
+                                    return `QAQF ${qaqfLevel}`;
                                   } else {
                                     return `N/A (level: ${content.level}, qaqfLevel: ${content.qaqfLevel}, qaqf_level: ${content.qaqf_level})`;
                                   }
@@ -1207,7 +1239,11 @@ const LessonPlanPage: React.FC = () => {
                               <div>
                             <b>Description:</b>
                             <div 
-                              className="mt-2 p-3 bg-white border rounded-md"
+                              className="mt-2 p-3 bg-white border rounded-md prose prose-sm max-w-none"
+                              style={{
+                                lineHeight: '1.6',
+                                fontSize: '14px'
+                              }}
                               dangerouslySetInnerHTML={{ 
                                 __html: content.description || (content.metadata && content.metadata.description) || "" 
                               }}
@@ -1607,17 +1643,11 @@ const LessonPlanPage: React.FC = () => {
             <select
               className="border rounded px-2 py-1 w-full"
               value={newModuleType}
-              onChange={e => setNewModuleType(e.target.value)}
+              onChange={e => setNewModuleType(e.target.value as ModuleType)}
             >
-              <option value="lecture">Lecture</option>
-              <option value="practical">Practical</option>
-              <option value="seminar">Seminar</option>
-              <option value="activity">Activity</option>
-              <option value="case_study">Case Study</option>
-              <option value="quiz">Quiz</option>
-              <option value="exam">Exam</option>
-              <option value="assignment">Assignment</option>
-              <option value="practical">Practical</option>
+              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
             {/* title */}
             <input
@@ -1634,15 +1664,22 @@ const LessonPlanPage: React.FC = () => {
                 onChange={e => setNewModuleDuration(e.target.value)}
                 placeholder="Duration (e.g. 60 min)"
               />
-              <select
-                className="border rounded px-2 py-1 flex-1"
-                value={newModuleQAQF}
-                onChange={e => setNewModuleQAQF(Number(e.target.value))}
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
-                ))}
-              </select>
+             <select
+  className="border rounded px-2 py-1 flex-1"
+  value={newModuleQAQF}
+  onChange={e => setNewModuleQAQF(Number(e.target.value))}
+>
+  {Object.entries(QAQF_LEVELS).map(([qaqfLabel]) => {
+    // "QAQF 1" → 1
+    const number = parseInt(qaqfLabel.replace("QAQF ", ""), 10);
+    return (
+      <option key={qaqfLabel} value={number}>
+        {qaqfLabel}
+      </option>
+    );
+  })}
+</select>
+
             </div>
            
             <input
@@ -1658,12 +1695,15 @@ const LessonPlanPage: React.FC = () => {
               onChange={e => setNewModuleAiReference(e.target.value)}
             />
             
-            <div className="overflow-auto" style={{ maxHeight: 400 }}>
-              <RafayWrapper 
-                key={rafayKey}
-                onContentGenerated={(content) => setNewModuleDescription(content)}
-              />
-            </div>
+              <div className="" style={{ maxHeight: 700 }}>
+                <JoditEditor
+                  value={newModuleDescription}
+                  config={{ readonly: false, height: 600, width: '100%' }}
+                  tabIndex={1}
+                  onBlur={newContent => setNewModuleDescription(newContent)}
+                  onChange={() => { }}
+                />
+              </div>
           </div>
           <DialogFooter>
             <Button 
@@ -1690,7 +1730,7 @@ const LessonPlanPage: React.FC = () => {
               courseid: selectedCourse,
             })}>Add</Button>
             <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost" onClick={resetAddModuleForm}>Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -1899,20 +1939,14 @@ const LessonPlanPage: React.FC = () => {
               placeholder="Title"
               autoFocus
             />
-            <select
+             <select
               className="border rounded px-2 py-1 w-full"
               value={rightSideEditForm.type}
               onChange={e => setRightSideEditForm(f => ({ ...f, type: e.target.value }))}
             >
-              <option value="lecture">Lecture</option>
-              <option value="practical">Practical</option>
-              <option value="seminar">Seminar</option>
-              <option value="activity">Activity</option>
-              <option value="case_study">Case Study</option>
-              <option value="quiz">Quiz</option>
-              <option value="exam">Exam</option>
-              <option value="assignment">Assignment</option>
-              <option value="practical">Practical</option>
+              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
             <div className="flex gap-2">
               <input
@@ -1944,10 +1978,10 @@ const LessonPlanPage: React.FC = () => {
               value={rightSideAiReference}
               onChange={e => setRightSideAiReference(e.target.value)}
             />
-            <div className="overflow-auto" style={{ maxHeight: 400 }}>
+            <div className="" style={{ maxHeight: 700 }}>
               <JoditEditor
                 value={rightSideEditForm.description}
-                config={{ readonly: false, height: 400, width: '100%' }}
+                config={{ readonly: false, height: 600, width: '100%' }}
                 tabIndex={1}
                 onBlur={newContent => setRightSideEditForm(f => ({ ...f, description: newContent }))}
                 onChange={() => { }}
@@ -2110,6 +2144,9 @@ const LessonPlanPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Module Dialog */}
+
     </div>
   );
 };

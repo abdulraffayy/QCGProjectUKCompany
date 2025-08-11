@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent,} from "@/components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
-import { Separator } from "../components/ui/separator";
-import {  Plus } from "lucide-react";
+
+import { Plus } from "lucide-react";
 
 interface Section {
   heading: string;
@@ -38,13 +37,13 @@ interface RafayComponentProps {
 export default function AssessmentPage({ onContentGenerated, compact = false }: RafayComponentProps) {
   const [data, setData] = useState<AssessmentData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [queryResponse, setQueryResponse] = useState("");
-  const [showQueryResponse, setShowQueryResponse] = useState(false);
+  const [searchQuery] = useState("");
+ 
   const [error, setError] = useState<string | null>(null);
   const [openQuerySections, setOpenQuerySections] = useState<number[]>([]);
   const [queryInputs, setQueryInputs] = useState<{ [key: number]: string }>({});
   const [queryResponses, setQueryResponses] = useState<{ [key: number]: string }>({});
+  const [queryLoading, setQueryLoading] = useState<{ [key: number]: boolean }>({});
 
   // Function to format content for parent component
   const formatContentForParent = (assessmentData: AssessmentData) => {
@@ -57,7 +56,7 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
     formattedContent += `<p><strong>Learning Objectives:</strong> ${assessmentData.learning_objectives}</p>`;
     formattedContent += `<p><strong>Assessment Methods:</strong> ${assessmentData.assessment_methods}</p>`;
     
-    assessmentData.sections.forEach((section, index) => {
+    assessmentData.sections.forEach((section) => {
       formattedContent += `<h3>${section.heading}</h3>`;
       formattedContent += `<p>${section.content}</p>`;
       formattedContent += `<h4>Key Points:</h4><ul>`;
@@ -90,11 +89,31 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
       ...prev,
       [index]: value
     }));
+    
+    // Clear previous response when user starts typing new query
+    if (queryResponses[index]) {
+      setQueryResponses(prev => ({
+        ...prev,
+        [index]: ""
+      }));
+    }
   };
 
   const handleSearchQuery = async (index: number) => {
     const query = queryInputs[index];
     if (!query?.trim()) return;
+    
+    // Set loading state for this specific query
+    setQueryLoading(prev => ({
+      ...prev,
+      [index]: true
+    }));
+    
+    // Clear previous response
+    setQueryResponses(prev => ({
+      ...prev,
+      [index]: ""
+    }));
     
     try {
       const response = await fetch("/api/askquery", {
@@ -111,9 +130,19 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
       
       const result = await response.json();
       console.log("Full API Response:", result); // Debug log
+      
+      // Format the response to be simple and clean
+      let formattedResponse = result.response.response;
+      
+      // Remove any HTML tags and clean up the response
+      formattedResponse = formattedResponse
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\n\s*\n/g, '\n\n') // Remove extra line breaks
+        .trim();
+      
       setQueryResponses(prev => ({
         ...prev,
-        [index]: result.response.response
+        [index]: formattedResponse
       }));
     } catch (error) {
       console.error("Error submitting query:", error);
@@ -121,6 +150,46 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
         ...prev,
         [index]: "Sorry, I couldn't process your query at the moment. Please try again later."
       }));
+    } finally {
+      // Clear loading state
+      setQueryLoading(prev => ({
+        ...prev,
+        [index]: false
+      }));
+    }
+  };
+
+  // Function to add response to section card
+  const addResponseToSection = (index: number) => {
+    if (queryResponses[index] && data) {
+      // Get existing content
+      const existingContent = data.sections[index].content || "";
+      const newResponse = queryResponses[index];
+      
+      // Append new response to existing content
+      const updatedContent = existingContent 
+        ? `${existingContent}\n\n--- NEW QUERY RESPONSE ---\n\n${newResponse}`
+        : newResponse;
+      
+      // Update the section content
+      const updatedData = { ...data };
+      if (updatedData.sections && updatedData.sections[index]) {
+        updatedData.sections[index].content = updatedContent;
+        setData(updatedData);
+        
+        // Also update the parent component if callback exists
+        if (onContentGenerated) {
+          const formattedContent = formatContentForParent(updatedData);
+          onContentGenerated(formattedContent);
+        }
+        
+        console.log("Updated section content:", {
+          sectionIndex: index,
+          existingContent: existingContent,
+          newResponse: newResponse,
+          updatedContent: updatedContent
+        });
+      }
     }
   };
 
@@ -215,7 +284,7 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
             }
             console.log("Using fallback data due to JSON parsing error");
           } catch (fallbackError) {
-            setError(`Failed to parse API response: ${parseError.message}`);
+            setError(`Failed to parse API response: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`);
           }
         }
       } else {
@@ -369,14 +438,51 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
                     onChange={(e) => handleQueryInputChange(index, e.target.value)}
                   />
                   <div className="flex gap-2 items-center">
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleSearchQuery(index)}>
-                      Search
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-600 hover:bg-blue-700 text-white" 
+                      onClick={() => handleSearchQuery(index)}
+                      disabled={queryLoading[index]}
+                    >
+                      {queryLoading[index] ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Searching...
+                        </>
+                      ) : (
+                        'Search'
+                      )}
                     </Button>
-                    <span className="text-sm text-gray-500">Please enter a query.</span>
+                    <span className="text-sm text-gray-500">
+                      {queryLoading[index] ? 'Processing your query...' : 'Please enter a query.'}
+                    </span>
                   </div>
-                  {queryResponses[index] && (
-                    <div className="mt-4 p-4 rounded-md">
-                      <h4 className="font-bold text-black mb-3">Response:</h4>
+                  
+                  {/* Loading indicator */}
+                  {queryLoading[index] && (
+                    <div className="mt-4 p-4 rounded-md bg-blue-50 border border-blue-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span className="text-blue-700">Getting response...</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                                     {/* Response display */}
+                   {queryResponses[index] && !queryLoading[index] && (
+                     <div className="mt-4 p-4 rounded-md bg-green-50 border border-green-200">
+                       <div className="flex items-center justify-between mb-3">
+                         <h4 className="font-bold text-black">Response:</h4>
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           className="h-8 w-8 p-0 text-green-600 hover:text-green-800"
+                           onClick={() => addResponseToSection(index)}
+                           title="Add to section content"
+                         >
+                           ⋮
+                    </Button>
+                  </div>
                       <div 
                         className="text-gray-800 prose prose-sm max-w-none overflow-y-auto max-h-96 border border-gray-200 rounded p-3 bg-white"
                         style={{ 
@@ -385,9 +491,12 @@ export default function AssessmentPage({ onContentGenerated, compact = false }: 
                           overflowWrap: 'break-word',
                           lineHeight: '1.6'
                         }}
-                        dangerouslySetInnerHTML={{ __html: queryResponses[index] }}
-                      />
-                     
+                       >
+                         {queryResponses[index]}
+                       </div>
+                       <div className="mt-2 text-sm text-green-700">
+                         Click ⋮ to add this response to the section content above
+                       </div>
                     </div>
                   )}
                 </div>

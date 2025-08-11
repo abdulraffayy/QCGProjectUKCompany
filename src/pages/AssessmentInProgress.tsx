@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import MarkingCriteria from '../components/assessment/MarkingCriteria';
 import MarkingCriteriaModule from '../components/assessment/MarkingCriteriaModule';
 import JoditEditor from 'jodit-react';
+import { MODULE_TYPE_OPTIONS, ModuleType } from '../types';
 
 const AssessmentInProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("assessments");
@@ -300,22 +301,15 @@ const AssessmentInProgressPage: React.FC = () => {
                     </SelectContent>
                   </Select>
                 
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
-                      <SelectValue placeholder="Assessment Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="quiz">Quiz</SelectItem>
-                      <SelectItem value="exam">Exam</SelectItem>
-                      <SelectItem value="assignment">Assignment</SelectItem>
-                      <SelectItem value="practical">Practical</SelectItem>
-                      <SelectItem value="lecture">Lecture</SelectItem>
-                      <SelectItem value="seminar">Seminar</SelectItem>
-                      <SelectItem value="activity">Activity</SelectItem>
-                      <SelectItem value="case_study">Case Study</SelectItem>
-                    </SelectContent>
-                  </Select>
+                   <select
+              className="flex flex-col md:flex-row justify-between  gap-4 w-40 focus:ring-0 focus:ring-offset-0 border border-neutral-300 rounded-md px-2 py-1"
+              value={filterType}
+              onChange={e => setFilterType(e.target.value as ModuleType)}
+            >
+              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
                   
                   <Select value={filterLevel} onValueChange={setFilterLevel}>
                     <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
@@ -515,15 +509,13 @@ const AssessmentInProgressPage: React.FC = () => {
           <div className="space-y-3">
             {/* Type input */}
             <select
-              className="border rounded px-2 py-1 w-full h-10"
+              className="border rounded px-2 py-1 w-full"
               value={editLessonForm.type}
               onChange={e => setEditLessonForm(f => ({ ...f, type: e.target.value }))}
             >
-              <option value="quiz">Quiz</option>
-              <option value="exam">Exam</option>
-              <option value="assignment">Assignment</option>
-              <option value="practical">Practical</option>
-              <option value="case_study">Case Study</option>
+              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
             {/* Title input */}
             <input

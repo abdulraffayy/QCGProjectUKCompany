@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { MODULE_TYPE_OPTIONS } from "../../types";
 import {
   Card,
   CardContent,
@@ -335,7 +336,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       
 
       
-      alert("Changes saved successfully!");
+     
     } catch (err) {
       console.error("Failed to update lesson:", err);
       alert("Failed to save changes");
@@ -384,12 +385,20 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       const data = await response.json();
       
       if (data.generated_content && data.generated_content.length > 0) {
-        setEditableData(prev => ({ ...prev, description: data.generated_content}));
-        console.log('AI generated content updated editableData.description:', data.generated_content);
+        // Get existing description
+        const existingDescription = editableData.description || "";
+        
+        // Append new content to existing content
+        const combinedContent = existingDescription 
+          ? `${existingDescription}\n\n--- NEW AI GENERATED CONTENT ---\n\n${data.generated_content}`
+          : data.generated_content;
+        
+        setEditableData(prev => ({ ...prev, description: combinedContent}));
+        console.log('AI generated content appended to editableData.description:', combinedContent);
         // Force re-render to update the view section
         setDescriptionUpdateTrigger(prev => prev + 1);
         // Store in localStorage to remember the content
-        localStorage.setItem(`processingCenterContent_${item.id}`, data.generated_content);
+        localStorage.setItem(`processingCenterContent_${item.id}`, combinedContent);
       } else {
         setEditableData(prev => ({ ...prev, description: "No content generated." }));
         // Force re-render to update the view section
@@ -638,17 +647,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               <div>
                 <Label htmlFor="type" className="text-sm font-medium text-gray-700">Type</Label>
                 <select
-                  id="type"
-                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 w-full focus:border-blue-500 focus:ring-blue-500"
-                  value={editableData.type}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, type: e.target.value }))}
-                >
-                  <option value="lecture">Lecture</option>
-                  <option value="practical">Practical</option>
-                  <option value="seminar">Seminar</option>
-                  <option value="activity">Activity</option>
-                  <option value="case_study">Case Study</option>
-                </select>
+              className="border rounded px-2 py-1 w-full"
+              value={editableData.type}
+              onChange={e => setEditableData(f => ({ ...f, type: e.target.value }))}
+            >
+              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
               </div>
               <div>
                 <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration</Label>
@@ -706,7 +712,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                   toolbar: true,
                   spellcheck: true,
                   language: "en",
-                  height: 350,
+                  height: 500,
                   theme: "default",
                   buttons: [
                     "source",

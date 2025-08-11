@@ -14,7 +14,6 @@ const VerificationPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourse, setSelectedCourse] = useState('');
   const [courses, setCourses] = useState<{ id: string, title: string, description?: string }[]>([]);
-  const [selectedCourseDescription, setSelectedCourseDescription] = useState('');
   const [lessons, setLessons] = useState<any[]>([]);
   const [isLoadingLessons, setIsLoadingLessons] = useState(false);
   // Use only React state for statusCache (no localStorage)
@@ -213,23 +212,9 @@ const VerificationPage: React.FC = () => {
     lesson.type?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleVerificationComplete = (status: string, feedback: string) => {
-    setVerificationCompleted(true);
-    setVerificationComments(feedback);
-    setStatusValue(status);
-    
-    if (selectedContent?.id) {
-      updateLessonStatus(selectedContent.id, status);
-    }
-  };
 
-  const handleComplianceChecked = (isCompliant: boolean, issues: string[]) => {
-    if (isCompliant) {
-      setBritishStandardValue('yes');
-    } else {
-      setBritishStandardValue('no');
-    }
-  };
+
+
 
   async function updateLessonStatus(lessonId: number, status: string) {
     try {
@@ -430,127 +415,127 @@ const VerificationPage: React.FC = () => {
     }
   };
 
-  const runAutoVerification = async () => {
-    if (!selectedContent) {
-      toast({
-        title: "No Content Selected",
-        description: "Please select content to verify",
-        variant: "destructive",
-      });
-      return;
-    }
+  // const runAutoVerification = async () => {
+  //   if (!selectedContent) {
+  //     toast({
+  //       title: "No Content Selected",
+  //       description: "Please select content to verify",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
 
-    setIsVerifying(true);
-    setVerificationCompleted(false);
-    setVerificationComments('');
+  //   setIsVerifying(true);
+  //   setVerificationCompleted(false);
+  //   setVerificationComments('');
 
-    try {
-      const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+  //   try {
+  //     const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
          
-          content: selectedContent.description,
+  //         content: selectedContent.description,
          
-        }),
-      });
+  //       }),
+  //     });
 
-      if (!response.ok) {
-        throw new Error('Auto-verification failed');
-      }
+  //     if (!response.ok) {
+  //       throw new Error('Auto-verification failed');
+  //     }
 
-      const result = await response.json();
+  //     const result = await response.json();
       
-      // Debug: Log the AI response
-      console.log('Auto-Verification AI Response:', result);
+  //     // Debug: Log the AI response
+  //     console.log('Auto-Verification AI Response:', result);
       
-              // Check if the response has the expected structure
-        if (result.success && result.data) {
-          const data = result.data;
-          console.log('Auto-Verification Data:', data);
+  //             // Check if the response has the expected structure
+  //       if (result.success && result.data) {
+  //         const data = result.data;
+  //         console.log('Auto-Verification Data:', data);
           
-          // Map API response data to UI components using the helper function
-          mapApiResponseToUI(data);
+  //         // Map API response data to UI components using the helper function
+  //         mapApiResponseToUI(data);
           
-          // Only set verification comments if it exists in the API response
-          // If not found, leave the textarea empty
-          if (data.verification_comments !== undefined) {
-            setVerificationComments(data.verification_comments);
-            } else {
-            setVerificationComments(''); // Clear any previous content
-          }
-        } else {
-          console.log('Unexpected API response structure:', result);
-          // Don't show any JSON in the comments field
-          setVerificationComments('');
-        }
+  //         // Only set verification comments if it exists in the API response
+  //         // If not found, leave the textarea empty
+  //         if (data.verification_comments !== undefined) {
+  //           setVerificationComments(data.verification_comments);
+  //           } else {
+  //           setVerificationComments(''); // Clear any previous content
+  //         }
+  //       } else {
+  //         console.log('Unexpected API response structure:', result);
+  //         // Don't show any JSON in the comments field
+  //         setVerificationComments('');
+  //       }
       
-      // Calculate average score using the mapped values
-      const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
-      const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  //     // Calculate average score using the mapped values
+  //     const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
+  //     const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
       
-      // Determine final status based on API response or scores
-      let finalStatus = 'pending';
+  //     // Determine final status based on API response or scores
+  //     let finalStatus = 'pending';
       
-      // First try to use the verification_status from API response
-      if (result.success && result.data && result.data.verification_status) {
-        finalStatus = result.data.verification_status;
-      } else {
-        // Fallback to calculating based on average score
-        if (averageScore >= 3.5) {
-          finalStatus = 'verified';
-        } else if (averageScore >= 2.5) {
-          finalStatus = 'pending';
-        } else {
-          finalStatus = 'unverified';
-        }
-      }
+  //     // First try to use the verification_status from API response
+  //     if (result.success && result.data && result.data.verification_status) {
+  //       finalStatus = result.data.verification_status;
+  //     } else {
+  //       // Fallback to calculating based on average score
+  //       if (averageScore >= 3.5) {
+  //         finalStatus = 'verified';
+  //       } else if (averageScore >= 2.5) {
+  //         finalStatus = 'pending';
+  //       } else {
+  //         finalStatus = 'unverified';
+  //       }
+  //     }
 
-      // Update status
-      setStatusValue(finalStatus);
-      if (selectedContent?.id) {
-        updateLessonStatus(selectedContent.id, finalStatus);
-      }
+  //     // Update status
+  //     setStatusValue(finalStatus);
+  //     if (selectedContent?.id) {
+  //       updateLessonStatus(selectedContent.id, finalStatus);
+  //     }
 
-      setVerificationCompleted(true);
-      setIsVerifying(false);
+  //     setVerificationCompleted(true);
+  //     setIsVerifying(false);
 
-      toast({
-        title: "Auto-Verification Complete",
-        description: `Content verification completed with average score: ${averageScore.toFixed(1)}/4`,
-      });
+  //     toast({
+  //       title: "Auto-Verification Complete",
+  //       description: `Content verification completed with average score: ${averageScore.toFixed(1)}/4`,
+  //     });
 
-    } catch (error) {
-      setIsVerifying(false);
-      toast({
-        title: "Auto-Verification Failed",
-        description: "Failed to complete auto-verification process.",
-        variant: "destructive",
-      });
-    }
-  };
+  //   } catch (error) {
+  //     setIsVerifying(false);
+  //     toast({
+  //       title: "Auto-Verification Failed",
+  //       description: "Failed to complete auto-verification process.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
-  const resetVerification = () => {
-    setClarityScore(0);
-    setCompletenessScore(0);
-    setAccuracyScore(0);
-    setAlignmentScore(0);
-    setBritishStandardValue('no');
-    setVerificationCompleted(false);
-    setVerificationComments('');
-    setIsVerifying(false);
+  // const resetVerification = () => {
+  //   setClarityScore(0);
+  //   setCompletenessScore(0);
+  //   setAccuracyScore(0);
+  //   setAlignmentScore(0);
+  //   setBritishStandardValue('no');
+  //   setVerificationCompleted(false);
+  //   setVerificationComments('');
+  //   setIsVerifying(false);
     
-    // Clear cached scoring data for current lesson
-    if (selectedContent?.id) {
-      updateScoringCache(prev => {
-        const updated = { ...prev };
-        delete updated[selectedContent.id];
-        return updated;
-      });
-    }
-  };
+  //   // Clear cached scoring data for current lesson
+  //   if (selectedContent?.id) {
+  //     updateScoringCache(prev => {
+  //       const updated = { ...prev };
+  //       delete updated[selectedContent.id];
+  //       return updated;
+  //     });
+  //   }
+  // };
 
   const handleVerify = async () => {
     if (!selectedContent) {
@@ -693,9 +678,6 @@ const VerificationPage: React.FC = () => {
                   </CardTitle>
                   <Select value={selectedCourse} onValueChange={(value) => {
                     setSelectedCourse(value);
-                    // Find and store the course description
-                    const course = courses.find(c => c.id === value);
-                    setSelectedCourseDescription(course?.description || '');
                   }}>
                     <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
                       <SelectValue placeholder="Select a course" />
