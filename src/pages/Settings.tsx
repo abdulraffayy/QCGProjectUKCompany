@@ -22,7 +22,7 @@ const adminSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  role: z.enum(["user", "admin", "verification", "moderation"]),
+  role: z.enum(["admin", "verification", "moderation"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -45,7 +45,7 @@ const SettingsPage: React.FC = () => {
   
 
 
-  const { logout, user } = useAuth();
+  const { logout, user, login } = useAuth();
 
   // Form setup for admin tab
   const {
@@ -56,7 +56,7 @@ const SettingsPage: React.FC = () => {
   } = useForm<AdminForm>({
     resolver: zodResolver(adminSchema),
     defaultValues: {
-      role: "user",
+      role: "verification",
     },
   });
 
@@ -89,17 +89,31 @@ const SettingsPage: React.FC = () => {
 
       return response.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       console.log("Account created successfully:", data);
       
       // Show success toast with role-specific message
       const roleName = variables.role.charAt(0).toUpperCase() + variables.role.slice(1);
       toast.success(`${roleName} account created successfully`);
-     
-
-      if (variables.role === "admin" || variables.role === "verification") {
-        setLocation("/dashboard")
+      
+      // After registering, log in as the created user so Header/Profile reflect correct name/role
+      try {
+        const resp = await fetch('/api/auth/login-json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: variables.username, password: variables.password })
+        });
+        if (resp.ok) {
+          const loginData = await resp.json();
+          if (loginData?.access_token && loginData?.user) {
+            login(loginData.access_token, loginData.user);
+          }
+        }
+      } catch (e) {
+        console.error('Auto-login after register failed', e);
       }
+      // Redirect to dashboard
+      setLocation("/dashboard");
     },
     onError: (error: Error, variables) => {
       console.log("Account creation error:", error);
@@ -288,8 +302,8 @@ const SettingsPage: React.FC = () => {
                          )}
                        </div>
                        <div className="space-y-2">
-                         <Label htmlFor="role">Role</Label>
-                         <Select onValueChange={(value) => setValue("role", value as "user" | "admin" | "verification" | "moderation")}>
+                          <Label htmlFor="role">Role</Label>
+                          <Select onValueChange={(value) => setValue("role", value as "admin" | "verification" | "moderation")}>
                            <SelectTrigger>
                              <SelectValue placeholder="Select role" />
                            </SelectTrigger>

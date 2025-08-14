@@ -26,6 +26,11 @@ import ForgotPassword from "./pages/ForgotPassword";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Rafay from "./pages/Rafay";
+import CourseGeneratorPlatform from "./pages/CourseGeneratorPlatform";
+import { WizardPage } from "./pages/WizardPage";
+import { courseTypes } from "./types/courseTypes";
+
+
 
 // Wrapper component to handle route props for Rafay
 const RafayWrapper = () => <Rafay />;
@@ -82,6 +87,25 @@ function AuthenticatedRoutes() {
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
           <Route path="/rafay" component={RafayWrapper} />
+          <Route path="/course-generator" component={CourseGeneratorPlatform} />
+          <Route
+            path="/course-generator/wizard/:type"
+            component={({ params }: any) => {
+              const type = params.type as keyof typeof courseTypes[number] | string;
+              const found = courseTypes.find((c) => c.id === type);
+              if (!found) {
+                return <Redirect to="/course-generator" />;
+              }
+              return (
+                <WizardPage
+                  courseType={found}
+                  onBackToSelection={() => (window.location.href = "/course-generator")}
+                  onCreateAnother={() => (window.location.href = "/course-generator")}
+                />
+              );
+            }}
+          />
+
           <Route component={NotFound} />
         </Switch>
       </Layout>

@@ -82,17 +82,17 @@ export const MODULE_TYPE_OPTIONS: { [key in ModuleType]: string } = {
 // QAQF TYPES
 // ========================================
 
-export const QAQF_LEVELS: { [key: string]: string } = {
-    "Entry": "QAQF 1",
-    "Basic": "QAQF 2",
-    "Foundation": "QAQF 3",
-    "Intermediate": "QAQF 4",
-    "Advanced": "QAQF 5",
-    "Specialist": "QAQF 6",
-    "Professional": "QAQF 7",
-    "Expert": "QAQF 8",
-    "Master": "QAQF 9"
-  };
+export enum QAQF_LEVELS {
+  Awareness = "Qaqf level 1 – Awareness",
+  Application = "Qaqf Level 2 – Application",
+  Competence = "Qaqf Level 3 – Competence",
+  FunctionalIndependence = "Qaqf Level 4 – Functional Independence",
+  AdaptivePerformance = "Qaqf Level 5 – Adaptive Performance",
+  ProficientPractitioner = "Qaqf Level 6 – Proficient Practitioner",
+  SpecialistExpertise = "Qaqf Level 7 – Specialist Expertise",
+  StrategicLeadership = "Qaqf Level 8 – Strategic Leadership",
+  MasteryInnovation = "Qaqf Level 9 – Mastery / Innovation"
+}
   
 
 // ========================================
@@ -154,7 +154,7 @@ export interface User {
   updated_at?: string;
 }
 
-export type UserRole = 'admin' | 'teacher' | 'student' | 'moderator' | 'verification' | 'moderation' | 'user';
+export type UserRole = 'admin' | 'teacher' | 'student' | 'moderator' | 'verification' | 'moderation' | 'quality_assurance' | 'user';
 
 export interface AuthContextType {
   user: User | null;

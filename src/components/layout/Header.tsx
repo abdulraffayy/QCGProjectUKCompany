@@ -53,7 +53,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               </Avatar>
               <div className="ml-2 mr-2 hidden md:block">
                 <div className="text-sm font-medium">{user?.name || 'User'}</div>
-                <div className="text-xs text-neutral-500">{user?.role === 'admin' ? 'Administrator' : 'User'}</div>
+                <div className="text-xs text-neutral-500">
+                  {user?.role === 'admin' && 'Administrator'}
+                  {user?.role === 'verification' && 'Verification'}
+                  {user?.role === 'moderation' && 'Moderation'}
+                  {!user?.role || (user?.role !== 'admin' && user?.role !== 'verification' && user?.role !== 'moderation') ? 'User' : ''}
+                </div>
               </div>
               <span className="material-icons text-neutral-700">arrow_drop_down</span>
             </div>

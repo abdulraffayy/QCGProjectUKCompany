@@ -358,7 +358,7 @@ export default function CourseGenerator() {
                             <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                             <span>{lesson.title}</span>
                             <span className="ml-auto text-muted-foreground">
-                              {lesson.duration_minutes}min
+                              {/* {lesson.duration_minutes}min */}
                             </span>
                           </div>
                         ))}

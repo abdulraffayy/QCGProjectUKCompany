@@ -56,7 +56,13 @@ const AssessmentInProgressPage: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('/api/courses');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/courses', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
         if (!res.ok) throw new Error('Failed to fetch courses');
         const data = await res.json();
         setCourses(Array.isArray(data) ? data : []);

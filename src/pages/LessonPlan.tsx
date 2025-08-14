@@ -98,7 +98,7 @@ const LessonPlanPage: React.FC = () => {
   const [newModuleTitle, setNewModuleTitle] = useState("");
   const [newModuleType, setNewModuleType] = useState("lecture");
   const [newModuleDuration, setNewModuleDuration] = useState("");
-  const [newModuleQAQF, setNewModuleQAQF] = useState(1);
+  const [newModuleQAQF, setNewModuleQAQF] = useState<string>("1");
   const [newModuleDescription, setNewModuleDescription] = useState("");
   const [newModuleUserId, setNewModuleUserId] = useState("");
   const [newModuleCourseId, setNewModuleCourseId] = useState("");
@@ -127,7 +127,7 @@ const LessonPlanPage: React.FC = () => {
     title: "",
     type: "lecture",
     duration: "",
-    qaqfLevel: 1,
+    qaqfLevel: "1",
     script: "",
     courseid: "",
     userid: "",
@@ -145,7 +145,13 @@ const LessonPlanPage: React.FC = () => {
       if (userid) {
         url += `?userid=${encodeURIComponent(userid)}`;
       }
-      const res = await fetch(url);
+      const token = localStorage.getItem('token');
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        }
+      });
       if (!res.ok) throw new Error('Failed to fetch courses');
       const data = await res.json();
 
@@ -983,7 +989,7 @@ const LessonPlanPage: React.FC = () => {
     setNewModuleTitle("");
     setNewModuleType("lecture");
     setNewModuleDuration("");
-    setNewModuleQAQF(1);
+    setNewModuleQAQF("1");
     setNewModuleDescription("");
     setNewModuleUserId("");
     setNewModuleCourseId("");
@@ -1205,7 +1211,7 @@ const LessonPlanPage: React.FC = () => {
                                   (content.qaqfLevel || content.level || content.qaqf_level) <= 6 ? "bg-purple-100 text-purple-800 px-2 py-1 rounded" :
                                     "bg-violet-100 text-violet-800 px-2 py-1 rounded"
                               }>
-                                QAQF {content.qaqfLevel || content.level || content.qaqf_level}: {QAQF_LEVELS[content.qaqfLevel || content.level || content.qaqf_level]}
+                                QAQF {content.qaqfLevel || content.level || content.qaqf_level}: {QAQF_LEVELS[(content.qaqfLevel || content.level || content.qaqf_level) as keyof typeof QAQF_LEVELS]}
                               </span>
                             )}
                           </span>
@@ -1227,10 +1233,10 @@ const LessonPlanPage: React.FC = () => {
                                 <b>QAQF Level:</b>{" "}
                                 {(() => {
                                   const qaqfLevel = content.qaqfLevel || content.level || content.qaqf_level;
-                                  if (qaqfLevel && QAQF_LEVELS[qaqfLevel]) {
+                                  if (qaqfLevel && QAQF_LEVELS[qaqfLevel as keyof typeof QAQF_LEVELS]) {
                                     return `QAQF ${qaqfLevel}`;
                                   } else {
-                                    return `N/A (level: ${content.level}, qaqfLevel: ${content.qaqfLevel}, qaqf_level: ${content.qaqf_level})`;
+                                    return ` ${content.level}`;
                                   }
                                 })()}
                               </div>
@@ -1597,15 +1603,20 @@ const LessonPlanPage: React.FC = () => {
                 onChange={e => setEditModuleDialogDuration(e.target.value)}
                 placeholder="Duration (e.g. 60 min)"
               />
-              <select
-                className="border rounded px-2 py-1 flex-1"
-                value={editModuleDialogQAQF || 1}
-                onChange={e => setEditModuleDialogQAQF(Number(e.target.value))}
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
-                ))}
-              </select>
+                <select
+                  className="border rounded px-2 py-1 flex-1"
+                  value={editModuleDialogQAQF || 1}
+                  onChange={e => setEditModuleDialogQAQF(Number(e.target.value))}
+                >
+                  {Object.entries(QAQF_LEVELS).map(([qaqfLabel, qaqfName]) => {
+                    const number = parseInt(qaqfLabel.replace("QAQF ", ""), 10);
+                    return (
+                      <option key={qaqfLabel} value={number}>
+                        {qaqfLabel} - {qaqfName}
+                      </option>
+                    );
+                  })}
+                </select>
             </div>
 
             <textarea
@@ -1664,21 +1675,18 @@ const LessonPlanPage: React.FC = () => {
                 onChange={e => setNewModuleDuration(e.target.value)}
                 placeholder="Duration (e.g. 60 min)"
               />
-             <select
-  className="border rounded px-2 py-1 flex-1"
-  value={newModuleQAQF}
-  onChange={e => setNewModuleQAQF(Number(e.target.value))}
->
-  {Object.entries(QAQF_LEVELS).map(([qaqfLabel]) => {
-    // "QAQF 1" → 1
-    const number = parseInt(qaqfLabel.replace("QAQF ", ""), 10);
-    return (
-      <option key={qaqfLabel} value={number}>
-        {qaqfLabel}
-      </option>
-    );
-  })}
-</select>
+       <select
+                className="border rounded px-2 py-1 flex-1"
+                value={newModuleQAQF}
+                onChange={e => setNewModuleQAQF(e.target.value)}
+              >
+                {/* We can use Object.values() to get an array of just the string values */}
+                {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+                  <option key={qaqfLevel} value={qaqfLevel}>
+                    {qaqfLevel}
+                  </option>
+                ))}
+              </select>
 
             </div>
            
@@ -1695,10 +1703,10 @@ const LessonPlanPage: React.FC = () => {
               onChange={e => setNewModuleAiReference(e.target.value)}
             />
             
-              <div className="" style={{ maxHeight: 700 }}>
+              <div className="" style={{ maxHeight: 400 }}>
                 <JoditEditor
                   value={newModuleDescription}
-                  config={{ readonly: false, height: 600, width: '100%' }}
+                  config={{ readonly: false, height: 400, width: '100%' }}
                   tabIndex={1}
                   onBlur={newContent => setNewModuleDescription(newContent)}
                   onChange={() => { }}
@@ -1771,7 +1779,9 @@ const LessonPlanPage: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={async () => {
               try {
+                const token = localStorage.getItem('token');
                 const res = await fetch('/api/courses', {
+                  ...(token && { Authorization: `Bearer ${token}` }),
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(courseForm),
@@ -1955,13 +1965,16 @@ const LessonPlanPage: React.FC = () => {
                 onChange={e => setRightSideEditForm(f => ({ ...f, duration: e.target.value }))}
                 placeholder="Duration (e.g. 60 min)"
               />
-              <select
+             <select
                 className="border rounded px-2 py-1 flex-1"
                 value={rightSideEditForm.qaqfLevel}
-                onChange={e => setRightSideEditForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
+                onChange={e => setRightSideEditForm(f => ({ ...f, qaqfLevel: e.target.value }))}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                {/* We can use Object.values() to get an array of just the string values */}
+                {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+                  <option key={qaqfLevel} value={qaqfLevel}>
+                    {qaqfLevel}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1978,10 +1991,10 @@ const LessonPlanPage: React.FC = () => {
               value={rightSideAiReference}
               onChange={e => setRightSideAiReference(e.target.value)}
             />
-            <div className="" style={{ maxHeight: 700 }}>
+            <div className="" style={{ maxHeight: 400 }}>
               <JoditEditor
                 value={rightSideEditForm.description}
-                config={{ readonly: false, height: 600, width: '100%' }}
+                config={{ readonly: false, height: 400, width: '100%' }}
                 tabIndex={1}
                 onBlur={newContent => setRightSideEditForm(f => ({ ...f, description: newContent }))}
                 onChange={() => { }}
