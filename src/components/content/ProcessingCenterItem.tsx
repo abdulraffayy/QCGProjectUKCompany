@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MODULE_TYPE_OPTIONS } from "../../types";
+import { QAQF_LEVELS } from "../../types";
 import {
   Card,
   CardContent,
@@ -67,12 +68,38 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [status] = useState(item.status || "pending");
  
   
+  // Helper function to convert numeric level to full QAQF string
+  const getQaqfLevelString = (level: any): string => {
+    if (!level) return "";
+    
+    // If it's already a full string, return as is
+    if (typeof level === 'string' && level.includes('Qaqf Level')) {
+      return level;
+    }
+    
+    // If it's a number, convert to full string
+    const levelMap: { [key: number]: string } = {
+      1: "Qaqf level 1 – Awareness",
+      2: "Qaqf Level 2 – Application", 
+      3: "Qaqf Level 3 – Competence",
+      4: "Qaqf Level 4 – Functional Independence",
+      5: "Qaqf Level 5 – Adaptive Performance",
+      6: "Qaqf Level 6 – Proficient Practitioner",
+      7: "Qaqf Level 7 – Specialist Expertise",
+      8: "Qaqf Level 8 – Strategic Leadership",
+      9: "Qaqf Level 9 – Mastery / Innovation"
+    };
+    
+    const numLevel = typeof level === 'string' ? parseInt(level) : level;
+    return levelMap[numLevel] || "";
+  };
+
   // Add state for editable fields
   const [editableData, setEditableData] = useState({
     title: item.title || "",
     type: item.type || "",
     duration: (item.metadata && item.metadata.duration) || "",
-    qaqfLevel: item.qaqfLevel ? String(item.qaqfLevel) : "",
+    level: getQaqfLevelString(item.level || item.qaqfLevel),
     userid: (item.metadata && item.metadata.userid) || "",
     courseid: (item.metadata && item.metadata.courseid) || "",
     description: item.description || (item.metadata && item.metadata.description) || "",
@@ -121,25 +148,22 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   }, [item.id]);
 
-  // Log description changes for debugging
-  useEffect(() => {
-    console.log(`Item ${item.id} description:`, item.description);
-    console.log(`Item ${item.id} metadata description:`, item.metadata?.description);
-  }, [item.description, item.metadata?.description, item.id]);
+
 
   // Update editableData when item prop changes (e.g., after API update)
   useEffect(() => {
+    // Force update with fresh data from item prop
     setEditableData(prev => ({
       ...prev,
-      title: item.title || prev.title,
-      type: item.type || prev.type,
-      description: item.description || (item.metadata && item.metadata.description) || prev.description,
-      qaqfLevel: item.qaqfLevel ? String(item.qaqfLevel) : prev.qaqfLevel,
-      userid: (item.metadata && item.metadata.userid) || prev.userid,
-      courseid: (item.metadata && item.metadata.courseid) || prev.courseid,
-      duration: (item.metadata && item.metadata.duration) || prev.duration,
+      title: item.title || "",
+      type: item.type || "",
+      description: item.description || (item.metadata && item.metadata.description) || "",
+      level: getQaqfLevelString(item.level || item.qaqfLevel),
+      userid: (item.metadata && item.metadata.userid) || "",
+      courseid: (item.metadata && item.metadata.courseid) || "",
+      duration: (item.metadata && item.metadata.duration) || "",
     }));
-  }, [item.title, item.type, item.description, item.qaqfLevel, item.metadata]);
+  }, [item.title, item.type, item.description, item.level, item.qaqfLevel, item.metadata]);
 
   // Mouse event handlers for resizing (vertical only)
   useEffect(() => {
@@ -291,23 +315,27 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       const apiId = getApiId(item.id);
       console.log(`Original ID: ${item.id}, API ID: ${apiId}`);
 
+      const requestBody = {
+        title: editableData.title,
+        type: editableData.type,
+        description: editableData.description,
+        level: editableData.level || null,
+        userid: editableData.userid,
+        courseid: editableData.courseid,
+        duration: editableData.duration
+      };
+
       const res = await fetch(`/api/lessons/${apiId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: editableData.title,
-          type: editableData.type,
-          description: editableData.description,
-          level: parseInt(editableData.qaqfLevel) || null,
-          userid: editableData.userid,
-          courseid: editableData.courseid,
-          duration: editableData.duration
-        }),
+        body: JSON.stringify(requestBody),
       });
       if (!res.ok) throw new Error("Failed to update lesson");
+      
+
       
       // Update the local editable data to reflect the saved changes
       setEditableData(prev => ({
@@ -315,7 +343,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         title: editableData.title,
         type: editableData.type,
         description: editableData.description,
-        qaqfLevel: editableData.qaqfLevel,
+        level: editableData.level,
         userid: editableData.userid,
         courseid: editableData.courseid,
         duration: editableData.duration
@@ -326,6 +354,13 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       if (onAction) {
         onAction("updated", item.id, editableData.description);
       }
+      
+      // Force parent component to refresh data from API
+      setTimeout(() => {
+        if (onAction) {
+          onAction("refresh", item.id);
+        }
+      }, 500);
       
       // Force re-render to update the view section
       setDescriptionUpdateTrigger(prev => prev + 1);
@@ -359,7 +394,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       
       const generation_type = editableData.type || "quiz";
       const material = aiReference || "";
-      const qaqf_level = String(editableData.qaqfLevel || "1");
+      const qaqf_level = String(editableData.level || "1");
       const subject = editableData.title || "";
       const userquery = aiQuery || "";
       
@@ -548,30 +583,23 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       {/* ... non-editing preview ... */}
                       <div>
                         <b>Title:</b>{" "}
-                        {item.title ||
+                        {editableData.title || item.title ||
                           (item.metadata && item.metadata.title) ||
                           "N/A"}
                       </div>
                       <div>
                         <b>Type:</b>{" "}
-                        {item.type ||
+                        {editableData.type || item.type ||
                           (item.metadata && item.metadata.type) ||
                           "N/A"}
                       </div>
                       <div>
                         <b>Duration:</b>{" "}
-                        {(item.metadata && item.metadata.duration) || "N/A"}
+                        {editableData.duration || (item.metadata && item.metadata.duration) || "N/A"}
                       </div>
                       <div>
                         <b>QAQF Level:</b>{" "}
-                        {(() => {
-                          const qaqfLevel = item.level || item.qaqfLevel || item.qaqf_level;
-                          if (qaqfLevel) {
-                            return qaqfLevel;
-                          } else {
-                            return "N/A";
-                          }
-                        })()}
+                        {editableData.level || item.level|| "N/A"}
                       </div>
                       <div>
                         <b>User ID:</b>{" "}
@@ -668,15 +696,17 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               <div>
                 <Label htmlFor="qaqfLevel" className="text-sm font-medium text-gray-700">QAQF Level</Label>
                 <select
-                  id="qaqfLevel"
-                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 w-full focus:border-blue-500 focus:ring-blue-500"
-                  value={editableData.qaqfLevel}
-                  onChange={(e) => setEditableData(prev => ({ ...prev, qaqfLevel: e.target.value }))}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                    <option key={lvl} value={lvl}>QAQF {lvl}</option>
-                  ))}
-                </select>
+                className="border rounded w-full p-2"
+                value={editableData.level || ""}
+                onChange={e => setEditableData(f => ({ ...f, level: e.target.value }))}
+              >
+                {/* We can use Object.values() to get an array of just the string values */}
+                {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+                  <option key={qaqfLevel} value={qaqfLevel}>
+                    {qaqfLevel}
+                  </option>
+                ))}
+              </select>
               </div>    
               <div>
                   <Label htmlFor="aiQuery" className="text-sm font-medium text-gray-700">Ask your query (Optional)</Label>

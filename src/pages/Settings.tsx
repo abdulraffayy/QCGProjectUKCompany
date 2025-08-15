@@ -202,7 +202,9 @@ const SettingsPage: React.FC = () => {
             <TabsList className="mb-4">
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="admin">Admin</TabsTrigger>
+              {user?.role === 'admin' && (
+                <TabsTrigger value="admin">Admin</TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="profile">
@@ -250,12 +252,13 @@ const SettingsPage: React.FC = () => {
               </Card>
             </TabsContent>
 
-                         <TabsContent value="admin"> 
-               <Card>
-                 <CardHeader>
-                   <CardTitle>Admin Settings</CardTitle>
-                   <CardDescription>Create new user accounts</CardDescription>
-                 </CardHeader>
+                         {user?.role === 'admin' && (
+              <TabsContent value="admin"> 
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Admin Settings</CardTitle>
+                    <CardDescription>Create new user accounts</CardDescription>
+                  </CardHeader>
                  <CardContent className="space-y-4">
                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,6 +357,7 @@ const SettingsPage: React.FC = () => {
                  </CardContent>
                </Card>
              </TabsContent>
+            )}
             <TabsContent value="notifications">
               <Card>
                 <CardHeader>

@@ -21,6 +21,7 @@ import ProcessingCenterItem from '../components/content/ProcessingCenterItem';
 import LessonPlanTemplate from '../components/content/LessonPlanTemplate';
 import { useToast } from '../hooks/use-toast';
 import { StudyMaterial } from '../../shared/schema'; // adjust path
+import { QAQF_LEVELS } from '../types';
 
 // Unified validation schema for both content types
 const unifiedGenerationSchema = z.object({
@@ -623,9 +624,9 @@ const UnifiedContentGenerator: React.FC = () => {
                       <SelectValue placeholder="Select QAQF level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => (
-                        <SelectItem key={level} value={level.toString()}>
-                          Level {level}
+                      {Object.entries(QAQF_LEVELS).map(([key, value]) => (
+                        <SelectItem key={key} value={(Object.keys(QAQF_LEVELS).indexOf(key) + 1).toString()}>
+                          {value}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import MarkingCriteria from '../components/assessment/MarkingCriteria';
 import MarkingCriteriaModule from '../components/assessment/MarkingCriteriaModule';
 import JoditEditor from 'jodit-react';
-import { MODULE_TYPE_OPTIONS, ModuleType } from '../types';
+import { MODULE_TYPE_OPTIONS, ModuleType, QAQF_LEVELS } from '../types';
 
 const AssessmentInProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("assessments");
@@ -308,7 +308,7 @@ const AssessmentInProgressPage: React.FC = () => {
                   </Select>
                 
                    <select
-              className="flex flex-col md:flex-row justify-between  gap-4 w-40 focus:ring-0 focus:ring-offset-0 border border-neutral-300 rounded-md px-2 py-1"
+              className="flex flex-col md:flex-row justify-between w-60 gap-4  focus:ring-0 focus:ring-offset-0 border border-neutral-300 rounded-md px-2 py-1"
               value={filterType}
               onChange={e => setFilterType(e.target.value as ModuleType)}
             >
@@ -317,17 +317,23 @@ const AssessmentInProgressPage: React.FC = () => {
               ))}
             </select>
                   
-                  <Select value={filterLevel} onValueChange={setFilterLevel}>
-                    <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
-                      <SelectValue placeholder="QAQF Level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="1-3">Basic (1-3)</SelectItem>
-                      <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
-                      <SelectItem value="7-9">Advanced (7-9)</SelectItem>
-                    </SelectContent>
-                  </Select>
+            
+            <select
+  className="flex flex-col md:flex-row justify-between gap-4 w-60 focusring-0 focus:ring-offset-0 border border-neutral-300 rounded-md px-2 py-1"
+  value={filterLevel}
+  onChange={e => setFilterLevel(e.target.value)}
+>
+  {Object.entries(QAQF_LEVELS).map(([key, value]) => (
+    <option
+      key={key}
+      value={Object.keys(QAQF_LEVELS).indexOf(key) + 1}
+    >
+      {value}
+    </option>
+  ))}
+</select>
+
+          
                   
                   <Button variant="outline" size="default">
                     <span className="material-icons text-sm mr-2">filter_list</span>
@@ -373,13 +379,13 @@ const AssessmentInProgressPage: React.FC = () => {
                         <CardDescription className="flex items-center gap-1">
                           <span className="capitalize">{assessment.type}</span>
                           <span className="text-xs">•</span>
-                          <span>{assessment.questionsCount || 'N/A'} questions</span>
+                         
                           <span className="text-xs">•</span>
-                          <Badge className={(assessment.qaqfLevel || assessment.level) <= 3 ? "bg-blue-100 text-blue-800" : 
-                                          (assessment.qaqfLevel || assessment.level) <= 6 ? "bg-purple-100 text-purple-800" : 
-                                          "bg-violet-100 text-violet-800"}>
-                            QAQF {assessment.qaqfLevel || assessment.level || 'N/A'}
-                          </Badge>
+                                                     <Badge className={(assessment.qaqfLevel || assessment.level) <= 3 ? "bg-blue-100 text-blue-800 rounded-none hover:bg-blue-100" : 
+                                           (assessment.qaqfLevel || assessment.level) <= 6 ? "bg-purple-100 text-purple-800 rounded-none hover:bg-purple-100" : 
+                                           "bg-violet-100 text-violet-800 rounded-none hover:bg-violet-100"}>
+                             QAQF {Object.values(QAQF_LEVELS)[(assessment.qaqfLevel || assessment.level) - 1] || `Level ${assessment.qaqfLevel || assessment.level}`}
+                           </Badge>
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pb-3">
@@ -542,8 +548,8 @@ const AssessmentInProgressPage: React.FC = () => {
                 value={editLessonForm.qaqfLevel}
                 onChange={e => setEditLessonForm(f => ({ ...f, qaqfLevel: Number(e.target.value) }))}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
-                  <option key={lvl} value={lvl}>QAQF {lvl}</option>
+                {Object.entries(QAQF_LEVELS).map(([key, value]) => (
+                  <option key={key} value={Object.keys(QAQF_LEVELS).indexOf(key) + 1}>{value}</option>
                 ))}
               </select>
             </div>
@@ -596,10 +602,10 @@ const AssessmentInProgressPage: React.FC = () => {
                       <span className="text-gray-600">Type:</span>
                       <span className="capitalize">{previewAssessment.type}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">QAQF Level:</span>
-                      <span>Level {previewAssessment.qaqfLevel || previewAssessment.level}</span>
-                    </div>
+                                          <div className="flex justify-between">
+                        <span className="text-gray-600">QAQF Level:</span>
+                        <span>{Object.values(QAQF_LEVELS)[(previewAssessment.qaqfLevel || previewAssessment.level) - 1] || `Level ${previewAssessment.qaqfLevel || previewAssessment.level}`}</span>
+                      </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Progress:</span>
                       <span>{previewAssessment.progress || 0}%</span>
