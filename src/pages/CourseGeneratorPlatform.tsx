@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Target, Palette, FileText, Edit, Trash2, BookOpen, } from 'lucide-react';
+import { Sparkles, Target, Palette, FileText, Edit, Trash2, BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CourseType, courseTypes } from '../types/courseTypes';
 import { CourseTypeCard } from '../pages/CourseTypeCard';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -23,6 +22,13 @@ const CourseGeneratorPlatform = () => {
     description: '',
     status: 'Active'
   });
+
+  // Data table states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<'title' | 'description' | 'status'>('title');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const handleSelectCourseType = (courseType: CourseType) => {
     setLocation(`/course-generator/wizard/${courseType.id}`);
@@ -161,6 +167,56 @@ const CourseGeneratorPlatform = () => {
     setDeletingCourse(null);
   };
 
+  // Data table utility functions
+  const filteredCourses = courses.filter(course =>
+    course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (course.status && course.status.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    const aValue = a[sortField] || '';
+    const bValue = b[sortField] || '';
+    
+    if (sortDirection === 'asc') {
+      return aValue.toString().localeCompare(bValue.toString());
+    } else {
+      return bValue.toString().localeCompare(aValue.toString());
+    }
+  });
+
+  const totalPages = Math.ceil(sortedCourses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCourses = sortedCourses.slice(startIndex, endIndex);
+
+  const handleSort = (field: 'title' | 'description' | 'status') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  const SortIcon = ({ field }: { field: 'title' | 'description' | 'status' }) => {
+    if (sortField !== field) {
+      return <ChevronUp className="h-4 w-4 text-gray-400" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="h-4 w-4 text-blue-600" /> : 
+      <ChevronDown className="h-4 w-4 text-blue-600" />;
+  };
 
   return (
     <>
@@ -202,7 +258,7 @@ const CourseGeneratorPlatform = () => {
 
       
       <div className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               My Courses
@@ -224,42 +280,176 @@ const CourseGeneratorPlatform = () => {
               <p className="text-sm text-gray-400">Create your first course to see it here</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course) => (
-                <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-gray-900 truncate">
-                      {course.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <BookOpen className="h-4 w-4" />
-                        <span>Description: {course.description}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditCourse(course.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteCourse(course.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+            <div className="bg-white rounded-lg shadow-sm border w-full">
+              {/* Search and Controls */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search courses..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="items-per-page" className="text-sm text-gray-600">Show:</Label>
+                    <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-1/4"
+                        onClick={() => handleSort('title')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Title
+                          <SortIcon field="title" />
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-2/5"
+                        onClick={() => handleSort('description')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Description
+                          <SortIcon field="description" />
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-1/6"
+                        onClick={() => handleSort('status')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Status
+                          <SortIcon field="status" />
+                        </div>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentCourses.map((course) => (
+                      <tr key={course.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-md">
+                            {course.description || 'No description'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            course.status === 'Active' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {course.status || 'Active'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditCourse(course.id)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteCourse(course.id)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Showing {startIndex + 1} to {Math.min(endIndex, sortedCourses.length)} of {sortedCourses.length} results
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

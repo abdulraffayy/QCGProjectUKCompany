@@ -222,7 +222,7 @@ const AssessmentInProgressPage: React.FC = () => {
       const subject = editLessonForm.title || ""; // or another field if you have it
       const userquery = aiQuery || "";
 
-      const response = await fetch('/api/ai/assessment-content', {
+      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -234,6 +234,7 @@ const AssessmentInProgressPage: React.FC = () => {
           qaqf_level,
           subject,
           userquery,
+          courseid: selectedCourse,
         }),
       });
 
@@ -242,13 +243,36 @@ const AssessmentInProgressPage: React.FC = () => {
 
       // The backend returns { generated_content: [ ... ], status: "success" }
       if (data.generated_content && data.generated_content.length > 0) {
-        setEditLessonForm(f => ({ ...f, description: data.generated_content[0] }));
+        // Get existing content
+        const existingContent = editLessonForm.description || "";
+        
+        // Append new AI generated content to existing content
+        const combinedContent = existingContent 
+          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${data.generated_content}`
+          : data.generated_content;
+        
+        setEditLessonForm(f => ({ ...f, description: combinedContent }));
       } else {
-        setEditLessonForm(f => ({ ...f, description: "No content generated." }));
+        // If no content generated, append a message to existing content
+        const existingContent = editLessonForm.description || "";
+        const message = "No content generated.";
+        const combinedContent = existingContent 
+          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${message}`
+          : message;
+        
+        setEditLessonForm(f => ({ ...f, description: combinedContent }));
       }
     } catch (error) {
       console.error('AI Generate error:', error);
-      setEditLessonForm(f => ({ ...f, description: "AI generation failed." }));
+      
+      // Append error message to existing content
+      const existingContent = editLessonForm.description || "";
+      const errorMessage = "AI generation failed.";
+      const combinedContent = existingContent 
+        ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${errorMessage}`
+        : errorMessage;
+      
+      setEditLessonForm(f => ({ ...f, description: combinedContent }));
     } finally {
       setIsAIGenerating(false);
     }

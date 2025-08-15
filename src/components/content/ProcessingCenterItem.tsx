@@ -57,11 +57,13 @@ interface ProcessingCenterItemProps {
   };
   lessons?: any[];
   onAction?: (action: string, itemId: string, newDescription?: string) => void;
+  selectedCourseId?: string; // Add selected course ID prop
 }
 
 const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   item,
   onAction,
+  selectedCourseId,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -298,7 +300,8 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     }
   };
 
-  const handleEditClick = () => {
+  const handleEditClick = (courseid: string) => {
+    console.log('Course ID being sent:', courseid);
     setIsEditDialogOpen(true);
   };
 
@@ -410,6 +413,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
           qaqf_level,
           subject,
           userquery,
+          courseid: selectedCourseId,
         }),
       });
       
@@ -570,7 +574,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={handleEditClick}
+                        onClick={()=>handleEditClick(selectedCourseId || "")}
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Edit

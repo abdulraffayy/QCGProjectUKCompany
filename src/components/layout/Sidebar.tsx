@@ -60,22 +60,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           Overview
         </Link>
         
-        <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          Content
-        </div>
-        {(!isVerifier || isAdmin) && (
+        {/* Content section - only for regular users and admins */}
+        {(!isVerifier && !isModerator) || isAdmin ? (
           <>
+            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Content
+            </div>
             <Link href="/content-generator" className={navItemClass("/content-generator")}> 
               <span className="material-icons mr-3 text-inherit">auto_awesome</span>
               AI Content Studio
             </Link>
-            {/* <Link href="/my-content" className={navItemClass("/my-content")}> 
-              <span className="material-icons mr-3 text-inherit">history_edu</span>
-              Module Library
-            </Link> */}
-
-
-<Link href="/course-generator" className={navItemClass("/course-generator")}>
+            <Link href="/course-generator" className={navItemClass("/course-generator")}>
               <span className="material-icons mr-3 text-inherit">auto_awesome</span>
               Course Generator
             </Link>
@@ -92,53 +87,54 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               Video Generator
             </Link>
           </>
-        )}
-        
-        {/* Quality Assurance section per role */}
+                 ) : null}
+         
+         {/* Assessment in Progress - only for regular users */}
+         {(!isVerifier && !isModerator && !isAdmin) && (
+           <>
+             <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+               Assessment
+             </div>
+             <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}>
+               <span className="material-icons mr-3 text-inherit">assignment_late</span>
+               Assessment in Progress
+             </Link>
+           </>
+         )}
+         
+         {/* Quality Assurance section per role */}
         {(isAdmin || isVerifier || isModerator) && (
           <>
             <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
               Quality Assurance
             </div>
-            {/* Verification view: Verification, Assessment, Analytics */}
-            {isVerifier && !isAdmin && (
-              <>
-                <Link href="/verification" className={navItemClass("/verification")}>
-                  <span className="material-icons mr-3 text-inherit">verified</span>
-                  Verification
-                </Link>
-                <Link href="/assessment" className={navItemClass("/assessment")}>
-                  <span className="material-icons mr-3 text-inherit">school</span>
-                  Assessment
-                </Link>
-                <Link href="/analytics" className={navItemClass("/analytics")}>
-                  <span className="material-icons mr-3 text-inherit">analytics</span>
-                  Analytics
-                </Link>
-              </>
-            )}
+                         {/* Verification view: Only Verification and Assessment */}
+             {isVerifier && !isAdmin && (
+               <>
+                 <Link href="/verification" className={navItemClass("/verification")}>
+                   <span className="material-icons mr-3 text-inherit">verified</span>
+                   Verification
+                 </Link>
+                 <Link href="/assessment" className={navItemClass("/assessment")}>
+                   <span className="material-icons mr-3 text-inherit">school</span>
+                   Assessment
+                 </Link>
+               </>
+             )}
 
-            {/* Moderation view: Moderation, Assessment, Analytics, Assessment in Progress */}
-            {isModerator && !isAdmin && (
-              <>
-                <Link href="/moderation" className={navItemClass("/moderation")}>
-                  <span className="material-icons mr-3 text-inherit">gavel</span>
-                  Moderation
-                </Link>
-                <Link href="/assessment" className={navItemClass("/assessment")}>
-                  <span className="material-icons mr-3 text-inherit">school</span>
-                  Assessment
-                </Link>
-                <Link href="/analytics" className={navItemClass("/analytics")}>
-                  <span className="material-icons mr-3 text-inherit">analytics</span>
-                  Analytics
-                </Link>
-                <Link href="/assessment-in-progress" className={navItemClass("/assessment-in-progress")}>
-                  <span className="material-icons mr-3 text-inherit">assignment_late</span>
-                  Assessment in Progress
-                </Link>
-              </>
-            )}
+                         {/* Moderation view: Only Moderation and Assessment */}
+             {isModerator && !isAdmin && (
+               <>
+                 <Link href="/moderation" className={navItemClass("/moderation")}>
+                   <span className="material-icons mr-3 text-inherit">gavel</span>
+                   Moderation
+                 </Link>
+                 <Link href="/assessment" className={navItemClass("/assessment")}>
+                   <span className="material-icons mr-3 text-inherit">school</span>
+                   Assessment
+                 </Link>
+               </>
+             )}
 
             {/* Admin sees everything under QA */}
             {isAdmin && (
@@ -168,30 +164,35 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           </>
         )}
         
-        {/* Administration for Moderation, Verification and Admin */}
-        {(isAdmin || isVerifier || isModerator) && (
-          <>
-            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-              Administration
-            </div>
-            
-            <Link href="/qaqf-admin" className={navItemClass("/qaqf-admin")}>
-              <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
-              QAQF Admin
-            </Link>
-            
-            <Link href="/settings" className={navItemClass("/settings")}>
-              <span className="material-icons mr-3 text-inherit">settings</span>
-              Settings
-            </Link>
-            <Link href="/assessment" className={navItemClass("/assessment")}>
+                 {/* Administration section */}
+         {(isAdmin || isVerifier || isModerator) && (
+           <>
+             <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+               Administration
+             </div>
+             
+                           {/* QAQF Admin - only for Admin */}
+              {isAdmin && (
+                <Link href="/qaqf-admin" className={navItemClass("/qaqf-admin")}>
+                  <span className="material-icons mr-3 text-inherit">admin_panel_settings</span>
+                  QAQF Admin
+                </Link>
+              )}
+             
+                           <Link href="/settings" className={navItemClass("/settings")}>
+                <span className="material-icons mr-3 text-inherit">settings</span>
+                Settings
+              </Link>
+              
+              {/* Assessment - only for Admin */}
+              {isAdmin && (
+                <Link href="/assessment" className={navItemClass("/assessment")}>
                   <span className="material-icons mr-3 text-inherit">school</span>
                   Assessment
                 </Link>
-
-           
-          </>
-        )}
+              )}
+           </>
+         )}
         
        
         {/* <div className="px-4 mt-6 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
@@ -221,7 +222,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               <span className="material-icons mr-3 text-inherit">rafay</span>
               Rafay
             </Link> */}
-
+<Link href="/dummylesson" className={navItemClass("/dummylesson")}>
+                  <span className="material-icons mr-3 text-inherit">school</span>
+                  Dummy Lesson
+                </Link>
       </nav>
     </aside>
   );

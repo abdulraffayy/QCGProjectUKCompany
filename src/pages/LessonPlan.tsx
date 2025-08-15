@@ -146,21 +146,30 @@ const LessonPlanPage: React.FC = () => {
         url += `?userid=${encodeURIComponent(userid)}`;
       }
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+      
       const res = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         }
       });
-      if (!res.ok) throw new Error('Failed to fetch courses');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to fetch courses');
+      }
+      
       const data = await res.json();
-
-
-     
       setCourses(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching courses:', err);
-      
+      if (err instanceof Error && err.message.includes('Token')) {
+        toast.error("Authentication required. Please login again.");
+      }
     }
   };
 
@@ -171,8 +180,25 @@ const LessonPlanPage: React.FC = () => {
       if (courseId) {
         url += `?courseid=${encodeURIComponent(courseId)}`;
       }
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch lessons');
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+      
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to fetch lessons');
+      }
+      
       const data = await res.json();
       console.log('API returned modules data:', data);
       if (Array.isArray(data) && data.length > 0) {
@@ -181,7 +207,9 @@ const LessonPlanPage: React.FC = () => {
       setModules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching modules:', err);
-     
+      if (err instanceof Error && err.message.includes('Token')) {
+        toast.error("Authentication required. Please login again.");
+      }
     }
   };
 
@@ -193,16 +221,29 @@ const LessonPlanPage: React.FC = () => {
         return;
       }
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        return;
+      }
+
       const res = await fetch('/api/weeks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           title: addWeeksForm.title,
           courseid: selectedCourse,
           userid: userId,
         }),
       });
-      if (!res.ok) throw new Error('Failed to add week');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to add week');
+      }
 
       await res.json();
 
@@ -221,7 +262,7 @@ const LessonPlanPage: React.FC = () => {
       // Force a re-render by updating the refreshWeeks state
     } catch (err) {
       console.error('Error adding week:', err);
-      toast.error("Could not add week. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Could not add week. Please try again.");
     }
   };
 
@@ -340,12 +381,25 @@ const LessonPlanPage: React.FC = () => {
       level: newModule.qaqfLevel, // Send as 'level' to match backend field name
     };
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        return;
+      }
+      
       const res = await fetch('/api/lessons', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(moduleWithCourseId),
       });
-      if (!res.ok) throw new Error('Failed to add module');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to add module');
+      }
       // Get the created module from the response (if your API returns it)
       const createdModule = await res.json();
       // Add the new module to the modules list (left side)
@@ -375,15 +429,33 @@ const LessonPlanPage: React.FC = () => {
       level: editModuleDialogQAQF, // Send as 'level' to match backend field name
     };
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        return;
+      }
+      
       const res = await fetch(`/api/lessons/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(updatedModule),
       });
-      if (!res.ok) throw new Error('Failed to update module');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to update module');
+      }
 
       // Fetch the updated module from the server to get the correct data structure
-      const updatedModuleRes = await fetch(`/api/lessons/${id}`);
+      const updatedModuleRes = await fetch(`/api/lessons/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (updatedModuleRes.ok) {
         const serverUpdatedModule = await updatedModuleRes.json();
         console.log('Server returned updated module:', serverUpdatedModule);
@@ -423,14 +495,30 @@ const LessonPlanPage: React.FC = () => {
   // Add function to delete module from backend
   const handleDeleteModuleApi = async (id: number) => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        return false;
+      }
+      
       const res = await fetch(`/api/lessons/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      if (!res.ok) throw new Error('Failed to delete module');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete module');
+      }
+      
       toast.success('Module deleted successfully!');
       return true;
     } catch (err) {
-      toast.error('Could not delete module. Please try again.');
+      console.error('Error deleting module:', err);
+      toast.error(err instanceof Error ? err.message : 'Could not delete module. Please try again.');
       return false;
     }
   };
@@ -493,12 +581,31 @@ const LessonPlanPage: React.FC = () => {
 
   const fetchWeeksFromAPI = async () => {
     try {
-      const res = await fetch('/api/weeks');
-      if (!res.ok) throw new Error('Failed to fetch weeks');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+      
+      const res = await fetch('/api/weeks', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to fetch weeks');
+      }
+      
       const data = await res.json();
       setWeeksFromApi(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching weeks:', err);
+      if (err instanceof Error && err.message.includes('Token')) {
+        toast.error("Authentication required. Please login again.");
+      }
       setWeeksFromApi([]);
     }
   };
@@ -945,6 +1052,7 @@ const LessonPlanPage: React.FC = () => {
           qaqf_level,
           subject,
           userquery,
+          courseid: selectedCourse, 
         }),
       });
       if (!response.ok) throw new Error('Failed to generate content');
@@ -1033,6 +1141,7 @@ const LessonPlanPage: React.FC = () => {
           qaqf_level,
           subject,
           userquery,
+          courseid: selectedCourse, // Use the selected course ID
         }),
       });
   
@@ -1780,20 +1889,33 @@ const LessonPlanPage: React.FC = () => {
             <Button variant="outline" onClick={async () => {
               try {
                 const token = localStorage.getItem('token');
+                if (!token) {
+                  toast.error("Authentication required. Please login again.");
+                  return;
+                }
+                
                 const res = await fetch('/api/courses', {
-                  ...(token && { Authorization: `Bearer ${token}` }),
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
                   body: JSON.stringify(courseForm),
                 });
-                if (!res.ok) throw new Error('Failed to add course');
+                
+                if (!res.ok) {
+                  const errorData = await res.json();
+                  throw new Error(errorData.message || 'Failed to add course');
+                }
+                
                 await fetchCoursesFromAPI();
                 setSelectedCourse(courseForm.title);
                 toast.success("Course added!");
                 setAddCourseDialogOpen(false);
                 setCourseForm({ title: "", userid: "", description: "", status: "" });
               } catch (err) {
-                toast.error("Could not add course");
+                console.error('Error adding course:', err);
+                toast.error(err instanceof Error ? err.message : "Could not add course");
               }
             }}>Add</Button>
             <DialogClose asChild>

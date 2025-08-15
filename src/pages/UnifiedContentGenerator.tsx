@@ -1312,6 +1312,7 @@ const UnifiedContentGenerator: React.FC = () => {
                             content: item.content,
                             metadata: item.metadata,
                           }}
+                          selectedCourseId={selectedCourse}
                           onAction={async (action, itemId, newDescription) => {
                             if (action === 'deleted') {
                               setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
@@ -1370,6 +1371,7 @@ const UnifiedContentGenerator: React.FC = () => {
                             content: JSON.stringify(lesson, null, 2), // for Content Preview
                             metadata: lesson,
                           }}
+                          selectedCourseId={selectedCourse}
                           onAction={async (action, itemId) => {
                             if (action === 'deleted') {
                               setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
