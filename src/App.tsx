@@ -29,7 +29,7 @@ import Rafay from "./pages/Rafay";
 import CourseGeneratorPlatform from "./pages/CourseGeneratorPlatform";
 import { WizardPage } from "./pages/WizardPage";
 import { courseTypes } from "./types/courseTypes";
-import Dummy from "./pages/Dummy";
+
 import LessonPage from "./pages/Dummy";
 
 
