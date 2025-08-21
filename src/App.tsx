@@ -30,7 +30,7 @@ import CourseGeneratorPlatform from "./pages/CourseGeneratorPlatform";
 import { WizardPage } from "./pages/WizardPage";
 import { courseTypes } from "./types/courseTypes";
 
-import LessonPage from "./pages/Dummy";
+import Dummy from "./pages/Dummy";
 
 
 
@@ -90,7 +90,7 @@ function AuthenticatedRoutes() {
           <Route path="/settings" component={Settings} />
           <Route path="/rafay" component={RafayWrapper} />
           <Route path="/course-generator" component={CourseGeneratorPlatform} />
-          <Route path="/dummylesson" component={LessonPage} />
+          <Route path="/dummylesson" component={Dummy} />
 
           <Route
             path="/course-generator/wizard/:type"

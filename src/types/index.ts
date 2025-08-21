@@ -82,7 +82,8 @@ export const MODULE_TYPE_OPTIONS: { [key in ModuleType]: string } = {
 // QAQF TYPES
 // ========================================
 
-export enum QAQF_LEVELS {
+
+  export enum QAQF_LEVELS {
   Awareness = "Qaqf level 1 – Awareness",
   Application = "Qaqf Level 2 – Application",
   Competence = "Qaqf Level 3 – Competence",
@@ -93,7 +94,6 @@ export enum QAQF_LEVELS {
   StrategicLeadership = "Qaqf Level 8 – Strategic Leadership",
   MasteryInnovation = "Qaqf Level 9 – Mastery / Innovation"
 }
-  
 
 // ========================================
 // BASIC ENTITY TYPES

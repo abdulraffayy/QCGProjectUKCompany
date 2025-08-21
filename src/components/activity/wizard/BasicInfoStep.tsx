@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BasicInfo } from '../../types/courseTypes';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { getDifficultyOptions } from '../../types/courseTypes';
+import { BasicInfo } from '@/types/courseTypes';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getDifficultyOptions } from '@/types/courseTypes';
 
 interface BasicInfoStepProps {
   data: BasicInfo | undefined;

@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, AlertTriangle, Eye, RefreshCw, CheckCircle2 } fro
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface Content {
   id: number;
@@ -232,7 +233,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
         comments: verificationComments,
       };
 
-      const response = await fetch(`http://38.29.145.85:8000/api/moderation_lessons/${selectedContent.id}`, {
+      const response = await fetch(`http://69.197.176.134:5000/api/moderation_lessons/${selectedContent.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +292,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
       
       console.log('Sending request to API:', requestBody);
       
-      const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
+      const response = await fetch('http://69.197.176.134:5000/api/autoverification_lessons', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -356,29 +357,9 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
           }));
         }
         
-        // Calculate average score using the new values from API
-        const scores = [newClarityScore, newCompletenessScore, newAccuracyScore, newAlignmentScore];
-        const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-        
-        // Determine final status based on API response or calculated average
-        let finalStatus = 'pending';
-        if (data.verification_status) {
-          finalStatus = data.verification_status;
-        } else {
-          if (averageScore >= 3.5) {
-            finalStatus = 'verified';
-          } else if (averageScore >= 2.5) {
-            finalStatus = 'pending';
-          } else {
-            finalStatus = 'unverified';
-          }
-        }
-
-        // Update status
-        setStatusValue(finalStatus);
-        if (selectedContent?.id) {
-          updateLessonStatus(selectedContent.id, finalStatus);
-        }
+        // Note: We intentionally do NOT update the status here
+        // The status should remain unchanged after auto-verification
+        // Users can manually set the status based on the auto-verification results
       } else if (result.success === false) {
         // Handle API error response
         console.error('API returned error:', result.error);
@@ -654,19 +635,30 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                     </div>
                   
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                    <Button 
-                        variant="default"
-                        onClick={() => {
-                          if (selectedContent && selectedContent.description) {
-                            runAutoVerification();
-                          } else {
-                            console.error('No content selected or no description available');
-                          }
-                        }}
-                        size="sm"
-                      >
-                        Auto-Verify
-                      </Button>
+                    {/* Auto-Verify: Analyzes content and updates scores/comments but preserves current status */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                              variant="default"
+                              onClick={() => {
+                                if (selectedContent && selectedContent.description) {
+                                  runAutoVerification();
+                                } else {
+                                  console.error('No content selected or no description available');
+                                }
+                              }}
+                              size="sm"
+                            >
+                              Auto-Verify
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Analyzes content and updates scores/comments</p>
+                          <p>Status remains unchanged</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                      
                       <Button 
                         onClick={handleVerify}
@@ -721,6 +713,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
                             <SelectItem value="rejected">Rejected</SelectItem>
                           </SelectContent>
                         </Select>
+                        
                       </div>
                     </div>
                   </div>

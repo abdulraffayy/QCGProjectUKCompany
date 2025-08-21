@@ -126,10 +126,10 @@ const UnifiedContentGenerator: React.FC = () => {
   });
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
-    queryKey: ['http://38.29.145.85:8000/api/study-materials'],
+    queryKey: ['http://69.197.176.134:5000/api/study-materials'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
+      const response = await fetch('http://69.197.176.134:5000/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
@@ -172,16 +172,33 @@ const UnifiedContentGenerator: React.FC = () => {
 
   useEffect(() => {
     // Load from localStorage on mount
-    const saved = localStorage.getItem('generatedItems');
-    if (saved) {
-      setGeneratedItems(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('generatedItems');
+      console.log('🔍 Loading data - localStorage value:', saved);
+      if (saved) {
+        const parsedItems = JSON.parse(saved);
+        console.log('🔍 Parsed items:', parsedItems);
+        if (Array.isArray(parsedItems)) {
+          console.log('🔍 Setting generatedItems:', parsedItems);
+          setGeneratedItems(parsedItems);
+        } else {
+          console.log('🔍 Parsed data is not an array');
+          setGeneratedItems([]);
+        }
+      } else {
+        console.log('🔍 No data in localStorage');
+        setGeneratedItems([]);
+      }
+    } catch (error) {
+      console.error('🔍 Error loading data:', error);
+      setGeneratedItems([]);
     }
-    // No dummy data - start with empty array
   }, []);
 
   useEffect(() => {
     // Save to localStorage whenever generatedItems changes
     localStorage.setItem('generatedItems', JSON.stringify(generatedItems));
+    console.log('🔍 Saved to localStorage:', generatedItems);
   }, [generatedItems]);
 
   useEffect(() => {
@@ -359,7 +376,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
   const generationMutation = useMutation({
     mutationFn: async (data: UnifiedGenerationData) => {
-      const endpoint = data.generation_type === 'content' ? 'http://38.29.145.85:8000/api/ai/generate-content' : 'http://38.29.145.85:8000/api/ai/generate-content';
+      const endpoint = data.generation_type === 'content' ? 'http://69.197.176.134:5000/api/ai/generate-content' : 'http://69.197.176.134:5000/api/ai/generate-content';
       const token = localStorage.getItem('token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -1207,96 +1224,109 @@ const UnifiedContentGenerator: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className=''>
-              {generatedItems.length === 0 && courseLessons.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">No generated content to review yet</p>
-                  <p className="text-sm">Generate some content first to see it here for review and approval.</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Filter and Sort Controls */}
-                  <div className="flex flex-col sm:flex-row flex-wrap gap-4 p-2 sm:p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="filter-status">Filter by Status:</Label>
-                      <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-32 focus:ring-0 focus:ring-offset-0">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="verified">Verified</SelectItem>
-                          <SelectItem value="unverified">Unverified</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="filter-type">Filter by Type:</Label>
-                      <Select value={filterType} onValueChange={setFilterType}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Types</SelectItem>
-                          <SelectItem value="content">Content</SelectItem>
-                          <SelectItem value="course">Course</SelectItem>
-                          <SelectItem value="lesson">Lesson</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
-                      <Select value={selectedCourse} onValueChange={(value) => {
-                        setSelectedCourse(value);
-                        console.log("Raw selected value:", value);
-                        console.log("Available courses:", courses);
-                        
-                        // Try different ways to find the course
-                        const selectedCourseInfo = courses.find(course => {
-                          const courseId = String(course.id);
-                          const selectedValue = String(value);
-                          return courseId === selectedValue;
-                        });
-                        
-                        console.log("Course selected:", selectedCourseInfo);
-                        console.log("Selected Course ID:", value);
-                        console.log("Selected Course Name:", selectedCourseInfo?.title);
-                        console.log("Selected Course Full Object:", selectedCourseInfo);
-                      }}>
-                        <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
-                          <SelectValue placeholder="Select a course" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {courses.map(course => (
-                            <SelectItem key={course.id} value={String(course.id)}>
-                              {course.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+              {/* Quick Debug */}
+              {/* <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                Items: {generatedItems.length} | localStorage: {localStorage.getItem('generatedItems') ? 'Has Data' : 'Empty'}
+                <button 
+                  onClick={() => {
+                    const testItem = {
+                      id: 'demo-1',
+                      type: 'content',
+                      title: 'Demo Content',
+                      description: 'This is demo content',
+                      qaqfLevel: 5,
+                      qaqfComplianceScore: 85,
+                      content: 'Demo content body',
+                      createdAt: new Date().toISOString(),
+                      createdBy: 'Demo User',
+                      status: 'completed'
+                    };
+                    setGeneratedItems([testItem]);
+                    localStorage.setItem('generatedItems', JSON.stringify([testItem]));
+                  }}
+                  className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                >
+                  Add Demo
+                </button>
+              </div> */}
+              
+              <div className="space-y-6">
+                {/* Filter and Sort Controls - Always visible */}
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4 p-2 sm:p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="filter-status">Filter by Status:</Label>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-32 focus:ring-0 focus:ring-offset-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="verified">Verified</SelectItem>
+                        <SelectItem value="unverified">Unverified</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                 
-                  {selectedCourse && generatedItems.length > 0 && (
-                    <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="filter-type">Filter by Type:</Label>
+                    <Select value={filterType} onValueChange={setFilterType}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="content">Content</SelectItem>
+                        <SelectItem value="course">Course</SelectItem>
+                        <SelectItem value="lesson">Lesson</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
+                    <Select value={selectedCourse} onValueChange={(value) => {
+                      setSelectedCourse(value);
+                      console.log("Raw selected value:", value);
+                      console.log("Available courses:", courses);
                       
-                      {generatedItems
-                        .filter(item => {
-                          // Apply status filter
-                          if (filterStatus !== 'all') {
-                            return item.status === filterStatus;
-                          }
-                          // Apply type filter
-                          if (filterType !== 'all') {
-                            return item.type === filterType;
-                          }
-                          return true;
-                        })
-                        .map((item) => (
+                      // Try different ways to find the course
+                      const selectedCourseInfo = courses.find(course => {
+                        const courseId = String(course.id);
+                        const selectedValue = String(value);
+                        return courseId === selectedValue;
+                      });
+                      
+                      console.log("Course selected:", selectedCourseInfo);
+                      console.log("Selected Course ID:", value);
+                      console.log("Selected Course Full Object:", selectedCourseInfo);
+                    }}>
+                      <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map(course => (
+                          <SelectItem key={course.id} value={String(course.id)}>
+                            {course.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Content Display */}
+                {!selectedCourse ? (
+                  // Show generated items when no course is selected
+                  getFilteredAndSortedItems().length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No generated content found</p>
+                      <p className="text-sm">Generate some content first to see it here for review and approval.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {getFilteredAndSortedItems().map((item) => (
                         <ProcessingCenterItem
                           key={item.id}
                           item={{
@@ -1336,12 +1366,17 @@ const UnifiedContentGenerator: React.FC = () => {
                         />
                       ))}
                     </div>
-                  )}
-
-                  {/* Course Lessons Section */}
-                  {selectedCourse && courseLessons.length > 0 && (
+                  )
+                ) : (
+                  // Show course lessons when a course is selected
+                  courseLessons.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No lessons found for this course</p>
+                      <p className="text-sm">No lessons available for the selected course.</p>
+                    </div>
+                  ) : (
                     <div className="space-y-4">
-                    
                       {courseLessons
                         .filter(lesson => {
                           // Apply status filter
@@ -1386,63 +1421,48 @@ const UnifiedContentGenerator: React.FC = () => {
                         />
                       ))}
                     </div>
-                  )}
+                  )
+                )}
 
-                  {/* Show message when no course is selected */}
-                  {!selectedCourse && generatedItems.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">Please select a course</p>
-                      <p className="text-sm">Select a course from the dropdown above to view its lessons.</p>
-                    </div>
-                  )}
-
-                  {/* Show message when course is selected but no lessons found */}
-                  {selectedCourse && courseLessons.filter(lesson => 
-                    filterStatus === 'all' ? true : lesson.status === filterStatus
-                  ).length === 0 && generatedItems.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No lessons found</p>
-                      <p className="text-sm">
-                        {filterStatus !== 'all' 
-                          ? `No lessons with status "${filterStatus}" found for this course.` 
-                          : 'No lessons found for this course.'}
+                {/* Summary Stats */}
+                {((!selectedCourse && getFilteredAndSortedItems().length > 0) || (selectedCourse && courseLessons.length > 0)) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {!selectedCourse ? getFilteredAndSortedItems().length : courseLessons.length}
                       </p>
+                      <p className="text-sm text-gray-600">Total Items</p>
                     </div>
-                  )}
-
-                  {/* Summary Stats */}
-                  {(getFilteredAndSortedItems().length > 0 || courseLessons.length > 0) && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">
-                          {getFilteredAndSortedItems().length + courseLessons.length}
-                        </p>
-                        <p className="text-sm text-gray-600">Total Items</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-yellow-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'processing').length}
-                        </p>
-                        <p className="text-sm text-gray-600">Processing</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                          {getFilteredAndSortedItems().filter(i => i.status === 'completed').length}
-                        </p>
-                        <p className="text-sm text-gray-600">Completed</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-600">
-                          {Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(getFilteredAndSortedItems().length, 1))}%
-                        </p>
-                        <p className="text-sm text-gray-600">Avg. Compliance</p>
-                      </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-yellow-600">
+                        {!selectedCourse 
+                          ? getFilteredAndSortedItems().filter(i => i.status === 'processing').length
+                          : courseLessons.filter(i => i.status === 'processing').length
+                        }
+                      </p>
+                      <p className="text-sm text-gray-600">Processing</p>
                     </div>
-                  )}
-                </div>
-              )}
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {!selectedCourse 
+                          ? getFilteredAndSortedItems().filter(i => i.status === 'completed').length
+                          : courseLessons.filter(i => i.status === 'completed').length
+                        }
+                      </p>
+                      <p className="text-sm text-gray-600">Completed</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-600">
+                        {!selectedCourse 
+                          ? Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(getFilteredAndSortedItems().length, 1))
+                          : Math.round(courseLessons.reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(courseLessons.length, 1))
+                        }%
+                      </p>
+                      <p className="text-sm text-gray-600">Avg. Compliance</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

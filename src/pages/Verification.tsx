@@ -131,19 +131,15 @@ const VerificationPage: React.FC = () => {
     fetchCourses();
   }, []);
 
-  // Set statusValue to the lesson's status (if available) whenever a new lesson is selected
-  React.useEffect(() => {
-    if (selectedContent && selectedContent.status) {
-      setStatusValue(selectedContent.status);
-    } else {
-      setStatusValue('pending');
-    }
-  }, [selectedContent]);
-
   // When a lesson is selected, set the dropdown to its cached status and load cached scoring data
   React.useEffect(() => {
     if (selectedContent && selectedContent.id) {
-      setStatusValue(statusCache[selectedContent.id] || 'pending');
+      // Use cached status if available, otherwise use lesson's status, otherwise default to 'pending'
+      const cachedStatus = statusCache[selectedContent.id];
+      const lessonStatus = selectedContent.status;
+      const finalStatus = cachedStatus || lessonStatus || 'pending';
+      console.log('Setting initial status for lesson', selectedContent.id, 'to:', finalStatus);
+      setStatusValue(finalStatus);
       
       // Load cached scoring data for this lesson
       const cachedScoring = scoringCache[selectedContent.id];
@@ -177,6 +173,17 @@ const VerificationPage: React.FC = () => {
       setVerificationCompleted(false);
     }
   }, [selectedContent, statusCache, scoringCache]);
+
+  // Ensure status is preserved during verification process
+  React.useEffect(() => {
+    if (verificationCompleted && selectedContent?.id) {
+      // Keep the current status unchanged
+      const currentStatus = statusCache[selectedContent.id] || statusValue;
+      if (currentStatus !== statusValue) {
+        setStatusValue(currentStatus);
+      }
+    }
+  }, [verificationCompleted, selectedContent, statusCache, statusValue]);
 
   // When lessons are loaded for a course, set all their statuses to the backend value (or 'pending' if missing)
   React.useEffect(() => {
@@ -224,7 +231,7 @@ const VerificationPage: React.FC = () => {
 
   async function updateLessonStatus(lessonId: number, status: string) {
     try {
-      const response = await fetch(`/api/lessons/${lessonId}/status`, {
+      const response = await fetch(`/api/lessons_status/${lessonId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +288,7 @@ const VerificationPage: React.FC = () => {
         comments: verificationComments,
       };
 
-      const response = await fetch(`http://38.29.145.85:8000/api/verification_lessons/${selectedContent.id}`, {
+      const response = await fetch(`http://69.197.176.134:5000/api/verification_lessons/${selectedContent.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -333,18 +340,23 @@ const VerificationPage: React.FC = () => {
       return;
     }
 
+    // Store the current status to preserve it
+    const currentStatus = statusValue;
+    console.log('Preserving current status:', currentStatus);
+
     setIsVerifying(true);
     setVerificationCompleted(false);
     setVerificationComments('');
 
     try {
-      const response = await fetch('http://38.29.145.85:8000/api/autoverification_lessons', {
+      const response = await fetch('http://69.197.176.134:5000/api/autoverification_lessons', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           content: selectedContent.description,
+          // DO NOT send status to API - keep it separate
         }),
       });
 
@@ -380,35 +392,24 @@ const VerificationPage: React.FC = () => {
       const scores = [clarityScore, completenessScore, accuracyScore, alignmentScore];
       const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
       
-      // Determine final status based on API response or scores
-      let finalStatus = 'pending';
+      // IMPORTANT: Do NOT change the status - keep the current status
+      console.log('Keeping current status unchanged:', currentStatus);
       
-      // First try to use the verification_status from API response
-      if (result.success && result.data && result.data.verification_status) {
-        finalStatus = result.data.verification_status;
-      } else {
-        // Fallback to calculating based on average score
-        if (averageScore >= 3.5) {
-          finalStatus = 'verified';
-        } else if (averageScore >= 2.5) {
-          finalStatus = 'pending';
-        } else {
-          finalStatus = 'unverified';
-        }
-      }
-
-      // Update status
-      setStatusValue(finalStatus);
-      if (selectedContent?.id) {
-        updateLessonStatus(selectedContent.id, finalStatus);
-      }
+      // Ensure the status remains the same
+      setStatusValue(currentStatus);
+      
+      // Update the status cache to preserve the current status
+      setStatusCache(prev => ({
+        ...prev,
+        [selectedContent.id]: currentStatus
+      }));
 
       setVerificationCompleted(true);
       setIsVerifying(false);
 
       toast({
         title: "Auto-Verification Complete",
-        description: `Content verification completed with average score: ${averageScore.toFixed(1)}/4`,
+        description: `Content verification completed with average score: ${averageScore.toFixed(1)}/4. Status preserved.`,
       });
 
     } catch (error) {
@@ -628,11 +629,17 @@ const VerificationPage: React.FC = () => {
         finalStatus = 'unverified';
       }
 
-      // Update status
+      // Update status in UI and cache only
       setStatusValue(finalStatus);
-      if (selectedContent?.id) {
-        updateLessonStatus(selectedContent.id, finalStatus);
-      }
+      
+      // Update the status cache immediately
+      setStatusCache(prev => ({
+        ...prev,
+        [selectedContent.id]: finalStatus
+      }));
+      
+      // Note: We don't call updateLessonStatus here to avoid unwanted API calls
+      // The status will be saved to backend when user manually changes it or clicks "Save Changes"
 
       setVerificationCompleted(true);
       setIsVerifying(false);
@@ -864,15 +871,20 @@ const VerificationPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">Status</span>
                         <Select
+                          key={`status-${selectedContent?.id}-${statusValue}`}
                           value={statusValue}
                           onValueChange={(value) => {
+                            console.log('Status changed to:', value);
+                            // Update the UI immediately
+                            setStatusValue(value);
+                            // Update backend and cache
                             if (selectedContent?.id) {
                               updateLessonStatus(selectedContent.id, value);
                             }
                           }}
                         >
                           <SelectTrigger className="w-28 sm:w-36">
-                            <SelectValue />
+                            <SelectValue placeholder={statusValue || "Select status"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="verified">Verified</SelectItem>
@@ -881,6 +893,8 @@ const VerificationPage: React.FC = () => {
                             <SelectItem value="rejected">Rejected</SelectItem>
                           </SelectContent>
                         </Select>
+                      
+                       
                       </div>
                     </div>
                   </div>

@@ -211,10 +211,10 @@ import { useCourseWizard } from '../components/hooks/useCourseWizard';
 import { generateCourse } from '../types/courseGenerator';
 import { Button } from '../components/ui/button';
  import { Progress } from '../components/ui/progress';
-import { BasicInfoStep } from '../components/wizard/BasicInfoStep';
-import { LearningObjectivesStep } from '../components/wizard/LearningObjectivesStep';
-import { SpecializedContentStep } from '../components/wizard/SpecializedContentStep';
-import { ReviewStep } from '../components/wizard/ReviewStep';
+import { BasicInfoStep } from '../components/activity/wizard/BasicInfoStep';
+import { LearningObjectivesStep } from '../components/activity/wizard/LearningObjectivesStep';
+import { SpecializedContentStep } from '../components/activity/wizard/SpecializedContentStep';
+import { ReviewStep } from '../components/activity/wizard/ReviewStep';
 import { GeneratedCourseComponent } from '../pages/GeneratedCourse';
 
 interface WizardPageProps {

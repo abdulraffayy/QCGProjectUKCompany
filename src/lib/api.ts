@@ -27,10 +27,10 @@ export const generateCourseContent = async (
   requestData: CourseGenerationRequest,
   token?: string
 ): Promise<CourseGenerationResponse> => {
-  console.log('🌐 Making API call to:', 'http://38.29.145.85:8000/api/ai/generate-content');
+  console.log('🌐 Making API call to:', 'http://69.197.176.134:5000/api/ai/generate-content');
   console.log('📤 Request data:', requestData);
   
-  const response = await fetch('http://38.29.145.85:8000/api/ai/generate-content', {
+  const response = await fetch('http://69.197.176.134:5000/api/ai/generate-content', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,5 +47,11 @@ export const generateCourseContent = async (
 
   const result = await response.json();
   console.log('✅ API call successful:', result);
+  // Persist generated content so the editor can load it later
+  try {
+    if (result?.generated_content) {
+      localStorage.setItem('latest_generated_course_content', result.generated_content);
+    }
+  } catch {}
   return result;
 };

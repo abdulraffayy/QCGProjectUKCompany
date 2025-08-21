@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
-import { LearningObjectives, LearningObjective, CourseType } from '../../types/courseTypes';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Button } from '../ui/button';
-import { getDurationOptions } from '../../types/courseTypes';
+import { LearningObjectives, LearningObjective, CourseType } from '@/types/courseTypes';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { getDurationOptions } from '@/types/courseTypes';
 
 interface LearningObjectivesStepProps {
   data: LearningObjectives | undefined;

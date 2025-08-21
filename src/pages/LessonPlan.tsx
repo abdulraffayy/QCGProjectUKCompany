@@ -1,4 +1,3 @@
-
 import { ReactElement } from 'react';
 
 // TypeScript interfaces
@@ -8,6 +7,7 @@ interface ExplanationAttachment {
   explanationType: string;
   isCollapsed: boolean;
   position: number; // Track position in content
+  selectedText?: string; // Store the selected text for reference
 }
 import {
   DndContext,
@@ -41,12 +41,13 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import JoditEditor from 'jodit-react';
+import TiptapEditor from '../components/TiptapEditor';
 
 // Import centralized types
 import { 
   QAQF_LEVELS, 
   MODULE_TYPE_OPTIONS,
-  ModuleType 
+ 
 } from '../types';
 
 // Wrapper component for Rafay to use in dialog
@@ -136,7 +137,7 @@ const LessonPlanPage: React.FC = () => {
     title: "",
     type: "lecture",
     duration: "",
-    qaqfLevel: "1",
+    qaqfLevel: "",
     script: "",
     courseid: "",
     userid: "",
@@ -147,10 +148,60 @@ const LessonPlanPage: React.FC = () => {
   const [rightSideDeleteDialogOpen, setRightSideDeleteDialogOpen] = useState(false);
   const [rightSideDeleteModule, setRightSideDeleteModule] = useState<any>(null);
 
+  // Lesson content state for Tiptap editor
+  const [lessonContent, setLessonContent] = useState<string>('');
+  const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
 
+  // AI Explanation state for Edit Module dialog
+  const [editModuleSelectedText, setEditModuleSelectedText] = useState<string>('');
+  const [editModuleIsPopupOpen, setEditModuleIsPopupOpen] = useState<boolean>(false);
+  const [editModuleIsLoading, setEditModuleIsLoading] = useState<boolean>(false);
+  const [editModuleCurrentExplanationType, setEditModuleCurrentExplanationType] = useState<string>('explain');
+  const [editModuleAiResponse, setEditModuleAiResponse] = useState<string>('');
+  const [editModuleShowTooltip, setEditModuleShowTooltip] = useState<boolean>(false);
+  const [editModuleTooltipPosition, setEditModuleTooltipPosition] = useState({ x: 0, y: 0 });
+  const [editModuleAiQuery, setEditModuleAiQuery] = useState<string>('');
+  const [editModuleAiReference, setEditModuleAiReference] = useState<string>('');
+  const [editModuleIsAIGenerating, setEditModuleIsAIGenerating] = useState<boolean>(false);
+  const [editModuleResponseHistory, setEditModuleResponseHistory] = useState<Array<{type: string, content: string, timestamp: number}>>([]);
+  const [editModuleSelectedLinePosition, setEditModuleSelectedLinePosition] = useState<number>(-1);
+  const [editModuleIsEditorReady, setEditModuleIsEditorReady] = useState<boolean>(false);
+
+  // Refs for Edit Module dialog
+  const editModuleTiptapEditorRef = useRef<any>(null);
+  const editModuleSelectedTextEditorRef = useRef<any>(null);
+  const editModuleAiResponseEditorRef = useRef<any>(null);
+  const editModuleTooltipRef = useRef<HTMLDivElement>(null);
+
+  // Prefill the edit dialog's contentEditable with current description and keep it synced
+  useEffect(() => {
+    if (rightSideEditDialogOpen) {
+      // This is handled differently with Tiptap editor
+      console.log('Edit dialog opened with description:', rightSideEditForm.description);
+    }
+  }, [rightSideEditDialogOpen, rightSideEditForm.description]);
+
+  // const handleBeforeInput = (e: React.FormEvent<HTMLDivElement> & InputEvent) => {
+  //   e.preventDefault(); // browser ki apni formatting rok do
+  
+  //   const newText = e.data ?? ""; // jo user ne type kiya
+  //   const selection = window.getSelection();
+  //   if (!selection || !selection.rangeCount) return;
+  
+  //   const range = selection.getRangeAt(0);
+  //   range.deleteContents();
+  //   range.insertNode(document.createTextNode(newText));
+  
+  //   // state update
+  //   const plainText = e.currentTarget.innerText;
+  //   setRightSideEditForm(prev => ({
+  //     ...prev,
+  //     description: plainText,
+  //   }));
+  // };
+  
     // State variables
     const [selectedText, setSelectedText] = useState<string>('');
-    const [selectedRange, setSelectedRange] = useState<Range | null>(null);
     const [selectedLinePosition, setSelectedLinePosition] = useState<number>(-1);
     const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -168,10 +219,136 @@ const LessonPlanPage: React.FC = () => {
     const [responseHistory, setResponseHistory] = useState<Array<{type: string, content: string, timestamp: number}>>([]);
     
     // Refs
-    const lessonContentRef = useRef<HTMLDivElement>(null);
-    const explanationCounter = useRef<number>(0);
-    const tooltipRef = useRef<HTMLDivElement>(null);
+      // Tiptap editor ref for inserting AI explanations
+  const tiptapEditorRef = useRef<any>(null);
+  const selectedTextEditorRef = useRef<any>(null);
+  const aiResponseEditorRef = useRef<any>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Debug effect to check editor initialization
+  useEffect(() => {
+    const checkEditor = () => {
+      console.log('🔍 Checking Tiptap editor status...');
+      console.log('Editor ref:', tiptapEditorRef.current);
+      if (tiptapEditorRef.current) {
+        console.log('Editor ready:', tiptapEditorRef.current.isReady());
+        console.log('Editor methods:', Object.keys(tiptapEditorRef.current));
+      }
+    };
+
+    // Check after a short delay to allow editor to initialize
+    const timer = setTimeout(checkEditor, 1000);
+    return () => clearTimeout(timer);
+  }, []);
   
+
+
+
+
+
+
+  // Attach explanation for Add Lesson dialog
+     const attachExplanationForAddLesson = () => {
+      
+      console.log('🔍 attachExplanationForAddLesson called');
+      console.log('Selected text:', selectedText);
+      console.log('AI Response:', aiResponse);
+      console.log('Editor ref:', tiptapEditorRef.current);
+      console.log('Is editor ready state:', isEditorReady);
+      console.log('Selected line position:', selectedLinePosition);
+      
+      // Check if editor ref exists
+      if (!tiptapEditorRef.current) {
+        console.error('❌ Editor ref is null');
+        toast.error('Editor not initialized. Please try again.');
+        return;
+      }
+
+      // Check if editor is ready (both state and method)
+      if (!isEditorReady || !tiptapEditorRef.current.isReady()) {
+        console.error('❌ Editor not ready, attempting retry...');
+        console.log('isEditorReady:', isEditorReady);
+        console.log('editor.isReady():', tiptapEditorRef.current.isReady());
+        
+        // Try to wait a bit and retry
+        setTimeout(() => {
+          if (tiptapEditorRef.current && tiptapEditorRef.current.isReady() && isEditorReady) {
+            console.log('✅ Editor is now ready, retrying...');
+            attachExplanationForAddLesson();
+          } else {
+            console.error('❌ Editor still not ready after retry');
+            toast.error('Editor not ready. Please try again.');
+          }
+        }, 500);
+        return;
+      }
+
+      // Create formatted AI explanation content
+      const formattedExplanation = `
+<div class="my-4 bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-indigo-500 p-4 rounded-lg shadow-md">
+  <div class="font-bold text-gray-800 flex items-center mb-2">
+    🤖 AI Explanation
+  </div>
+  <div class="mt-3 text-gray-700">
+    ${aiResponse}
+  </div>
+</div>
+      `;
+
+      console.log('Formatted explanation:', formattedExplanation);
+
+      try {
+        // Always insert at the end of the editor content
+        const contentLength = tiptapEditorRef.current.getEditor().state.doc.content.size;
+        const insertPosition = contentLength;
+        
+        console.log('Inserting at end of editor, position:', insertPosition);
+        
+        // Insert content at the end
+        const result = tiptapEditorRef.current.insertContent(formattedExplanation, insertPosition);
+        
+        console.log('✅ AI response inserted successfully at the end');
+        console.log('Insert result:', result);
+        
+        // Also update the lessonContent state to ensure it's in sync
+        const updatedContent = tiptapEditorRef.current.getContent();
+        setLessonContent(updatedContent);
+        
+        // Show success message
+        toast.success(`AI explanation attached successfully at the bottom!`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        closePopup();
+      } catch (error) {
+        console.error('❌ Error inserting content:', error);
+        
+        // Fallback: try to update the state directly by appending to the end
+        try {
+          const currentContent = lessonContent || '';
+          const updatedContent = currentContent + formattedExplanation;
+          setLessonContent(updatedContent);
+          
+          console.log('✅ Fallback: Updated lesson content state (appended to end)');
+          toast.success(`AI explanation attached at the bottom (fallback method)!`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          
+          closePopup();
+        } catch (fallbackError) {
+          console.error('❌ Fallback also failed:', fallbackError);
+          toast.error('Failed to insert AI explanation. Please try again.');
+        }
+      }
+    };
+
+
     // Parse markdown content
     const parseMarkdown = (text: string): string => {
       return text
@@ -182,102 +359,23 @@ const LessonPlanPage: React.FC = () => {
         .replace(/\n/g, '<br>');
     };
   
-   // Find the line number of selected text using DOM position (always return last line)
-  const findSelectedLinePosition = (selectedText: string, range: Range): number => {
-    if (!lessonContentRef.current) return -1;
-  
-    const lines = lessonContent.split('\n');
-    const cleanSelectedText = selectedText.trim().replace(/\s+/g, ' ').toLowerCase();
-  
-    console.log('Finding position for selected text:', selectedText);
-    console.log('Clean selected text:', cleanSelectedText);
-  
-    const container = lessonContentRef.current;
-  
-    // ✅ Use the END of selection instead of the start
-    let currentNode = range.endContainer;
-    let targetElement: Element | null = null;
-  
-    // Walk up the DOM tree to find the closest block element (DIV or P)
-    while (currentNode && currentNode !== container) {
-      if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        const element = currentNode as Element;
-        if (element.tagName === 'DIV' || element.tagName === 'P') {
-          targetElement = element;
-          break;
-        }
-      }
-      currentNode = currentNode.parentNode as Node;
-    }
-  
-    // If we found a DOM element, map it to its index
-    if (targetElement) {
-      const allDivs = Array.from(container.querySelectorAll('div'));
-      const elementIndex = allDivs.indexOf(targetElement as HTMLDivElement);
-  
-      if (elementIndex !== -1) {
-        console.log('Found element at index (end of selection):', elementIndex);
-        return elementIndex; // ✅ always the last line
-      }
-    }
-  
-    // Fallback: find the last line containing part of the selected text
-    let lastMatchingLine = -1;
-    for (let i = 0; i < lines.length; i++) {
-      const cleanLine = lines[i].replace(/\s+/g, ' ').toLowerCase();
-      const selectedWords = cleanSelectedText.split(' ');
-  
-      const hasMatchingWord = selectedWords.some(
-        (word) => word.length > 2 && cleanLine.includes(word)
-      );
-  
-      if (hasMatchingWord) {
-        lastMatchingLine = i;
-        console.log('Found matching word in line:', i, 'Line content:', lines[i]);
-      }
-    }
-  
-    if (lastMatchingLine !== -1) {
-      console.log('Returning last matching line:', lastMatchingLine);
-      return lastMatchingLine;
-    }
-  
-    // Final fallback: try exact/partial text match
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const cleanLine = lines[i].replace(/\s+/g, ' ').toLowerCase();
-      if (
-        cleanLine.includes(cleanSelectedText) ||
-        cleanSelectedText.includes(cleanLine)
-      ) {
-        console.log('Found exact match at line:', i);
-        return i;
-      }
-    }
-  
-    console.log('No match found for selected text');
-    return -1;
-  };
+   // Find the line number of selected text - simplified for Tiptap
+
   
   
     // Handle text selection
-    const handleTextSelection = (e: React.MouseEvent | React.TouchEvent) => {
-      const selection = window.getSelection();
-      if (!selection) return;
-      
-      const text = selection.toString().trim();
-      if (text !== '') {
+    const handleTextSelection = (selectedText: string, selectionPosition?: {from: number, to: number}) => {
+      if (selectedText && selectedText.trim() !== '') {
+        const text = selectedText.trim();
         setSelectedText(text);
-        setSelectedRange(selection.getRangeAt(0));
         
-        // Find the position of the selected line
-        const linePosition = findSelectedLinePosition(text, selection.getRangeAt(0));
-        setSelectedLinePosition(linePosition);
+        // Store selection position for later use
+        if (selectionPosition) {
+          setSelectedLinePosition(selectionPosition.from);
+        }
         
-        // Position tooltip
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        setTooltipPosition({ x: clientX, y: clientY - 40 });
-        setShowTooltip(true);
+        console.log('Selected text:', text);
+        console.log('Selection position:', selectionPosition);
         
         // Show popup after delay
         setTimeout(() => {
@@ -287,19 +385,7 @@ const LessonPlanPage: React.FC = () => {
       }
     };
   
-    // Highlight selected text
-    const highlightSelectedText = () => {
-      if (!selectedRange || !lessonContentRef.current) return;
-      
-      const span = document.createElement('span');
-      span.className = 'bg-gradient-to-r from-cyan-200 to-pink-200 p-0.5 rounded-md animate-pulse';
-      
-      try {
-        selectedRange.surroundContents(span);
-      } catch (e) {
-        console.log('Complex selection detected');
-      }
-    };
+   
   
     // Close popup
     const closePopup = () => {
@@ -310,19 +396,7 @@ const LessonPlanPage: React.FC = () => {
       setSelectedLinePosition(-1);
       setResponseHistory([]); // Clear response history when closing popup
       
-      // Clear selection highlighting
-      if (lessonContentRef.current) {
-        const highlighted = lessonContentRef.current.querySelectorAll('.bg-gradient-to-r');
-        highlighted.forEach(el => {
-          const parent = el.parentNode;
-          if (parent) {
-            parent.replaceChild(document.createTextNode(el.textContent || ''), el);
-            parent.normalize();
-          }
-        });
-      }
-      
-      // Clear selection
+      // Clear selection - Tiptap handles this automatically
       window.getSelection()?.removeAllRanges();
     };
   
@@ -352,7 +426,7 @@ const LessonPlanPage: React.FC = () => {
         const subject = selectedText;
         const userquery = aiQuery || `Please ${currentExplanationType} this text: ${selectedText}`;
   
-        const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
+        const response = await fetch('http://69.197.176.134:5000/api/ai/assessment-content', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -384,11 +458,10 @@ const LessonPlanPage: React.FC = () => {
            
            setResponseHistory(prev => [...prev, newResponse]);
            
-           // Update the main AI response to show all responses
+           // Update the main AI response to show all responses (newest first)
            const allResponses = [...responseHistory, newResponse];
-           const formattedResponses = allResponses.map((resp,) => {
-             const time = new Date(resp.timestamp).toLocaleTimeString();
-             return `--- ${resp.type.toUpperCase()} (${time}) ---\n\n${resp.content}`;
+           const formattedResponses = allResponses.reverse().map((resp,) => {
+             return resp.content;
            }).join('\n\n');
            
            setAiResponse(formattedResponses);
@@ -404,33 +477,255 @@ const LessonPlanPage: React.FC = () => {
       }
     };
   
-    // Attach explanation to lesson at the selected line position
-    const attachExplanation = () => {
-      if (selectedLinePosition === -1) {
-        console.log('No line position found for selected text:', selectedText);
-        alert('Could not find the exact position for the selected text. Please try selecting the text again.');
+    // Handle text selection for Edit Module dialog
+    const handleEditModuleTextSelection = (selectedText: string, selectionPosition?: {from: number, to: number}) => {
+      if (selectedText && selectedText.trim() !== '') {
+        const text = selectedText.trim();
+        setEditModuleSelectedText(text);
+        
+        // Store selection position for later use
+        if (selectionPosition) {
+          setEditModuleSelectedLinePosition(selectionPosition.from);
+        }
+        
+        console.log('Edit Module - Selected text:', text);
+        console.log('Edit Module - Selection position:', selectionPosition);
+        
+        // Show popup after delay
+        setTimeout(() => {
+          setEditModuleIsPopupOpen(true);
+          setEditModuleShowTooltip(false);
+        }, 300);
+      }
+    };
+
+    // Close popup for Edit Module dialog
+    const closeEditModulePopup = () => {
+      setEditModuleIsPopupOpen(false);
+      setEditModuleAiResponse('');
+      setEditModuleAiQuery('');
+      setEditModuleAiReference('');
+      setEditModuleSelectedLinePosition(-1);
+      setEditModuleResponseHistory([]);
+      setEditModuleIsEditorReady(false);
+      
+      // Clear selection
+      window.getSelection()?.removeAllRanges();
+    };
+
+    // Send AI explanation request for Edit Module dialog
+    const sendEditModuleExplanationRequest = async () => {
+      setEditModuleIsLoading(true);
+      setEditModuleIsAIGenerating(true);
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('User token is missing! Please login again.');
+          return;
+        }
+  
+        // Map explanation types to generation types
+        const generationTypeMap: { [key: string]: string } = {
+          'explain': 'explanation',
+          'summary': 'summary',
+          'detailed': 'detailed_explanation',
+          'examples': 'examples'
+        };
+  
+        const generation_type = generationTypeMap[editModuleCurrentExplanationType] || 'explanation';
+        const material = editModuleAiReference || editModuleSelectedText;
+        const qaqf_level = "1"; // Default QAQF level
+        const subject = editModuleSelectedText;
+        const userquery = editModuleAiQuery || `Please ${editModuleCurrentExplanationType} this text: ${editModuleSelectedText}`;
+  
+        const response = await fetch('http://69.197.176.134:5000/api/ai/assessment-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            generation_type,
+            material,
+            qaqf_level,
+            subject,
+            userquery,
+            courseid: '', // You can add course ID if needed
+          }),
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to generate content');
+        }
+  
+        const data = await response.json();
+        
+        if (data.generated_content && data.generated_content.length > 0) {
+          // ✅ Add new response to history
+          const newResponse = {
+            type: editModuleCurrentExplanationType,
+            content: data.generated_content,
+            timestamp: Date.now()
+          };
+          
+          setEditModuleResponseHistory(prev => [...prev, newResponse]);
+          
+          // Update the main AI response to show all responses (newest first)
+          const allResponses = [...editModuleResponseHistory, newResponse];
+          const formattedResponses = allResponses.reverse().map((resp,) => {
+            return resp.content;
+          }).join('\n\n');
+          
+          setEditModuleAiResponse(formattedResponses);
+        } else {
+          setEditModuleAiResponse('No content generated. Please try again.');
+        }
+      } catch (error) {
+        console.error('AI Generate error:', error);
+        setEditModuleAiResponse('AI generation failed. Please check your connection and try again.');
+      } finally {
+        setEditModuleIsLoading(false);
+        setEditModuleIsAIGenerating(false);
+      }
+    };
+
+    // Attach explanation for Edit Module dialog
+    const attachEditModuleExplanation = () => {
+      console.log('Edit Module - Selected text:', editModuleSelectedText);
+      console.log('Edit Module - AI Response:', editModuleAiResponse);
+      console.log('Edit Module - Editor ref:', editModuleTiptapEditorRef.current);
+      console.log('Edit Module - Selected line position:', editModuleSelectedLinePosition);
+      
+      // Check if editor is ready
+      if (!editModuleTiptapEditorRef.current || !editModuleTiptapEditorRef.current.isReady() || !editModuleIsEditorReady) {
+        console.error('❌ Edit Module Editor not ready');
+        console.log('editModuleIsEditorReady:', editModuleIsEditorReady);
+        console.log('editor.isReady():', editModuleTiptapEditorRef.current?.isReady());
+        toast.error('Editor not ready. Please try again.');
         return;
       }
+
+      // Create formatted AI explanation content
+      const formattedExplanation = `
+<div class="my-4 bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-indigo-500 p-4 rounded-lg shadow-md">
+  <div class="font-bold text-gray-800 flex items-center mb-2">
+    🤖 AI Explanation
+  </div>
+  <div class="mt-3 text-gray-700">
+    ${editModuleAiResponse}
+  </div>
+</div>
+      `;
+
+      console.log('Edit Module - Formatted explanation:', formattedExplanation);
+
+      try {
+        // Always insert at the end of the editor content
+        const contentLength = editModuleTiptapEditorRef.current.getEditor().state.doc.content.size;
+        const insertPosition = contentLength;
+        
+        console.log('Edit Module - Inserting at end of editor, position:', insertPosition);
+        
+        // Insert content at the end
+        const result = editModuleTiptapEditorRef.current.insertContent(formattedExplanation, insertPosition);
+        
+        console.log('✅ Edit Module - AI response inserted successfully at the end');
+        console.log('Edit Module - Insert result:', result);
+        
+        // Update the edit form state
+        const newContent = editModuleTiptapEditorRef.current.getContent();
+        setRightSideEditForm(prev => ({ ...prev, description: newContent }));
+        console.log('✅ Edit Module - Form updated');
+        
+        // Show success message
+        toast.success(`AI explanation attached successfully at the bottom!`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        closeEditModulePopup();
+      } catch (error) {
+        console.error('❌ Edit Module - Error inserting content:', error);
+        
+        // Fallback: try to update the state directly by appending to the end
+        try {
+          const currentContent = rightSideEditForm.description || '';
+          const updatedContent = currentContent + formattedExplanation;
+          setRightSideEditForm(prev => ({ ...prev, description: updatedContent }));
+          
+          console.log('✅ Edit Module - Fallback: Updated form state (appended to end)');
+          toast.success(`AI explanation attached at the bottom (fallback method)!`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          
+          closeEditModulePopup();
+        } catch (fallbackError) {
+          console.error('❌ Edit Module - Fallback also failed:', fallbackError);
+          toast.error('Failed to insert AI explanation. Please try again.');
+        }
+      }
+    };
+
+    // Attach explanation to lesson at the selected line position
+    const attachExplanation = () => {
+     
+      console.log('Selected text:', selectedText);
+      console.log('AI Response:', aiResponse);
+      console.log('Editor ref:', tiptapEditorRef.current);
       
-      explanationCounter.current += 1;
-      
-      const newExplanation: ExplanationAttachment = {
-        id: Date.now(),
-        content: aiResponse,
-        explanationType: currentExplanationType,
-        isCollapsed: false,
-        position: selectedLinePosition,
-      };
-      
-      console.log('Adding explanation at position:', selectedLinePosition, 'for text:', selectedText);
-      console.log('New explanation:', newExplanation);
-      console.log('Current explanations before adding:', explanations);
-      
-      const updatedExplanations = [...explanations, newExplanation];
-      console.log('Updated explanations:', updatedExplanations);
-      
-      setExplanations(updatedExplanations);
-      closePopup();
+      // Check if editor is ready
+      if (!tiptapEditorRef.current || !tiptapEditorRef.current.isReady()) {
+        console.error('❌ Editor not ready');
+        toast.error('Editor not ready. Please try again.');
+        return;
+      }
+
+      // Create formatted AI explanation content
+      const formattedExplanation = `
+<div class="my-4 bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-indigo-500 p-4 rounded-lg shadow-md">
+  <div class="font-bold text-gray-800 flex items-center mb-2">
+   
+  </div>
+  <div class="mt-3 text-gray-700">
+    ${aiResponse}
+  </div>
+</div>
+      `;
+
+      console.log('Formatted explanation:', formattedExplanation);
+
+      try {
+        // Insert the explanation into the Tiptap editor
+        tiptapEditorRef.current.insertContent(formattedExplanation);
+        console.log('✅ Content inserted successfully');
+        
+        // Update both the lesson content state and the edit form state
+        const newContent = tiptapEditorRef.current.getContent();
+        setLessonContent(newContent);
+        setRightSideEditForm(prev => ({ ...prev, description: newContent }));
+        console.log('✅ Lesson content and edit form updated');
+        
+        // Show success message
+        toast.success(`AI explanation attached to "${selectedText.substring(0, 30)}${selectedText.length > 30 ? '...' : ''}"`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        closePopup();
+      } catch (error) {
+        console.error('❌ Error inserting content:', error);
+        toast.error('Failed to insert AI explanation. Please try again.');
+      }
     };
   
     // Toggle explanation visibility
@@ -449,24 +744,7 @@ const LessonPlanPage: React.FC = () => {
     const renderLessonContentWithExplanations = () => {
       // Create dynamic content from form data
       const dynamicContent = `
-**Module Title:** ${rightSideEditForm.title || 'Untitled Module'}
-
-**Module Type:** ${rightSideEditForm.type || 'Not specified'}
-
-**Duration:** ${rightSideEditForm.duration || 'Not specified'}
-
-**QAQF Level:** ${rightSideEditForm.qaqfLevel || 'Not specified'}
-
-**Description:** ${rightSideEditForm.description || 'No description provided'}
-
----
-
-**Module Details:**
-- **Course ID:** ${rightSideEditForm.courseid || 'Not specified'}
-- **User ID:** ${rightSideEditForm.userid || 'Not specified'}
-- **Level:** ${rightSideEditForm.level || 'Not specified'}
-
-${rightSideEditForm.description || ''}
+      ASK HERE
       `;
       
       const lines = dynamicContent.split('\n');
@@ -545,102 +823,16 @@ ${rightSideEditForm.description || ''}
       
       return result;
     };
+
+
+
+
+ // ✅ Remove old `lessonContent`
+// const lessonContent = ` ... big dummy string ... `;
+
+// This function is no longer needed with Tiptap editor
   
-  
-  
-    useEffect(() => {
-      if (selectedText && isPopupOpen) {
-        highlightSelectedText();
-      }
-    }, [selectedText, isPopupOpen]);
-  
-    // Lesson content
-    const lessonContent = `
-      **Course Title:** Race Story Course - QAQF Level Beginner
-  
-      **Duration:** 1 week(s)
-      
-      **Module Count:** 4
-      
-      **Delivery Mode:** Online
-      
-      **Target Audience:** Kids
-      
-      **Learning Objectives:**
-      
-      * To create a compelling race story using descriptive language and imaginative techniques
-      * To understand the structure and format of a typical race story
-      * To develop creative writing skills through the use of metaphors, similes, and other literary devices
-      * To build confidence in expressing oneself through written communication
-      
-      **Weekly Module Breakdown:**
-      
-      **Module 1: Introduction to Race Stories (Days 1-2)**
-      
-      * Learning Outcomes:
-        + Understand the concept of a race story and its importance in literature
-        + Identify key elements of a typical race story, such as setting, characters, and plot
-        + Learn how to use descriptive language to create vivid imagery
-      * Instructional Methods:
-        + Video lectures introducing the concept of race stories
-        + Guided reading exercises to familiarize students with examples of race stories
-        + Interactive quizzes to assess understanding
-      * Assessment Strategy: Quiz (20%) - "What is a Race Story?"
-      
-      **Module 2: Building a Narrative (Days 3-4)**
-      
-      * Learning Outcomes:
-        + Learn how to create a compelling narrative structure for a race story
-        + Understand the importance of pacing, tension, and resolution in a story
-        + Practice writing descriptive paragraphs using sensory details
-      * Instructional Methods:
-        + Writing workshops where students practice building a narrative
-        + Guided writing exercises to help students develop their creative writing skills
-        + One-on-one feedback sessions to support student progress
-      * Assessment Strategy: Assignment (40%) - "Write a descriptive paragraph about a racing event"
-      
-      **Module 3: Creative Writing Techniques (Days 5-6)**
-      
-      * Learning Outcomes:
-        + Learn how to use metaphors, similes, and other literary devices to enhance writing
-        + Understand the importance of figurative language in creating vivid imagery
-        + Practice using sensory details to describe a racing event
-      * Instructional Methods:
-        + Writing workshops where students practice using creative writing techniques
-        + Guided reading exercises to familiarize students with examples of metaphors and similes
-        + Interactive quizzes to assess understanding
-      * Assessment Strategy: Quiz (20%) - "Identify Literary Devices"
-      
-      **Module 4: Final Project and Review (Days 7)**
-      
-      * Learning Outcomes:
-        + Write a complete race story using the skills learned throughout the course
-        + Revise and edit work for clarity, coherence, and style
-        + Present final projects to the class for peer feedback and review
-      * Instructional Methods:
-        + Writing workshops where students share and discuss their final projects
-        + One-on-one feedback sessions to support student progress
-        + Review of key concepts and strategies learned throughout the course
-      * Assessment Strategy: Final Project (20%) - "Write a Complete Race Story"
-      
-      **Embedded Assessment Strategies:**
-      
-      * Quizzes to assess understanding of learning objectives
-      * Assignments to evaluate application of skills and knowledge
-      * Peer feedback and review to promote critical thinking and collaboration
-      
-      **Real-World Application Opportunities:**
-      
-      * Students can share their final projects with family, friends, or online communities to build confidence in creative writing
-      * Students can use the skills learned throughout the course to write short stories or scripts for presentations or performances
-      
-      **QAQF Level Beginner Standards:**
-      
-      * The course is designed to meet the learning objectives and standards set by the QAQF Level Beginner framework.
-      * The course outline ensures that students receive a comprehensive education in creative writing, storytelling, and narrative structure.
-      
-      By following this course outline, students will develop the skills and confidence needed to create engaging race stories and become proficient writers.
-    `;
+    // Lesson content is now managed by the lessonContent state variable
 
   
   const fetchCoursesFromAPI = async (userid?: string) => {
@@ -869,20 +1061,16 @@ ${rightSideEditForm.description || ''}
   // Intra-week drag handlers - REMOVED since we only allow left-to-right dragging
 
   const handleAddModule = async (newModule: any) => {
-    // Use the current description from the form (which already contains combined content)
-    const finalDescription = newModuleDescription || newModule.description || "";
-    
-    // Debug: Log what we're saving
-    console.log("Adding module with description:", {
-      finalDescription: finalDescription
-    });
-    
-    // Prepare the module data with courseid and preserve HTML content
+    // Use the lesson content from the Tiptap editor state
+    const lessonContentText = lessonContent;
+
+    // Keep form description as-is; put editor text into the script field
     const moduleWithCourseId = {
       ...newModule,
-      description: finalDescription, // Preserve HTML content instead of stripping it
+      description: lessonContentText,
       courseid: selectedCourse,
       level: newModule.qaqfLevel, // Send as 'level' to match backend field name
+      userid: newModuleUserId, // Add the user ID
     };
     try {
       const token = localStorage.getItem('token');
@@ -1525,8 +1713,7 @@ ${rightSideEditForm.description || ''}
 
  
 
-  // Add state for AI query and reference for Add Lesson dialog
-  const [newModuleAiQuery, setNewModuleAiQuery] = useState("");
+  // Add state for AI reference for Add Lesson dialog
   const [newModuleAiReference, setNewModuleAiReference] = useState("");
 
 
@@ -1539,7 +1726,6 @@ ${rightSideEditForm.description || ''}
     setNewModuleDescription("");
     setNewModuleUserId("");
     setNewModuleCourseId("");
-    setNewModuleAiQuery("");
     setNewModuleAiReference("");
   };
 
@@ -1551,75 +1737,7 @@ ${rightSideEditForm.description || ''}
   }, [addModuleDialogOpen]);
 
   // Add AI Generate handler for Add Lesson dialog
-  const handleAddModuleAIGenerate = async () => {
-    setIsAIGenerating(true);
-  
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('User token is missing!');
-        return;
-      }
-  
-      const generation_type = newModuleType || "quiz";
-      const material = newModuleAiReference || "";
-      const qaqf_level = String(newModuleQAQF || "1");
-      const subject = newModuleTitle || "";
-      const userquery = newModuleAiQuery || "";
 
-      const response = await fetch('http://38.29.145.85:8000/api/ai/assessment-content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          generation_type,
-          material,
-          qaqf_level,
-          subject,
-          userquery,
-          courseid: selectedCourse, // Use the selected course ID
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (data.generated_content?.length > 0) {
-        // Get existing content
-        const existingContent = newModuleDescription || "";
-        
-        // Append new AI generated content to existing content
-        const combinedContent = existingContent 
-          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${data.generated_content}`
-          : data.generated_content;
-        
-        setNewModuleDescription(combinedContent);
-      } else {
-        // If no content generated, append a message to existing content
-        const existingContent = newModuleDescription || "";
-        const message = "No content generated.";
-        const combinedContent = existingContent 
-          ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${message}`
-          : message;
-        
-        setNewModuleDescription(combinedContent);
-      }
-    } catch (error) {
-      console.error("AI Generate error:", error);
-      
-      // Append error message to existing content
-      const existingContent = newModuleDescription || "";
-      const errorMessage = "AI generation failed.";
-      const combinedContent = existingContent 
-        ? `${existingContent}\n\n--- AI GENERATED CONTENT ---\n\n${errorMessage}`
-        : errorMessage;
-      
-      setNewModuleDescription(combinedContent);
-    } finally {
-      setIsAIGenerating(false);
-    }
-  };
   
 
   return (
@@ -1659,13 +1777,13 @@ ${rightSideEditForm.description || ''}
                   )}
                 </SelectContent>
               </Select>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setAddCourseDialogOpen(true)}
               >
                 Add Course
-              </Button>
+              </Button> */}
             </div>
           </div>
           {/* Only show headings if no course is selected */}
@@ -2179,104 +2297,306 @@ ${rightSideEditForm.description || ''}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={addModuleDialogOpen} onOpenChange={setAddModuleDialogOpen}>
+       <Dialog open={addModuleDialogOpen} onOpenChange={setAddModuleDialogOpen}>
         <DialogContent className="max-w-full w-full h-full">
           <DialogHeader>
             <DialogTitle>Add Lesson</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 mt-0">
-            <select
-              className="border rounded px-2 py-1 w-full"
-              value={newModuleType}
-              onChange={e => setNewModuleType(e.target.value as ModuleType)}
-            >
-              {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            {/* title */}
-            <input
-              className="border rounded px-2 py-1 w-full"
-              value={newModuleTitle}
-              onChange={e => setNewModuleTitle(e.target.value)}
-              placeholder="Title"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <input
-                className="border rounded px-2 py-1 flex-1"
-                value={newModuleDuration}
-                onChange={e => setNewModuleDuration(e.target.value)}
-                placeholder="Duration (e.g. 60 min)"
-              />
-       <select
-                className="border rounded px-2 py-1 flex-1"
-                value={newModuleQAQF}
-                onChange={e => setNewModuleQAQF(e.target.value)}
-              >
-                {/* We can use Object.values() to get an array of just the string values */}
-                {Object.values(QAQF_LEVELS).map(qaqfLevel => (
-                  <option key={qaqfLevel} value={qaqfLevel}>
-                    {qaqfLevel}
-                  </option>
-                ))}
-              </select>
+          <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="max-w-6xl mx-auto">
+       
 
-            </div>
-           
-            <input
-              className="border rounded px-2 py-1 w-full"
-              placeholder="Ask your Query"
-              value={newModuleAiQuery}
-              onChange={e => setNewModuleAiQuery(e.target.value)}
-            />
-            <input
-              className="border rounded px-2 py-1 w-full"
-              placeholder="AI reference study material"
-              value={newModuleAiReference}
-              onChange={e => setNewModuleAiReference(e.target.value)}
-            />
-            
-              <div className="" style={{ maxHeight: 400 }}>
-                <JoditEditor
-                  value={newModuleDescription}
-                  config={{ readonly: false, height: 400, width: '100%' }}
-                  tabIndex={1}
-                  onBlur={newContent => setNewModuleDescription(newContent)}
-                  onChange={() => { }}
-                />
-              </div>
+        {/* Selection Tooltip */}
+        {showTooltip && (
+          <div 
+            ref={tooltipRef}
+            className="fixed bg-gray-900 text-white py-2 px-3 rounded-lg text-sm z-50 transition-opacity"
+            style={{ 
+              left: `${tooltipPosition.x}px`, 
+              top: `${tooltipPosition.y}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            Click to explain this text
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-5 border-r-5 border-t-5 border-l-transparent border-r-transparent border-t-gray-900"></div>
           </div>
+        )}
+
+        {/* Overlay */}
+        {isPopupOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 animate-fadeIn"
+            onClick={closePopup}
+          ></div>
+        )}
+
+        {/* Popup */}
+        {isPopupOpen && (
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden z-50 animate-popupIn">
+            {/* Header - Fixed */}
+            <div className="border-b border-gray-200 p-5 flex justify-between items-center bg-white">
+              <h3 className="text-xl font-bold text-gray-800">🧠 AI Explanation</h3>
+              <button 
+                className="text-gray-500 hover:text-red-500 text-2xl transition-colors"
+                onClick={closePopup}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Scrollable Content Area */}
+            <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
+              <div className="p-5 border-b border-gray-100 bg-gray-50 rounded-t-lg">
+                <strong className="text-gray-700">Selected text:</strong>
+                <div className="mt-2">
+                  <TiptapEditor
+                    ref={selectedTextEditorRef}
+                    content={selectedText}
+                    onContentChange={(newContent) => setSelectedText(newContent)}
+                    className="bg-white border border-gray-200 rounded-lg min-h-[100px]"
+                  />
+                </div>
+              </div>
+              
+              <div className="p-5 flex flex-wrap gap-2">
+                {['explain', 'summary', 'detailed', 'examples'].map((type) => (
+                  <button
+                    key={type}
+                    className={`px-4 py-2 rounded-full border-2 transition-all ${
+                      currentExplanationType === type
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100 transform -translate-y-0.5'
+                        : 'border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+                    }`}
+                    onClick={() => setCurrentExplanationType(type)}
+                  >
+                    {type === 'explain' && '💡 Explain'}
+                    {type === 'summary' && '📝 Summary'}
+                    {type === 'detailed' && '🔍 Detailed'}
+                    {type === 'examples' && '📋 Examples'}
+                  </button>
+                ))}
+              </div>
+              
+            
+              
+              <div className="p-5">
+                <button
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:from-indigo-700 hover:to-purple-700 flex items-center justify-center"
+                  onClick={sendExplanationRequest}
+                  disabled={isLoading || isAIGenerating}
+                >
+                  {isLoading || isAIGenerating ? (
+                    <div className="flex items-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      {isAIGenerating ? 'Get AI Explanation...' : 'Get Ai Explaination...'}
+                    </div>
+                  ) : (
+                    <>
+                      🚀 Get AI Explanation
+                    </>
+                  )}
+                </button>
+                
+                                 {aiResponse && (
+                   <div className="mt-5 p-5 bg-gray-50 rounded-xl border border-green-200">
+                                           <div className="flex justify-end mb-3">
+                        <button
+                          className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                          onClick={() => {
+                            setAiResponse('');
+                            setResponseHistory([]);
+                          }}
+                          title="Clear all responses"
+                        >
+                          🗑️ Clear
+                        </button>
+                      </div>
+                                          <div 
+                         className="text-gray-700 max-h-60 overflow-y-auto"
+                         dangerouslySetInnerHTML={{ __html: parseMarkdown(aiResponse) }}
+                       ></div>
+                     
+                     <div className="mt-4 flex gap-2">
+                       <button
+                         className="flex-1 py-2 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center"
+                         onClick={attachExplanationForAddLesson}
+                       >
+                         ✅ Attach to Lesson
+                       </button>
+                       </div>
+                   </div>
+                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lesson Header */}
+        <div className="bg-white bg-opacity-95  rounded-2xl p-6 mb-6 shadow-xl text-center">
+  <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+  {newModuleTitle}
+  </h1>
+
+     {/* Form Row */}
+   <div className="grid grid-cols-5 gap-4 items-end mt-6">
+     
+     {/* Title Input */}
+     <div className="space-y-2">
+       <label className="text-sm font-medium text-gray-700">Title</label>
+       <input
+         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+         value={newModuleTitle}
+         onChange={e => setNewModuleTitle(e.target.value)}
+         placeholder="Enter module title"
+       />
+     </div>
+
+     {/* Type Dropdown */}
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700">Type</label>
+      <select
+        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        value={newModuleType}
+        onChange={e => setNewModuleType(e.target.value)}
+      >
+        <option value="">Select a Type</option>
+        {Object.entries(MODULE_TYPE_OPTIONS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Duration Input */}
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700">Duration</label>
+      <input
+        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        value={newModuleDuration}
+        onChange={e => setNewModuleDuration(e.target.value)}
+        placeholder="e.g. 60 min"
+      />
+    </div>
+
+    {/* QAQF Level Dropdown */}
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700 ">QAQF Level</label>
+      <select
+        className="w-60 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        value={newModuleQAQF}
+        onChange={e => setNewModuleQAQF(e.target.value)}
+      >
+        <option value="">Select a QAQF Level</option>
+        {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+          <option key={qaqfLevel} value={qaqfLevel}>
+            {qaqfLevel}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Save Button */}
+    <div className="flex justify-center">
+      <Button
+        className="w-20 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+        onClick={() => handleAddModule({
+          title: newModuleTitle,
+          type: newModuleType,
+          qaqfLevel: newModuleQAQF,
+          duration: newModuleDuration,
+          description: newModuleDescription,
+          courseid: selectedCourse,
+        })}
+      >
+        Add 
+      </Button>
+    </div>
+  </div>
+</div>
+
+
+        {/* Lesson Content */}
+        <div className="bg-white bg-opacity-98 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-2"></div>
+          
+          {/* Editor Status Indicator */}
+          {!isEditorReady && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-yellow-700 text-sm">Initializing editor...</span>
+              </div>
+            </div>
+          )}
+          
+          <TiptapEditor
+            content={lessonContent || ''}
+            onContentChange={setLessonContent}
+            onTextSelection={handleTextSelection}
+            onReady={() => {
+              console.log('🎉 TiptapEditor is ready in LessonPlan');
+              setIsEditorReady(true);
+            }}
+            className="min-h-[400px]"
+            editorRef={tiptapEditorRef}
+          />
+        </div>
+      </div>
+      
+     
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes popupIn {
+          from { 
+            opacity: 0; 
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          to { 
+            opacity: 1; 
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
+        
+        @keyframes slideIn {
+          from { 
+            opacity: 0; 
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        
+        .animate-popupIn {
+          animation: popupIn 0.3s ease-out;
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.4s ease-out;
+        }
+      `}</style>
+    </div>
           <DialogFooter>
-            <Button 
-              variant="default" 
-              onClick={handleAddModuleAIGenerate}
-            >
-              {isAIGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  loading...
-                </>
-              ) : (
-                'AI Generate'
-              )}
-            </Button>
-           
-            <Button variant="outline" onClick={() => handleAddModule({
-              title: newModuleTitle,
-              type: newModuleType,
-              qaqfLevel: newModuleQAQF,
-              duration: newModuleDuration,
-              description: newModuleDescription,
-              userid: newModuleUserId,
-              courseid: selectedCourse,
-            })}>Add</Button>
             <DialogClose asChild>
-              <Button variant="ghost" onClick={resetAddModuleForm}>Cancel</Button>
+              
             </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
+
+
 
    
       <Dialog open={addCourseDialogOpen} onOpenChange={setAddCourseDialogOpen}>
@@ -2491,15 +2811,14 @@ ${rightSideEditForm.description || ''}
           <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="max-w-6xl mx-auto">
        
-
-        {/* Selection Tooltip */}
-        {showTooltip && (
+        {/* Edit Module Selection Tooltip */}
+        {editModuleShowTooltip && (
           <div 
-            ref={tooltipRef}
+            ref={editModuleTooltipRef}
             className="fixed bg-gray-900 text-white py-2 px-3 rounded-lg text-sm z-50 transition-opacity"
             style={{ 
-              left: `${tooltipPosition.x}px`, 
-              top: `${tooltipPosition.y}px`,
+              left: `${editModuleTooltipPosition.x}px`, 
+              top: `${editModuleTooltipPosition.y}px`,
               transform: 'translateX(-50%)'
             }}
           >
@@ -2508,23 +2827,23 @@ ${rightSideEditForm.description || ''}
           </div>
         )}
 
-        {/* Overlay */}
-        {isPopupOpen && (
+        {/* Edit Module Overlay */}
+        {editModuleIsPopupOpen && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 animate-fadeIn"
-            onClick={closePopup}
+            onClick={closeEditModulePopup}
           ></div>
         )}
 
-        {/* Popup */}
-        {isPopupOpen && (
+        {/* Edit Module Popup */}
+        {editModuleIsPopupOpen && (
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden z-50 animate-popupIn">
             {/* Header - Fixed */}
             <div className="border-b border-gray-200 p-5 flex justify-between items-center bg-white">
               <h3 className="text-xl font-bold text-gray-800">🧠 AI Explanation</h3>
               <button 
                 className="text-gray-500 hover:text-red-500 text-2xl transition-colors"
-                onClick={closePopup}
+                onClick={closeEditModulePopup}
               >
                 ✕
               </button>
@@ -2534,12 +2853,13 @@ ${rightSideEditForm.description || ''}
             <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
               <div className="p-5 border-b border-gray-100 bg-gray-50 rounded-t-lg">
                 <strong className="text-gray-700">Selected text:</strong>
-                <div 
-                  className="mt-2 p-3 bg-white border border-gray-200 rounded-lg"
-                  contentEditable
-                  suppressContentEditableWarning
-                >
-                  {selectedText}
+                <div className="mt-2">
+                  <TiptapEditor
+                    ref={editModuleSelectedTextEditorRef}
+                    content={editModuleSelectedText}
+                    onContentChange={(newContent) => setEditModuleSelectedText(newContent)}
+                    className="bg-white border border-gray-200 rounded-lg min-h-[100px]"
+                  />
                 </div>
               </div>
               
@@ -2548,11 +2868,11 @@ ${rightSideEditForm.description || ''}
                   <button
                     key={type}
                     className={`px-4 py-2 rounded-full border-2 transition-all ${
-                      currentExplanationType === type
+                      editModuleCurrentExplanationType === type
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100 transform -translate-y-0.5'
                         : 'border-indigo-300 text-indigo-600 hover:bg-indigo-50'
                     }`}
-                    onClick={() => setCurrentExplanationType(type)}
+                    onClick={() => setEditModuleCurrentExplanationType(type)}
                   >
                     {type === 'explain' && '💡 Explain'}
                     {type === 'summary' && '📝 Summary'}
@@ -2562,18 +2882,16 @@ ${rightSideEditForm.description || ''}
                 ))}
               </div>
               
-            
-              
               <div className="p-5">
                 <button
                   className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:from-indigo-700 hover:to-purple-700 flex items-center justify-center"
-                  onClick={sendExplanationRequest}
-                  disabled={isLoading || isAIGenerating}
+                  onClick={sendEditModuleExplanationRequest}
+                  disabled={editModuleIsLoading || editModuleIsAIGenerating}
                 >
-                  {isLoading || isAIGenerating ? (
+                  {editModuleIsLoading || editModuleIsAIGenerating ? (
                     <div className="flex items-center">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      {isAIGenerating ? 'Get AI Explanation...' : 'Get Ai Explaination...'}
+                      {editModuleIsAIGenerating ? 'Get AI Explanation...' : 'Get AI Explanation...'}
                     </div>
                   ) : (
                     <>
@@ -2582,36 +2900,39 @@ ${rightSideEditForm.description || ''}
                   )}
                 </button>
                 
-                                 {aiResponse && (
-                   <div className="mt-5 p-5 bg-gray-50 rounded-xl border border-green-200">
-                                           <h4 className="text-lg font-bold text-gray-800 mb-3 flex justify-between items-center">
-                        <span>🤖 AI Response ({responseHistory.length} responses)</span>
-                        <button
-                          className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
-                          onClick={() => {
-                            setAiResponse('');
-                            setResponseHistory([]);
-                          }}
-                          title="Clear all responses"
-                        >
-                          🗑️ Clear
-                        </button>
-                      </h4>
-                     <div 
-                       className="text-gray-700 max-h-60 overflow-y-auto"
-                       dangerouslySetInnerHTML={{ __html: parseMarkdown(aiResponse) }}
-                     ></div>
-                     
-                     <div className="mt-4 flex gap-2">
-                       <button
-                         className="flex-1 py-2 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center"
-                         onClick={attachExplanation}
-                       >
-                         ✅ Attach to Lesson
-                       </button>
-                     </div>
-                   </div>
-                 )}
+                {editModuleAiResponse && (
+                  <div className="mt-5 p-5 bg-gray-50 rounded-xl border border-green-200">
+                    <div className="flex justify-end mb-3">
+                      <button
+                        className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                        onClick={() => {
+                          setEditModuleAiResponse('');
+                          setEditModuleResponseHistory([]);
+                        }}
+                        title="Clear all responses"
+                      >
+                        🗑️ Clear
+                      </button>
+                    </div>
+                    <div className="text-gray-700 max-h-60 overflow-y-auto">
+                      <TiptapEditor
+                        ref={editModuleAiResponseEditorRef}
+                        content={editModuleAiResponse}
+                        onContentChange={(newContent) => setEditModuleAiResponse(newContent)}
+                        className="bg-white border border-gray-200 rounded-lg min-h-[120px]"
+                      />
+                    </div>
+                    
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        className="flex-1 py-2 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center"
+                        onClick={attachEditModuleExplanation}
+                      >
+                        ✅ Attach to Lesson
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2694,15 +3015,32 @@ ${rightSideEditForm.description || ''}
 
 
         {/* Lesson Content */}
-        <div 
-          ref={lessonContentRef}
-          className="bg-white bg-opacity-98 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden"
-          onMouseUp={handleTextSelection}
-          onTouchEnd={handleTextSelection}
-        >
+        <div className="bg-white bg-opacity-98 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-2"></div>
-          {renderLessonContentWithExplanations()}
+          
+          {/* Editor Status Indicator */}
+          {!editModuleIsEditorReady && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-yellow-700 text-sm">Initializing editor...</span>
+              </div>
+            </div>
+          )}
+          
+          <TiptapEditor
+            content={rightSideEditForm.description || ''}
+            onContentChange={(content) => setRightSideEditForm(prev => ({ ...prev, description: content }))}
+            className="min-h-[200px]"
+            onTextSelection={handleEditModuleTextSelection}
+            onReady={() => {
+              console.log('🎉 Edit Module TiptapEditor is ready');
+              setEditModuleIsEditorReady(true);
+            }}
+            editorRef={editModuleTiptapEditorRef}
+          />
         </div>
+
       </div>
       
      
@@ -2924,10 +3262,6 @@ ${rightSideEditForm.description || ''}
     </div>
   );
 };
-
-
-
-
 
 export default LessonPlanPage;
 

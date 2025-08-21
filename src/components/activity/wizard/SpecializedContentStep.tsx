@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CourseType, SpecializedContent } from '../../types/courseTypes';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
+import { CourseType, SpecializedContent } from '@/types/courseTypes';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SpecializedContentStepProps {
   data: SpecializedContent | undefined;

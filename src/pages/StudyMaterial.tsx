@@ -10,6 +10,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 
+
 import { toast } from 'react-toastify';
 import { 
   Plus, 
@@ -18,17 +19,17 @@ import {
   Trash2, 
   FolderPlus,
   Library,
-  Layout,
   Folder,
   Loader2
 } from 'lucide-react';
+import { QAQF_LEVELS } from '@/types';
 
 interface StudyMaterial {
   id: number;
   title: string;
   description: string;
   type: string;
-  qaqfLevel: number;
+  qaqf_level: number;
   fileName?: string;
   filePath?: string;
   fileSize?: number;
@@ -47,26 +48,13 @@ interface Collection {
   updatedAt: string;
 }
 
-interface MaterialTemplate {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  qaqfLevel: string;
-  templateContent: string;
-  placeholders?: any[];
-  usageCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function StudyMaterial() {
   const [activeTab, setActiveTab] = useState('materials');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [createType, setCreateType] = useState<'material' | 'collection' | 'template'>('material');
+  const [createType, setCreateType] = useState<'material' | 'collection'>('material');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [showDeleteCollectionDialog, setShowDeleteCollectionDialog] = useState(false);
@@ -75,6 +63,27 @@ export default function StudyMaterial() {
   const [isUploading, setIsUploading] = useState(false);
   const [pdfContent, setPdfContent] = useState<string>('');
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [levelId, setLevelId] = useState<string>('');
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
+  const [newMaterial, setNewMaterial] = useState({
+    title: '',
+    description: '',
+    type: '',
+    qaqf_level: '',
+    content: ''
+  });
+
+  const resetNewMaterial = () => {
+    setNewMaterial({
+      title: '',
+      description: '',
+      type: '',
+      qaqf_level: '',
+      content: ''
+    });
+    setSelectedFile(null);
+    setSelectedCollectionId('');
+  };
   
  
   const queryClient = useQueryClient();
@@ -85,7 +94,7 @@ export default function StudyMaterial() {
     queryFn: async () => {
       const token = localStorage.getItem('token');
       console.log('Token used for /api/study-materials:', token);
-      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
@@ -100,7 +109,7 @@ export default function StudyMaterial() {
       const token = localStorage.getItem('token');
       console.log('=== Fetching collections ===');
       console.log('Token used for /api/collection-study-materials:', token);
-      const response = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/collection-study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       console.log('Collections response status:', response.status);
@@ -116,26 +125,12 @@ export default function StudyMaterial() {
     console.log('Collections data changed:', collections.length, 'items:', collections);
   }, [collections]);
 
-  // Fetch material templates
-  const { data: templates = [], isLoading: templatesLoading } = useQuery<MaterialTemplate[]>({
-    queryKey: ['material-templates'],
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      console.log('Token used for /api/material-templates:', token);
-      const response = await fetch('http://38.29.145.85:8000/api/material-templates', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
-      });
-      if (!response.ok) throw new Error('Failed to fetch material templates');
-      return response.json();
-    },
-  });
-
   // Create material mutation
   const createMaterialMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://38.29.145.85:8000/api/study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -158,9 +153,9 @@ export default function StudyMaterial() {
         queryKey: ['study-materials'] 
       });
       
-      toast.success("PDF successfully uploaded");
+      toast.success("Material created successfully");
       setShowCreateDialog(false);
-      setSelectedFile(null);
+      resetNewMaterial();
       setIsUploading(false); // Stop loading state
     },
     onError: (error) => {
@@ -175,7 +170,7 @@ export default function StudyMaterial() {
     mutationFn: async ({formData }: { id: number; formData: FormData }) => {
       const token = localStorage.getItem('token');
       console.log('Token used for update /api/update-study-materials:', token);
-      const response = await fetch('http://38.29.145.85:8000/api/update-study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/update-study-materials', {
         method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         body: formData,
@@ -209,7 +204,7 @@ export default function StudyMaterial() {
       formData.append('name', data.name);
       formData.append('description', data.description || '');
       
-      const response = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/collection-study-materials', {
         method: 'POST',
         headers: token
           ? { 'Authorization': `Bearer ${token}` }
@@ -250,7 +245,7 @@ export default function StudyMaterial() {
         console.log(`${key}: ${value}`);
       }
       
-      const response = await fetch('http://38.29.145.85:8000/api/updatecollection-study-materials', {
+        const response = await fetch('http://69.197.176.134:8000/api/updatecollection-study-materials', {
         method: 'POST',
         headers: token
           ? { 'Authorization': `Bearer ${token}` }
@@ -275,107 +270,44 @@ export default function StudyMaterial() {
     },
   });
 
-  // Delete collection mutation
-  // const deleteCollectionMutation = useMutation({
-  //   mutationFn: async (id: number) => {
-  //     const response = await fetch(`http://38.29.145.85:8000/api/deletecollection-study-materials`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ id }),
-  //     });
-  //     if (!response.ok) throw new Error('Failed to delete collection');
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
-  //     toast.success('Collection deleted successfully');
-  //   },
-  //   onError: (error: any) => {
-  //     if (error instanceof Error && error.message === 'Failed to delete collection') {
-  //       toast.error('Collection not found or already deleted');
-  //     } else if (error?.response?.status === 404) {
-  //       toast.error('Collection not found (404)');
-  //     } else {
-  //       toast.error('Failed to delete collection');
-  //     }
-  //   },
-  // });
-
-  // Create template mutation
-  const createTemplateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/material-templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to create template');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast.success('Template created successfully');
-      setShowCreateDialog(false);
-    },
-    onError: () => {
-      toast.error('Failed to create template');
-    },
-  });
-
-  // Update template mutation
-  const updateTemplateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`/api/material-templates/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to update template');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast.success('Template updated successfully');
-      setShowEditDialog(false);
-      setSelectedItem(null);
-    },
-    onError: () => {
-      toast.error('Failed to update template');
-    },
-  });
-
-  // Delete template mutation
- 
-
-  // Use template mutation
-  const useTemplateMutation = useMutation({
-    mutationFn: async ({ templateId, customizations }: { templateId: number; customizations: any }) => {
-      const response = await fetch(`/api/material-templates/${templateId}/use`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customizations }),
-      });
-      if (!response.ok) throw new Error('Failed to use template');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/study-materials'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/material-templates'] });
-      toast.success('Material created from template successfully');
-    },
-    onError: () => {
-      toast.error('Failed to create material from template');
-    },
-  });
-
-  const handleCreateNew = (type: 'material' | 'collection' | 'template') => {
+  const handleCreateNew = (type: 'material' | 'collection') => {
     setCreateType(type);
     setSelectedItem(null);
     setShowCreateDialog(true);
+    // Reset form states when opening create dialog
+    if (type === 'material') {
+      setLevelId('');
+      setSelectedCollectionId('');
+      setSelectedFile(null);
+    }
   };
 
   const handleEdit = (item: any) => {
     setSelectedItem(item);
     setShowEditDialog(true);
+    // Set form states based on selected item
+    setLevelId(item.qaqf_level?.toString() || '');
+    setSelectedCollectionId(item.collectionid?.toString() || item.collection_id?.toString() || '');
+    
+    // Map numeric QAQF level to the corresponding enum string
+    let qaqfLevelString = '';
+    if (item.qaqf_level) {
+      // Find the enum value that contains the level number
+      const levelNumber = item.qaqf_level.toString();
+      const matchingLevel = Object.values(QAQF_LEVELS).find(level => 
+        level.includes(`Level ${levelNumber}`)
+      );
+      qaqfLevelString = matchingLevel || item.qaqf_level.toString();
+    }
+    
+    // Also update newMaterial state for the form
+    setNewMaterial({
+      title: item.title || '',
+      description: item.description || '',
+      type: item.type || '',
+      qaqf_level: qaqfLevelString,
+      content: item.content || ''
+    });
   };
 
   const handleDelete = (item: any) => {
@@ -388,7 +320,6 @@ export default function StudyMaterial() {
     }
   };
 
-
   // New delete function using /api/delete-study-materials endpoint with try-catch
   const confirmDeletecollection = async (id: number) => {
     try {
@@ -399,7 +330,7 @@ export default function StudyMaterial() {
       const formData = new FormData();
       formData.append('id', id.toString());
       
-      const response = await fetch('http://38.29.145.85:8000/api/delete-study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/delete-study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -526,15 +457,6 @@ export default function StudyMaterial() {
     }
   };
 
-  const handleUseTemplate = (template: MaterialTemplate) => {
-    const customizations = {
-      title: `${template.title} - Copy`,
-      description: template.description,
-    };
-    useTemplateMutation.mutate({ templateId: template.id, customizations });
-  };
-
-
   const handleView = async (item: any) => {
     if (activeTab === 'materials') {
       setSelectedItem(item);
@@ -564,9 +486,6 @@ export default function StudyMaterial() {
       // Navigate to collection view page or show materials in collection
       setSelectedItem(item);
       setShowViewDialog(true);
-    } else if (activeTab === 'templates') {
-      setSelectedItem(item);
-      setShowViewDialog(true);
     }
   };
 
@@ -579,39 +498,32 @@ export default function StudyMaterial() {
     event.preventDefault();
     setIsUploading(true); // Start loading state
   
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData();
 
-    // Ensure all text fields are part of formData for update as well
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const type = formData.get('type') as string;
-    const qaqfLevel = formData.get('qaqfLevel');
-    const content = formData.get('content') as string;
-
-    // Add all form fields to formData, handling qaqf_level and JSON string arrays
-    formData.set('title', title);
-    formData.set('description', description);
-    formData.set('type', type);
-    if (qaqfLevel) {
-      formData.set('qaqf_level', String(Number(qaqfLevel)));
-    } else if (selectedItem && typeof selectedItem.qaqfLevel === 'number') {
-        // If qaqfLevel is not in form but exists in selectedItem, use it
-        formData.set('qaqf_level', String(selectedItem.qaqfLevel));
-    }
-    formData.set('content', content || ''); // Ensure content is not null
-    formData.set('characteristics', JSON.stringify([])); // Assuming empty array for now
-    formData.set('tags', JSON.stringify([])); // Assuming empty array for now
-
-    // Add collectionId to formData if it exists in selectedItem
-    if (selectedItem && selectedItem.collectionId) {
-      formData.set('collection_id', selectedItem.collectionId.toString());
-    }
-
-    // Remove qaqfLevel form field name if it exists, as we use qaqf_level
-    formData.delete('qaqfLevel');
+    // Use newMaterial state for form data
+    formData.set('title', newMaterial.title);
+    formData.set('description', newMaterial.description);
+    formData.set('type', newMaterial.type);
     
-    if (selectedFile) {
-      formData.append('file', selectedFile);
+    // Extract just the number from QAQF level string (e.g., "Qaqf Level 2 – Application" -> "2")
+    const qaqfLevelMatch = newMaterial.qaqf_level.match(/Level (\d+)/);
+    const qaqfLevelNumber = qaqfLevelMatch ? qaqfLevelMatch[1] : newMaterial.qaqf_level;
+    formData.set('qaqf_level', qaqfLevelNumber);
+    
+    // Add content if provided
+    if (newMaterial.content) {
+      formData.set('content', newMaterial.content);
+    }
+
+    // Add selectedCollectionId to formData - backend expects 'collectionid'
+    if (selectedCollectionId) {
+      formData.set('collectionid', selectedCollectionId);
+    }
+    
+    // Use the appropriate file based on which dialog is open
+    const currentFile = showEditDialog ? null : selectedFile;
+    if (currentFile) {
+      formData.append('file', currentFile);
     }
 
     if (selectedItem && selectedItem.id) {
@@ -649,25 +561,6 @@ export default function StudyMaterial() {
     }
   };
 
-  const handleSubmitTemplate = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const data = {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      type: formData.get('type') as string,
-      qaqfLevel: formData.get('qaqfLevel') as string,
-      templateContent: formData.get('templateContent') as string,
-      placeholders: [],
-    };
-    
-    if (selectedItem) {
-      updateTemplateMutation.mutate({ id: selectedItem.id, data });
-    } else {
-      createTemplateMutation.mutate(data);
-    }
-  };
-
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Unknown size';
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -685,11 +578,11 @@ export default function StudyMaterial() {
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Study Material Management</h1>
-        <p className="text-gray-600">Manage your educational materials, collections, and templates</p>
+        <p className="text-gray-600">Manage your educational materials and collections</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="materials" className="flex items-center gap-2">
             <Library className="h-4 w-4" />
             Material Library
@@ -697,10 +590,6 @@ export default function StudyMaterial() {
           <TabsTrigger value="collections" className="flex items-center gap-2">
             <Folder className="h-4 w-4" />
             Collections
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Layout className="h-4 w-4" />
-            Templates
           </TabsTrigger>
         </TabsList>
 
@@ -824,84 +713,20 @@ export default function StudyMaterial() {
             )}
           </div>
         </TabsContent>
-
-        {/* Templates Tab */}
-        <TabsContent value="templates" className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">Study Material Templates</h3>
-              <Button onClick={() => handleCreateNew('template')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Template
-              </Button>
-            </div>
-            
-            {templatesLoading ? (
-              <div className="text-center py-8">Loading templates...</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templates.map((template) => (
-                  <Card key={template.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <Layout className="h-8 w-8 text-green-500 mb-2" />
-                        <Badge variant="outline">{template.qaqfLevel}</Badge>
-                      </div>
-                      <CardTitle className="text-lg">{template.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="text-sm text-gray-600 line-clamp-2">{template.description}</p>
-                      <div className="space-y-1 text-xs text-gray-500">
-                        <div className="flex justify-between">
-                          <span>Type:</span>
-                          <span className="capitalize">{template.type}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Used:</span>
-                          <span>{template.usageCount} times</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Last updated:</span>
-                          <span>{new Date(template.updatedAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleView(template)}>
-                          <Layout className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleUseTemplate(template)}>
-                          <FileText className="h-4 w-4 mr-1" />
-                          Use
-                        </Button>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(template)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" onClick={() => handleDelete(template)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* Create/Upload Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          resetNewMaterial();
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {createType === 'material' && 'Upload Study Material'}
               {createType === 'collection' && 'Create New Collection'}
-              {createType === 'template' && 'Create New Template'}
             </DialogTitle>
           </DialogHeader>
           
@@ -909,17 +734,31 @@ export default function StudyMaterial() {
             <form onSubmit={handleSubmitMaterial} className="space-y-4">
               <div>
                 <Label htmlFor="title">Title</Label>
-                <Input name="title" required />
+                <Input 
+                  name="title" 
+                  value={newMaterial.title}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
+                  required 
+                />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea name="description" />
+                <Textarea 
+                  name="description" 
+                  value={newMaterial.description}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
+                />
               </div>
               <div>
                 <Label htmlFor="type">Type</Label>
-                <Select name="type" required>
+                <Select 
+                  name="type" 
+                  value={newMaterial.type}
+                  onValueChange={(value) => setNewMaterial({ ...newMaterial, type: value })}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="article">Article</SelectItem>
@@ -932,26 +771,46 @@ export default function StudyMaterial() {
               </div>
               <div>
                 <Label htmlFor="qaqfLevel">QAQF Level</Label>
-                <Select name="qaqfLevel" required>
+                <Select 
+                  name="qaqfLevel" 
+                  value={newMaterial.qaqf_level}
+                  onValueChange={(value) => setNewMaterial({ ...newMaterial, qaqf_level: value })}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select QAQF Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
-                      <SelectItem key={level} value={level.toString()}>{level}</SelectItem>
+                    {Object.entries(QAQF_LEVELS).map(([key, value]) => (
+                      <SelectItem key={key} value={value}>
+                        {value}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label htmlFor="content">Content (optional)</Label>
-                <Textarea name="content" placeholder="Text content if no file is uploaded" />
+                <Textarea 
+                  name="content" 
+                  value={newMaterial.content}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, content: e.target.value })}
+                  placeholder="Text content if no file is uploaded" 
+                />
               </div>
               <div>
-                <Label htmlFor="collection">Material Collection</Label>
-                <Select name="collection" value={selectedItem?.collectionId?.toString() || ''} onValueChange={(value) => setSelectedItem((prev: any) => ({ ...prev, collectionId: parseInt(value) }))}>
+                <Label htmlFor="collection">Material Collection *</Label>
+                <Select 
+                  name="collection" 
+                  value={selectedCollectionId} 
+                  onValueChange={(value) => {
+                    setSelectedCollectionId(value);
+                    console.log('Selected Collection ID:', value);
+                  }}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a collection (optional)" />
+                    <SelectValue placeholder="Select a collection (required)" />
                   </SelectTrigger>
                   <SelectContent>
                     {collections.map((collection) => (
@@ -963,12 +822,19 @@ export default function StudyMaterial() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="file">File (optional)</Label>
+                <Label htmlFor="file">File (Optional)</Label>
                 <Input 
                   type="file" 
                   onChange={handleFileSelect}
                   accept=".pdf,.doc,.docx,.txt,.md"
+                  disabled={!selectedCollectionId}
+                  className={!selectedCollectionId ? "opacity-50 cursor-not-allowed" : ""}
                 />
+                {!selectedCollectionId && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Please select a Material Collection first to enable file upload
+                  </p>
+                )}
                 {selectedFile && (
                   <p className="text-sm text-gray-500 mt-1">
                     Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
@@ -979,7 +845,7 @@ export default function StudyMaterial() {
              
              
               
-              <Button type="submit" className="w-full" disabled={isUploading}>
+              <Button type="submit" className="w-full" disabled={isUploading || !selectedCollectionId}>
                 {isUploading ? (
                   <span className="flex items-center justify-center">
                    uploading...
@@ -1010,59 +876,6 @@ export default function StudyMaterial() {
               </Button>
             </form>
           )}
-
-          {createType === 'template' && (
-            <form onSubmit={handleSubmitTemplate} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Template Name</Label>
-                <Input name="title" required />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea name="description" />
-              </div>
-              <div>
-                <Label htmlFor="type">Type</Label>
-                <Select name="type" required>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="quiz">Quiz</SelectItem>
-                    <SelectItem value="worksheet">Worksheet</SelectItem>
-                    <SelectItem value="handout">Handout</SelectItem>
-                    <SelectItem value="guide">Guide</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="qaqfLevel">QAQF Level Range</Label>
-                <Select name="qaqfLevel" required>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-3">Basic (1-3)</SelectItem>
-                    <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
-                    <SelectItem value="7-9">Advanced (7-9)</SelectItem>
-                    <SelectItem value="Various">Various Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="templateContent">Template Content</Label>
-                <Textarea 
-                  name="templateContent" 
-                  required 
-                  placeholder="Use {{variable_name}} for placeholders"
-                  rows={6}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={createTemplateMutation.isPending}>
-                {createTemplateMutation.isPending ? 'Creating...' : 'Create Template'}
-              </Button>
-            </form>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -1073,7 +886,6 @@ export default function StudyMaterial() {
             <DialogTitle>
               {activeTab === 'materials' && 'View Study Material'}
               {activeTab === 'collections' && 'View Collection'}
-              {activeTab === 'templates' && 'View Template'}
             </DialogTitle>
           </DialogHeader>
           
@@ -1098,7 +910,19 @@ export default function StudyMaterial() {
                     </div>
                     <div>
                       <Label className="font-semibold">QAQF Level</Label>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqf_level}</p>
+                      <p className="mt-1 p-2 bg-gray-50 rounded">
+                        {(() => {
+                          // Map numeric QAQF level to the corresponding enum string
+                          if (selectedItem.qaqf_level) {
+                            const levelNumber = selectedItem.qaqf_level.toString();
+                            const matchingLevel = Object.values(QAQF_LEVELS).find(level => 
+                              level.includes(`Level ${levelNumber}`)
+                            );
+                            return matchingLevel || selectedItem.qaqf_level;
+                          }
+                          return selectedItem.qaqf_level || 'Not specified';
+                        })()}
+                      </p>
                     </div>
                   </div>
                   
@@ -1141,33 +965,6 @@ export default function StudyMaterial() {
                   </div>
                 </>
               )}
-
-              {activeTab === 'templates' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="font-semibold">Type</Label>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.type}</p>
-                    </div>
-                    <div>
-                      <Label className="font-semibold">QAQF Level</Label>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.qaqf_level}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="font-semibold">Template Content</Label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded max-h-40 overflow-y-auto">
-                      <pre className="whitespace-pre-wrap text-sm">{selectedItem.templateContent}</pre>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="font-semibold">Usage Count</Label>
-                    <p className="mt-1 p-2 bg-gray-50 rounded">{selectedItem.usageCount}</p>
-                  </div>
-                </>
-              )}
               
              
             </div>
@@ -1182,25 +979,39 @@ export default function StudyMaterial() {
             <DialogTitle>
               {activeTab === 'materials' && 'Edit Study Material'}
               {activeTab === 'collections' && 'Edit Collection'}
-              {activeTab === 'templates' && 'Edit Template'}
             </DialogTitle>
           </DialogHeader>
           
           {selectedItem && activeTab === 'materials' && (
             <form onSubmit={handleSubmitMaterial} className="space-y-4">
               <div>
-                <Label htmlFor="name">Title</Label>
-                <Input name="title" defaultValue={selectedItem.title} required />
+                <Label htmlFor="title">Title</Label>
+                <Input 
+                  name="title" 
+                  value={newMaterial.title}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
+                  required 
+                />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea name="description" defaultValue={selectedItem.description} required />
+                <Textarea 
+                  name="description" 
+                  value={newMaterial.description}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
+                  required 
+                />
               </div>
               <div>
                 <Label htmlFor="type">Type</Label>
-                <Select name="type" defaultValue={selectedItem.type} required>
+                <Select 
+                  name="type" 
+                  value={newMaterial.type}
+                  onValueChange={(value) => setNewMaterial({ ...newMaterial, type: value })}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="article">Article</SelectItem>
@@ -1213,13 +1024,20 @@ export default function StudyMaterial() {
               </div>
               <div>
                 <Label htmlFor="qaqfLevel">QAQF Level</Label>
-                <Select name="qaqfLevel" defaultValue={selectedItem.qaqf_level?.toString()}>
+                <Select 
+                  name="qaqfLevel" 
+                  value={newMaterial.qaqf_level}
+                  onValueChange={(value) => setNewMaterial({ ...newMaterial, qaqf_level: value })}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select QAQF Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1,2,3,4,5,6,7,8,9].map(level => (
-                      <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
+                    {Object.entries(QAQF_LEVELS).map(([key, value]) => (
+                      <SelectItem key={key} value={value}>
+                        {value}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1228,10 +1046,33 @@ export default function StudyMaterial() {
                 <Label htmlFor="content">Content</Label>
                 <Textarea 
                   name="content" 
-                  defaultValue={selectedItem?.content || ''} 
+                  value={newMaterial.content}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, content: e.target.value })}
                   placeholder="Enter content here..."
                   rows={6}
                 />
+              </div>
+              <div>
+                <Label htmlFor="collection">Material Collection</Label>
+                <Select 
+                  name="collection" 
+                  value={selectedCollectionId} 
+                  onValueChange={(value) => {
+                    setSelectedCollectionId(value);
+                    console.log('Edit - Selected Collection ID:', value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a collection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
              
               <Button type="submit" className="w-full" disabled={updateMaterialMutation.isPending}>
@@ -1252,61 +1093,6 @@ export default function StudyMaterial() {
               </div>
               <Button type="submit" className="w-full" disabled={updateCollectionMutation.isPending}>
                 {updateCollectionMutation.isPending ? 'Updating...' : 'Update Collection'}
-              </Button>
-            </form>
-          )}
-
-          {selectedItem && activeTab === 'templates' && (
-            <form onSubmit={handleSubmitTemplate} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input name="title" defaultValue={selectedItem.title} required />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea name="description" defaultValue={selectedItem.description} required />
-              </div>
-              <div>
-                <Label htmlFor="type">Type</Label>
-                <Select name="type" defaultValue={selectedItem.type}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lesson_plan">Lesson Plan</SelectItem>
-                    <SelectItem value="assessment">Assessment</SelectItem>
-                    <SelectItem value="worksheet">Worksheet</SelectItem>
-                    <SelectItem value="presentation">Presentation</SelectItem>
-                    <SelectItem value="handout">Handout</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="qaqfLevel">QAQF Level</Label>
-                <Select name="qaqfLevel" defaultValue={selectedItem.qaqfLevel}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-3">Basic (1-3)</SelectItem>
-                    <SelectItem value="4-6">Intermediate (4-6)</SelectItem>
-                    <SelectItem value="7-9">Advanced (7-9)</SelectItem>
-                    <SelectItem value="Various">Various Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="templateContent">Template Content</Label>
-                <Textarea 
-                  name="templateContent" 
-                  defaultValue={selectedItem.templateContent}
-                  required 
-                  placeholder="Use {{variable_name}} for placeholders"
-                  rows={6}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={updateTemplateMutation.isPending}>
-                {updateTemplateMutation.isPending ? 'Updating...' : 'Update Template'}
               </Button>
             </form>
           )}

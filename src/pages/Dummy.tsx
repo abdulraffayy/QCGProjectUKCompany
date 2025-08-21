@@ -626,6 +626,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
           className="bg-white bg-opacity-98 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden"
           onMouseUp={handleTextSelection}
           onTouchEnd={handleTextSelection}
+          contentEditable={true}
         >
           {/* Decorative gradient bar */}
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400"></div>

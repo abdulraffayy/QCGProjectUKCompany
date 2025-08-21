@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { CourseData, LearningObjective, GeneratedCourse } from '../../types/courseTypes';
-import { Button } from '../ui/button';
+import { CourseData, LearningObjective, GeneratedCourse } from '@/types/courseTypes';
+import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
-import { generateCourseContent } from '../../lib/api';
+import { generateCourseContent } from '@/lib/api';
 
 interface ReviewStepProps {
   courseData: CourseData;

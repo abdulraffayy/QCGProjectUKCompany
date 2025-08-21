@@ -142,3 +142,27 @@ body {
     @apply bg-background text-foreground;
       }
 }
+
+/* ContentEditable formatting fixes */
+[contenteditable="true"] {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  text-orientation: mixed !important;
+  writing-mode: horizontal-tb !important;
+  outline: none !important;
+  min-height: 100px !important;
+}
+
+[contenteditable="true"]:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[contenteditable="true"] * {
+  direction: ltr !important;
+  text-align: left !important;
+}

@@ -579,7 +579,7 @@ def create_course():
     cur.execute('''
         INSERT INTO generatecourses (title, userid, description, status)
         VALUES (?, ?, ?, ?)
-    ''', (data['title'], data['userid'], data.get('description', ''), data.get('status', 'active')))
+    ''', (data['title'], data['userid'], data.get('lessonContent', data.get('description', '')), data.get('status', 'active')))
     db.commit()
     return jsonify({'success': True, 'id': cur.lastrowid})
 
@@ -590,7 +590,7 @@ def update_course(id):
     db.execute('''
         UPDATE generatecourses SET title = ?, userid = ?, description = ?, status = ?
         WHERE id = ?
-    ''', (data['title'], data['userid'], data.get('description', ''), data.get('status', 'active'), id))
+    ''', (data['title'], data['userid'], data.get('lessonContent', data.get('description', '')), data.get('status', 'active'), id))
     db.commit()
     return jsonify({'success': True})
 
