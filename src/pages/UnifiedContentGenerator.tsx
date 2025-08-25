@@ -48,9 +48,8 @@ const unifiedGenerationSchema = z.object({
   additional_requirements: z.string().optional(),
 
   // Source content fields
-  source_type: z.enum(['manual', 'pdf', 'website', 'scanned_doc']).optional(),
+  source_type: z.enum(['manual', 'pdf']).optional(),
   source_content: z.string().optional(),
-  website_url: z.string().url().optional(),
   uploaded_files: z.array(z.string()).optional()
 });
 
@@ -87,7 +86,11 @@ interface GeneratedItem {
   metadata?: any;
 }
 
-const UnifiedContentGenerator: React.FC = () => {
+interface UnifiedContentGeneratorProps {
+  courseId?: string; // Add prop for course ID from parent
+}
+
+const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ courseId }) => {
   // Helper function to generate smaller IDs
   const generateSmallId = (): string => {
     // Generate a random 1-3 digit number (1-999)
@@ -98,7 +101,7 @@ const UnifiedContentGenerator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('processing');
   const [selectedType, setSelectedType] = useState<'content' | 'course'>('content');
-  const [sourceType, setSourceType] = useState<'manual' | 'pdf' | 'website' | 'scanned_doc'>('manual');
+  const [sourceType, setSourceType] = useState<'manual' | 'pdf'>('manual');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [extractedContent, setExtractedContent] = useState<string>('');
@@ -110,8 +113,11 @@ const UnifiedContentGenerator: React.FC = () => {
   const { toast } = useToast();
   const [selectedPDFs, setSelectedPDFs] = useState<number[]>([]);
   const [courses, setCourses] = useState<{ id: string, title: string }[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<string>('');
+  const [selectedCourse, setSelectedCourse] = useState<string>(courseId || '');
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [collections, setCollections] = useState<{ id: number, name: string, description: string }[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
+  const [collectionPDFs, setCollectionPDFs] = useState<StudyMaterial[]>([]);
   
 
   // Fetch QAQF data dynamically
@@ -125,22 +131,63 @@ const UnifiedContentGenerator: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: materials = [], isLoading: materialsLoading } = useQuery<StudyMaterial[]>({
-    queryKey: ['http://69.197.176.134:5000/api/study-materials'],
+  const { data: materials = [], isLoading: materialsLoading, error: materialsError } = useQuery<StudyMaterial[]>({
+    queryKey: ['study-materials'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://69.197.176.134:5000/api/study-materials', {
+      const response = await fetch('http://69.197.176.134:8000/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
       return response.json();
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // 1. Console log for debugging
-  console.log('studyMaterials:', materials);
+  // Fetch collections
+  const { data: collectionsData = [], isLoading: collectionsLoading, error: collectionsError } = useQuery<{ id: number, name: string, description: string }[]>({
+    queryKey: ['collections'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://69.197.176.134:8000/api/collection-study-materials', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error('Failed to fetch collections');
+      return response.json();
+    },
+    retry: 3,
+    retryDelay: 1000,
+  });
 
-  // 2. Filter for PDFs (covering both filename and fileName)
+  // Update collections state when data changes
+  useEffect(() => {
+    setCollections(collectionsData);
+  }, [collectionsData]);
+
+  // Filter PDFs by selected collection
+  useEffect(() => {
+    if (selectedCollectionId && materials.length > 0) {
+      const filteredPDFs = materials.filter(material => {
+        // Check if material has collection information
+        const materialAny = material as any;
+        return materialAny.collectionid?.toString() === selectedCollectionId || 
+               materialAny.collection_id?.toString() === selectedCollectionId ||
+               materialAny.collection?.toString() === selectedCollectionId;
+      });
+      setCollectionPDFs(filteredPDFs);
+    } else {
+      setCollectionPDFs([]);
+    }
+  }, [selectedCollectionId, materials]);
+
+  // Debug logging
+  useEffect(() => {
+  console.log('studyMaterials:', materials);
+    console.log('collections:', collections);
+    console.log('selectedCollectionId:', selectedCollectionId);
+    console.log('collectionPDFs:', collectionPDFs);
+  }, [materials, collections, selectedCollectionId, collectionPDFs]);
   
 
 
@@ -165,7 +212,6 @@ const UnifiedContentGenerator: React.FC = () => {
       additional_requirements: '',
       source_content: '',
       source_type: 'manual',
-      website_url: '',
       uploaded_files: []
     }
   });
@@ -239,6 +285,13 @@ const UnifiedContentGenerator: React.FC = () => {
     }
   };
 
+  // Update selectedCourse when courseId prop changes
+  useEffect(() => {
+    if (courseId && courseId !== selectedCourse) {
+      setSelectedCourse(courseId);
+    }
+  }, [courseId, selectedCourse]);
+
   useEffect(() => {
     console.log("selectedCourse changed to:", selectedCourse);
     fetchLessons();
@@ -277,31 +330,7 @@ const UnifiedContentGenerator: React.FC = () => {
     }
   };
 
-  const handleWebsiteExtraction = async (url: string) => {
-    if (!url) return;
 
-    setIsProcessingFiles(true);
-
-    try {
-      const response = await fetch('/api/extract-website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) throw new Error('Failed to extract website content');
-
-      const result = await response.json();
-      setExtractedContent(result.extracted_text);
-      form.setValue('source_content', result.extracted_text);
-
-      toast({ title: "Website content extracted successfully" });
-    } catch (error) {
-      toast({ title: "Failed to extract website content", variant: "destructive" });
-    } finally {
-      setIsProcessingFiles(false);
-    }
-  };
 
   // Handler for drop event
   const handlePDFDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -376,7 +405,7 @@ const UnifiedContentGenerator: React.FC = () => {
 
   const generationMutation = useMutation({
     mutationFn: async (data: UnifiedGenerationData) => {
-      const endpoint = data.generation_type === 'content' ? 'http://69.197.176.134:5000/api/ai/generate-content' : 'http://69.197.176.134:5000/api/ai/generate-content';
+      const endpoint = data.generation_type === 'content' ? 'http://69.197.176.134:8000/api/ai/generate-content' : 'http://69.197.176.134:8000/api/ai/generate-content';
       const token = localStorage.getItem('token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -433,7 +462,9 @@ const UnifiedContentGenerator: React.FC = () => {
         status: 'completed',
         metadata: {
           ...data,
-          original_response: data
+          original_response: data,
+          courseid: selectedCourse, // Store the selected course ID in metadata
+          selected_course_id: selectedCourse
         }
       };
       
@@ -454,15 +485,34 @@ const UnifiedContentGenerator: React.FC = () => {
   });
 
   const onSubmit = (data: UnifiedGenerationData) => {
-
-
-
     // Get selected course information
     const selectedCourseInfo = courses.find(course => String(course.id) === selectedCourse);
     setIsGenerating(true);
     console.log("Submit button clicked");
- 
     console.log("Selected Course Name:", selectedCourseInfo?.title);
+    
+    // Validate that a course is selected
+    if (!selectedCourse) {
+      toast({
+        title: "No course selected",
+        description: "Please select a course before generating content.",
+        variant: "destructive"
+      });
+      setIsGenerating(false);
+      return;
+    }
+    
+    // Validate that PDFs are selected if source type is PDF
+    if (data.source_type === 'pdf' && selectedPDFs.length === 0) {
+      toast({
+        title: "No PDFs selected",
+        description: "Please select at least one PDF from the collection.",
+        variant: "destructive"
+      });
+      setIsGenerating(false);
+      return;
+    }
+    
     generationMutation.mutate(data);
     setTimeout(() => setIsGenerating(false), 3000);
   };
@@ -498,27 +548,120 @@ const UnifiedContentGenerator: React.FC = () => {
   
 
 
-  if (levelsLoading || characteristicsLoading) {
+  if (levelsLoading || characteristicsLoading || materialsLoading || collectionsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading QAQF Framework...</span>
+        <span className="ml-2">Loading data...</span>
+      </div>
+    );
+  }
+
+  // Show error states
+  if (materialsError || collectionsError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error loading data</p>
+          <p className="text-sm text-gray-600">
+            {materialsError && `Materials: ${materialsError.message}`}
+            {collectionsError && `Collections: ${collectionsError.message}`}
+          </p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <GraduationCap className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Unified Content & Course Generator</h1>
-          <p className="text-muted-foreground">Create content and courses with integrated QAQF compliance</p>
-        </div>
-      </div>
+     <div className="flex items-center justify-between mb-6">
+  {/* Left side (icon + title + description) */}
+  <div className="flex items-center space-x-3">
+    <GraduationCap className="h-8 w-8 text-primary" />
+    <div>
+      <h1 className="text-3xl font-bold">
+        Unified Content & Course Generator
+      </h1>
+      <p className="text-muted-foreground">
+        Create content and courses with integrated QAQF compliance
+      </p>
+    </div>
+  </div>
+
+  {/* Right side (filters in one line) */}
+  <div className="flex flex-wrap items-center gap-4 p-2 sm:p-4 bg-gray-50 rounded-lg">
+    {/* Filter by Status */}
+    <div className="flex items-center space-x-2">
+      <Label htmlFor="filter-status">Filter by Status:</Label>
+      <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <SelectTrigger className="w-32 focus:ring-0 focus:ring-offset-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="verified">Verified</SelectItem>
+          <SelectItem value="unverified">Unverified</SelectItem>
+          <SelectItem value="rejected">Rejected</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="completed">Completed</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    {/* Filter by Type */}
+    <div className="flex items-center space-x-2">
+      <Label htmlFor="filter-type">Filter by Type:</Label>
+      <Select value={filterType} onValueChange={setFilterType}>
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="content">Content</SelectItem>
+          <SelectItem value="course">Course</SelectItem>
+          <SelectItem value="lesson">Lesson</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    {/* Select a Course */}
+    <div className="flex items-center space-x-2">
+      <Label htmlFor="filter-course" className="font-medium">
+        Select a course:
+      </Label>
+      <Select
+        value={selectedCourse}
+        onValueChange={(value) => {
+          setSelectedCourse(value);
+          const selectedCourseInfo = courses.find(
+            (course) => String(course.id) === String(value)
+          );
+          console.log("Course selected:", selectedCourseInfo);
+        }}
+      >
+        <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
+          <SelectValue placeholder="Select a course" />
+        </SelectTrigger>
+        <SelectContent>
+          {courses.map((course) => (
+            <SelectItem key={course.id} value={String(course.id)}>
+              {course.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
           <TabsTrigger value="generator" className="flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Generator</span>
@@ -530,10 +673,6 @@ const UnifiedContentGenerator: React.FC = () => {
               <Badge variant="secondary" className="ml-1">{generatedItems.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="library" className="flex items-center space-x-2">
-            <History className="h-4 w-4" />
-            <span>Content Library</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="generator" className="space-y-6">
@@ -543,43 +682,11 @@ const UnifiedContentGenerator: React.FC = () => {
               <CardDescription>Choose what you want to create</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
-                <Card
-                  className={`cursor-pointer transition-all ${selectedType === 'content' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => {
-                    setSelectedType('content');
-                    form.setValue('generation_type', 'content');
-                  }}
-                >
-                  <CardContent className="p-6 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-primary" />
-                    <h3 className="font-semibold mb-2">Content Generation</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Create academic papers, assessments, lectures, and study materials
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={`cursor-pointer transition-all ${selectedType === 'course' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => {
-                    setSelectedType('course');
-                    form.setValue('generation_type', 'course');
-                  }}
-                >
-                  <CardContent className="p-6 text-center">
-                    <GraduationCap className="h-12 w-12 mx-auto mb-4 text-primary" />
-                    <h3 className="font-semibold mb-2">Course Generation</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Design complete courses with modules, lessons, and assessments
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Generation type cards removed from UI but values still included in API data */}
             </CardContent>
           </Card>
 
-          <form onSubmit={form.handleSubmit((data) => {
+          <form onSubmit={form.handleSubmit((data: UnifiedGenerationData) => {
             console.log("Submit button clicked");
             console.log("Current form data:", data);
             onSubmit(data);
@@ -604,26 +711,26 @@ const UnifiedContentGenerator: React.FC = () => {
                   )}
                 </div>
                 {/* Select a course dropdown from LessonPlan.tsx */}
-                <div className="space-y-2">
-                  <Label htmlFor="course_select">Select a course</Label>
-                  <Select
-                    value={selectedCourse}
-                    onValueChange={setSelectedCourse}
-                  >
-                    <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0">
-                      <SelectValue placeholder="Select a course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.length === 0 ? (
-                        <div className="px-3 py-2 text-neutral-400 text-sm">No courses yet</div>
-                      ) : (
-                        courses.map((course, idx) => (
-                          <SelectItem key={idx} value={String(course.id)}>{course.title}</SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Course selection removed - using courseId from parent */}
+                {selectedCourse ? (
+                  <div className="space-y-2">
+                    <Label>Selected Course</Label>
+                    <div className="p-3 bg-gray-50 rounded-md border">
+                      <p className="text-sm font-medium">
+                        {courses.find(course => String(course.id) === selectedCourse)?.title || `Course ID: ${selectedCourse}`}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Selected Course</Label>
+                    <div className="p-3 bg-yellow-50 rounded-md border border-yellow-200">
+                      <p className="text-sm text-yellow-700">
+                        No course selected. Please select a course from the filter above or navigate from a course page.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="subject_area">Subject Area</Label>
@@ -762,85 +869,111 @@ const UnifiedContentGenerator: React.FC = () => {
                 </CardTitle>
                 <CardDescription>
                   Choose how to provide source material for content generation.
-                  <div className="mt-2">
-                    <strong>Uploaded PDFs:</strong>
-                    <ul className="space-y-2 mt-2">
-                      {materialsLoading && <li className="text-sm text-gray-400">Loading PDFs...</li>}
-                      {!materialsLoading && materials.length === 0 && (
-                        <li className="text-sm text-gray-400">No PDFs found.</li>
-                      )}
-                      {materials.map((pdf) => (
-                        <li
-                          key={pdf.id}
-                          draggable
-                          onDragStart={e => {
-                            e.dataTransfer.setData('application/pdf-id', String(pdf.id ?? ''));
-                            e.dataTransfer.setData('application/pdf-name', String(pdf.file_name ?? ''));
-                          }}
-                          className="flex items-center gap-2 cursor-move hover:bg-gray-50 p-2 rounded border"
-                          style={{
-                            border: selectedPDFs.includes(pdf.id) ? '2px solid #22c55e' : '1px solid #e5e7eb',
-                            borderRadius: 6,
-                            background: selectedPDFs.includes(pdf.id) ? '#f0fdf4' : undefined,
-                          }}
-                        >
-                          {/* Checkbox selector */}
-                          <input
-                            type="checkbox"
-                            checked={selectedPDFs.includes(pdf.id)}
-                            onChange={e => {
-                              const newSelectedPDFs = e.target.checked
-                                ? [...selectedPDFs, pdf.id]
-                                : selectedPDFs.filter(id => id !== pdf.id);
-                              setSelectedPDFs(newSelectedPDFs);
-                              
-                              // Console logging for PDF selection
-                              const selectedPDFInfo = materials
-                                .filter(pdfItem => newSelectedPDFs.includes(pdfItem.id))
-                                .map(pdfItem => ({
-                                  id: pdfItem.id,
-                                  title: pdfItem.title || pdfItem.file_name,
-                                  file_name: pdfItem.file_name
-                                }));
-                              console.log("PDF Selection Changed:", selectedPDFInfo);
-                              console.log("Selected PDF IDs:", newSelectedPDFs);
-                              console.log("Selected PDF Names:", selectedPDFInfo.map(p => p.title));
-                            }}
-                            className="mr-2"
-                            style={{ width: 18, height: 18 }}
-                          />
-                          {/* Tick icon if selected */}
-                          {selectedPDFs.includes(pdf.id) && (
-                            <span className="text-green-600 mr-1">
-                              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                                <path stroke="#22c55e" strokeWidth="3" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                          {/* PDF link */}
-                          <a
-                            href={`/uploads/documents/${pdf.file_name}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline text-blue-600 flex-1"
-                          >
-                            {pdf.title ? pdf.title : pdf.file_name}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                    {selectedPDFs.length > 0 && (
-                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                        <p className="text-sm text-green-700">
-                          <strong>{selectedPDFs.length}</strong> PDF{selectedPDFs.length > 1 ? 's' : ''} selected
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Material Collection and PDF dropdown - always visible at top */}
+                    <div>
+                      <Label htmlFor="collection">Material Collection *</Label>
+                      <Select 
+                        name="collection" 
+                    value={selectedPDFs.length > 0 ? selectedPDFs[0].toString() : selectedCollectionId} 
+                        onValueChange={(value) => {
+                      // Check if the value is a PDF ID (from collectionPDFs) or a collection ID
+                      const isPdfId = collectionPDFs.some(pdf => pdf.id.toString() === value);
+                      
+                      if (isPdfId) {
+                        // Value is a PDF ID
+                        const pdfId = parseInt(value);
+                        setSelectedPDFs([pdfId]);
+                        // Keep the current collection selected
+                      } else {
+                        // Value is a collection ID
+                          setSelectedCollectionId(value);
+                          setSelectedPDFs([]); // Reset selected PDFs when collection changes
+                          console.log('Selected Collection ID:', value);
+                      }
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                      <SelectValue placeholder="Select a collection or PDF (required)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {collectionsLoading ? (
+                            <div className="px-3 py-2 text-neutral-400 text-sm">Loading collections...</div>
+                          ) : collections.length === 0 ? (
+                            <div className="px-3 py-2 text-neutral-400 text-sm">No collections found</div>
+                          ) : (
+                        <>
+                          {/* Collections with their PDFs immediately below */}
+                          {collections.map((collection) => {
+                            const isSelectedCollection = collection.id.toString() === selectedCollectionId;
+                            const collectionPdfs = materials.filter(material => {
+                              const materialAny = material as any;
+                              return materialAny.collectionid?.toString() === collection.id.toString() || 
+                                     materialAny.collection_id?.toString() === collection.id.toString() ||
+                                     materialAny.collection?.toString() === collection.id.toString();
+                            });
+                            
+                            return (
+                              <div key={`collection-${collection.id}`}>
+                                <SelectItem value={collection.id.toString()}>
+                                  📁 {collection.name}
+                              </SelectItem>
+                                
+                                {/* Show PDFs immediately under the selected collection */}
+                                {isSelectedCollection && collectionPdfs.length > 0 && (
+                                  <>
+                                    {collectionPdfs.map((pdf) => (
+                                      <SelectItem 
+                                        key={`pdf-${pdf.id}`} 
+                                        value={pdf.id.toString()}
+                                        className="ml-4"
+                                      >
+                                        📄 {pdf.title || pdf.file_name || `PDF ${pdf.id}`}
+                                </SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        
+                        {selectedPDFs.length > 0 && (
+                          <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                            <p className="text-sm text-green-700 mb-2">
+                        <strong>1</strong> PDF selected:
+                            </p>
+                            <div className="space-y-1">
+                              {selectedPDFs.map((pdfId) => {
+                                const pdf = collectionPDFs.find(p => p.id === pdfId);
+                                return pdf ? (
+                                  <div key={pdfId} className="flex items-center justify-between text-sm">
+                              <span>{pdf.title || pdf.file_name || `PDF ${pdf.id}`}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 text-red-600"
+                                onClick={() => setSelectedPDFs([])}
+                                    >
+                                      ×
+                                    </Button>
+                                  </div>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                {/* Source type selection - Manual Input and PDF/Books on same line */}
+                <div className="grid grid-cols-2 gap-4">
                   <Card
                     className={`cursor-pointer transition-all ${sourceType === 'manual' ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSourceType('manual')}
@@ -860,28 +993,11 @@ const UnifiedContentGenerator: React.FC = () => {
                       <p className="text-sm font-medium">PDF/Books</p>
                     </CardContent>
                   </Card>
+                  </div>
 
-                  <Card
-                    className={`cursor-pointer transition-all ${sourceType === 'website' ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => setSourceType('website')}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Globe className="h-8 w-8 mx-auto mb-2 text-primary" />
-                      <p className="text-sm font-medium">Website URL</p>
-                    </CardContent>
-                  </Card>
 
-                  <Card
-                    className={`cursor-pointer transition-all ${sourceType === 'scanned_doc' ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => setSourceType('scanned_doc')}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Scan className="h-8 w-8 mx-auto mb-2 text-primary" />
-                      <p className="text-sm font-medium">Scanned Docs</p>
-                    </CardContent>
-                  </Card>
-                </div>
 
+                {/* Manual input textarea - only show when manual source type is selected */}
                 {sourceType === 'manual' && (
                   <div className="space-y-2">
                     <Label htmlFor="source_content">Source Content (Optional)</Label>
@@ -899,215 +1015,9 @@ const UnifiedContentGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {sourceType === 'pdf' && (
-                  <div className="space-y-4">
-                    <div
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
-                      onDrop={handlePDFDrop}
-                      onDragOver={e => e.preventDefault()}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        accept=".pdf,.doc,.docx,.txt,.epub"
-                        onChange={(e) => handleFileUpload(e.target.files)}
-                        className="hidden"
-                        id="pdf-upload"
-                        disabled={isProcessingFiles}
-                      />
-                      <label htmlFor="pdf-upload" className="cursor-pointer">
-                        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg font-medium text-gray-900">Upload PDFs or Documents</p>
-                        <p className="text-sm text-gray-500">
-                          Supports PDF, DOC, DOCX, TXT, EPUB files. Multiple files allowed.
-                        </p>
-                        <div className="mt-2">
-                          <strong>Uploaded PDFs:</strong>
-                          {/* <ul>
-                            {materialsLoading && <li className="text-sm text-gray-400">Loading PDFs...</li>}
-                            {!materialsLoading && materials.length === 0 && (
-                              <li className="text-sm text-gray-400">No PDFs found.</li>
-                            )}
-                            {materials.map((pdf) => (
-                              <li
-                                key={pdf.id}
-                                draggable
-                                onDragStart={e => {
-                                  e.dataTransfer.setData('application/pdf-id', String(pdf.id ?? ''));
-                                  e.dataTransfer.setData('application/pdf-name', String(pdf.file_name ?? ''));
-                                }}
-                                className="cursor-move hover:underline text-blue-600"
-                              >
-                                <a
-                                  href={`/uploads/documents/${pdf.file_name}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:underline"
-                                >
-                                  {pdf.title ? pdf.title : pdf.file_name}
-                                </a>
-                              </li>
-                            ))}
-                          </ul> */}
-                          <p className="text-xs text-gray-500 mt-2">
-                            Drag a PDF from the list above and drop it here to select it for content generation.
-                          </p>
-                        </div>
-                      </label>
-                    </div>
 
-                    {uploadedFiles.length > 0 && (
-                      <div className="space-y-2">
-                        <Label>Uploaded Files:</Label>
-                        <div className="space-y-1">
-                          {uploadedFiles.map((file, index) => (
-                            <div key={index} className="flex items-center space-x-2 text-sm">
-                              <FileText className="h-4 w-4" />
-                              <span>{file.name}</span>
-                              <span className="text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {isProcessingFiles && (
-                      <div className="flex items-center space-x-2 text-blue-600">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Processing files...</span>
-                      </div>
-                    )}
 
-                    {extractedContent && (
-                      <div className="space-y-2">
-                        <Label>Extracted Content:</Label>
-                        <Textarea
-                          value={extractedContent}
-                          onChange={(e) => {
-                            setExtractedContent(e.target.value);
-                            form.setValue('source_content', e.target.value);
-                          }}
-                          rows={8}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {sourceType === 'website' && (
-                  <div className="space-y-4">
-                    <div className="flex space-x-2">
-                      <div className="flex-1">
-                        <Label htmlFor="website_url">Website URL</Label>
-                        <Input
-                          id="website_url"
-                          {...form.register('website_url')}
-                          placeholder="https://example.com/article"
-                          type="url"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const url = form.watch('website_url');
-                            if (url) handleWebsiteExtraction(url);
-                          }}
-                          disabled={isProcessingFiles || !form.watch('website_url')}
-                          className="flex items-center space-x-2"
-                        >
-                          {isProcessingFiles ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Link className="h-4 w-4" />
-                          )}
-                          <span>Extract</span>
-                        </Button>
-                      </div>
-                    </div>
-
-                    {extractedContent && (
-                      <div className="space-y-2">
-                        <Label>Extracted Website Content:</Label>
-                        <Textarea
-                          value={extractedContent}
-                          onChange={(e) => {
-                            setExtractedContent(e.target.value);
-                            form.setValue('source_content', e.target.value);
-                          }}
-                          rows={8}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {sourceType === 'scanned_doc' && (
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.tiff"
-                        onChange={(e) => handleFileUpload(e.target.files)}
-                        className="hidden"
-                        id="scan-upload"
-                        disabled={isProcessingFiles}
-                      />
-                      <label htmlFor="scan-upload" className="cursor-pointer">
-                        <FileImage className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg font-medium text-gray-900">Upload Scanned Documents</p>
-                        <p className="text-sm text-gray-500">
-                          Supports JPG, PNG, GIF, BMP, TIFF. OCR will extract text automatically.
-                        </p>
-                      </label>
-                    </div>
-
-                    {uploadedFiles.length > 0 && (
-                      <div className="space-y-2">
-                        <Label>Uploaded Images:</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                          {uploadedFiles.map((file, index) => (
-                            <div key={index} className="relative">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={file.name}
-                                className="w-full h-24 object-cover rounded border"
-                              />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b">
-                                {file.name}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {isProcessingFiles && (
-                      <div className="flex items-center space-x-2 text-blue-600">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Processing OCR...</span>
-                      </div>
-                    )}
-
-                    {extractedContent && (
-                      <div className="space-y-2">
-                        <Label>OCR Extracted Text:</Label>
-                        <Textarea
-                          value={extractedContent}
-                          onChange={(e) => {
-                            setExtractedContent(e.target.value);
-                            form.setValue('source_content', e.target.value);
-                          }}
-                          rows={8}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -1193,7 +1103,7 @@ const UnifiedContentGenerator: React.FC = () => {
                 disabled={isGenerating || generationMutation.isPending}
                 className="flex items-center space-x-2"
                 onClick={() => {
-                  const formData = form.getValues();
+                  const formData = form.getValues() as UnifiedGenerationData;
                   console.log("Submit button clicked");
                   console.log("Current form data:", formData);
                   onSubmit(formData);
@@ -1252,327 +1162,196 @@ const UnifiedContentGenerator: React.FC = () => {
               
               <div className="space-y-6">
                 {/* Filter and Sort Controls - Always visible */}
-                <div className="flex flex-col sm:flex-row flex-wrap gap-4 p-2 sm:p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="filter-status">Filter by Status:</Label>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-32 focus:ring-0 focus:ring-offset-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="verified">Verified</SelectItem>
-                        <SelectItem value="unverified">Unverified</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="filter-type">Filter by Type:</Label>
-                    <Select value={filterType} onValueChange={setFilterType}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="content">Content</SelectItem>
-                        <SelectItem value="course">Course</SelectItem>
-                        <SelectItem value="lesson">Lesson</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="filter-course" className="font-medium">Select a course:</Label>
-                    <Select value={selectedCourse} onValueChange={(value) => {
-                      setSelectedCourse(value);
-                      console.log("Raw selected value:", value);
-                      console.log("Available courses:", courses);
-                      
-                      // Try different ways to find the course
-                      const selectedCourseInfo = courses.find(course => {
-                        const courseId = String(course.id);
-                        const selectedValue = String(value);
-                        return courseId === selectedValue;
-                      });
-                      
-                      console.log("Course selected:", selectedCourseInfo);
-                      console.log("Selected Course ID:", value);
-                      console.log("Selected Course Full Object:", selectedCourseInfo);
-                    }}>
-                      <SelectTrigger className="w-40 focus:ring-0 focus:ring-offset-0">
-                        <SelectValue placeholder="Select a course" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courses.map(course => (
-                          <SelectItem key={course.id} value={String(course.id)}>
-                            {course.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
+               
                 {/* Content Display */}
                 {!selectedCourse ? (
-                  // Show generated items when no course is selected
-                  getFilteredAndSortedItems().length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No generated content found</p>
-                      <p className="text-sm">Generate some content first to see it here for review and approval.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {getFilteredAndSortedItems().map((item) => (
-                        <ProcessingCenterItem
-                          key={item.id}
-                          item={{
-                            id: item.id,
-                            title: item.title,
-                            type: item.type,
-                            status: (['verified', 'unverified', 'rejected', 'pending'].includes(item.status) ? item.status : 'pending') as 'verified' | 'unverified' | 'rejected' | 'pending',
-                            createdAt: item.createdAt,
-                            createdBy: item.createdBy,
-                            description: item.description,
-                            qaqfLevel: item.qaqfLevel,
-                            qaqfComplianceScore: item.qaqfComplianceScore,
-                            content: item.content,
-                            metadata: item.metadata,
-                          }}
-                          selectedCourseId={selectedCourse}
-                          onAction={async (action, itemId, newDescription) => {
-                            if (action === 'deleted') {
-                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                            } else if (action === 'status_changed') {
-                              setGeneratedItems(prev => [...prev]);
-                            } else if (action === 'updated') {
-                              setGeneratedItems(prev => prev.map(item =>
-                                item.id === itemId
-                                  ? { ...item, description: newDescription }
-                                  : item
-                              ));
-                              if (selectedCourse) {
-                                fetchLessons();
-                              }
-                              toast({
-                                title: "Content updated successfully!",
-                                description: "Your changes have been saved."
-                              });
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )
+                  // Show message when no course is selected
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No course selected</p>
+                    <p className="text-sm">Please select a course to view its content and lessons.</p>
+                  </div>
                 ) : (
-                  // Show course lessons when a course is selected
-                  courseLessons.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No lessons found for this course</p>
-                      <p className="text-sm">No lessons available for the selected course.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {courseLessons
-                        .filter(lesson => {
-                          // Apply status filter
-                          if (filterStatus !== 'all') {
-                            return lesson.status === filterStatus;
+                  // Show course lessons and generated content when a course is selected
+                  (() => {
+                    // Get existing lessons for this course
+                    const existingLessons = courseLessons.filter(lesson => {
+                      // Apply status filter
+                      if (filterStatus !== 'all') {
+                        return lesson.status === filterStatus;
+                      }
+                      // Apply type filter
+                      if (filterType !== 'all') {
+                        return lesson.type === filterType;
+                      }
+                      return true;
+                    });
+
+                    // Get generated content for this specific course
+                    const generatedContentForCourse = getFilteredAndSortedItems().filter(item => {
+                      const itemCourseId = item.metadata?.courseid || item.metadata?.selected_course_id;
+                      return itemCourseId === selectedCourse;
+                    });
+
+                    // Combine lessons and generated content
+                    const allItems = [...existingLessons, ...generatedContentForCourse];
+
+                    if (allItems.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium">No content found for this course</p>
+                          <p className="text-sm">No lessons or generated content available for the selected course.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        {allItems.map((item) => {
+                          // Check if this is a lesson (from courseLessons) or generated content
+                          const isLesson = courseLessons.some(lesson => lesson.id === item.id);
+                          
+                          if (isLesson) {
+                            // Render existing lesson
+                            return (
+                              <ProcessingCenterItem
+                                key={item.id}
+                                item={{
+                                  id: item.id,
+                                  title: item.title,
+                                  type: item.type || 'lesson',
+                                  status: item.status || 'pending',
+                                  createdAt: item.createddate || '',
+                                  createdBy: item.userid ? `User ${item.userid}` : 'User',
+                                  description: item.description || item.content || (item.metadata && item.metadata.description) || '',
+                                  qaqfLevel: item.level || undefined,
+                                  progress: undefined,
+                                  estimatedTime: undefined,
+                                  content: JSON.stringify(item, null, 2), // for Content Preview
+                                  metadata: item,
+                                }}
+                                selectedCourseId={selectedCourse}
+                                onAction={async (action, itemId) => {
+                                  if (action === 'deleted') {
+                                    setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                                  } else if (action === 'status_changed') {
+                                    // Refresh the data or update the item status
+                                    setGeneratedItems(prev => [...prev]);
+                                  } else if (action === 'updated') {
+                                    // Refresh the lessons data when an item is updated
+                                    await fetchLessons();
+                                  }
+                                }}
+                              />
+                            );
+                          } else {
+                            // Render generated content
+                            return (
+                              <ProcessingCenterItem
+                                key={item.id}
+                                item={{
+                                  id: item.id,
+                                  title: item.title,
+                                  type: item.type,
+                                  status: (['verified', 'unverified', 'rejected', 'pending'].includes(item.status) ? item.status : 'pending') as 'verified' | 'unverified' | 'rejected' | 'pending',
+                                  createdAt: item.createdAt,
+                                  createdBy: item.createdBy,
+                                  description: item.description,
+                                  qaqfLevel: item.qaqfLevel,
+                                  qaqfComplianceScore: item.qaqfComplianceScore,
+                                  content: item.content,
+                                  metadata: item.metadata,
+                                }}
+                                selectedCourseId={selectedCourse}
+                                onAction={async (action, itemId, newDescription) => {
+                                  if (action === 'deleted') {
+                                    setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
+                                  } else if (action === 'status_changed') {
+                                    setGeneratedItems(prev => [...prev]);
+                                  } else if (action === 'updated') {
+                                    setGeneratedItems(prev => prev.map(item =>
+                                      item.id === itemId
+                                        ? { ...item, description: newDescription }
+                                        : item
+                                    ));
+                                    if (selectedCourse) {
+                                      fetchLessons();
+                                    }
+                                    toast({
+                                      title: "Content updated successfully!",
+                                      description: "Your changes have been saved."
+                                    });
+                                  }
+                                }}
+                              />
+                            );
                           }
-                          // Apply type filter
-                          if (filterType !== 'all') {
-                            return lesson.type === filterType;
-                          }
-                          return true;
-                        })
-                        .map((lesson) => (
-                        <ProcessingCenterItem
-                          key={lesson.id}
-                          item={{
-                            id: lesson.id,
-                            title: lesson.title,
-                            type: lesson.type || 'lesson',
-                            status: lesson.status || 'pending',
-                            createdAt: lesson.createddate || '',
-                            createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
-                            description: lesson.description || lesson.content || (lesson.metadata && lesson.metadata.description) || '',
-                            qaqfLevel: lesson.level || undefined,
-                            progress: undefined,
-                            estimatedTime: undefined,
-                            content: JSON.stringify(lesson, null, 2), // for Content Preview
-                            metadata: lesson,
-                          }}
-                          selectedCourseId={selectedCourse}
-                          onAction={async (action, itemId) => {
-                            if (action === 'deleted') {
-                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                            } else if (action === 'status_changed') {
-                              // Refresh the data or update the item status
-                              setGeneratedItems(prev => [...prev]);
-                            } else if (action === 'updated') {
-                              // Refresh the lessons data when an item is updated
-                              await fetchLessons();
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )
+                        })}
+                      </div>
+                    );
+                  })()
                 )}
 
                 {/* Summary Stats */}
-                {((!selectedCourse && getFilteredAndSortedItems().length > 0) || (selectedCourse && courseLessons.length > 0)) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">
-                        {!selectedCourse ? getFilteredAndSortedItems().length : courseLessons.length}
-                      </p>
-                      <p className="text-sm text-gray-600">Total Items</p>
+                {selectedCourse && (() => {
+                  // Get existing lessons for this course
+                  const existingLessons = courseLessons.filter(lesson => {
+                    // Apply status filter
+                    if (filterStatus !== 'all') {
+                      return lesson.status === filterStatus;
+                    }
+                    // Apply type filter
+                    if (filterType !== 'all') {
+                      return lesson.type === filterType;
+                    }
+                    return true;
+                  });
+
+                  // Get generated content for this specific course
+                  const generatedContentForCourse = getFilteredAndSortedItems().filter(item => {
+                    const itemCourseId = item.metadata?.courseid || item.metadata?.selected_course_id;
+                    return itemCourseId === selectedCourse;
+                  });
+
+                  // Combine lessons and generated content
+                  const allItems = [...existingLessons, ...generatedContentForCourse];
+
+                  return allItems.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-2 sm:p-4 bg-blue-50 rounded-lg">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">
+                          {allItems.length}
+                        </p>
+                        <p className="text-sm text-gray-600">Total Items</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-yellow-600">
+                          {allItems.filter(i => i.status === 'processing').length}
+                        </p>
+                        <p className="text-sm text-gray-600">Processing</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">
+                          {allItems.filter(i => i.status === 'completed').length}
+                        </p>
+                        <p className="text-sm text-gray-600">Completed</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-600">
+                          {Math.round(allItems.reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(allItems.length, 1))}%
+                        </p>
+                        <p className="text-sm text-gray-600">Avg. Compliance</p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-yellow-600">
-                        {!selectedCourse 
-                          ? getFilteredAndSortedItems().filter(i => i.status === 'processing').length
-                          : courseLessons.filter(i => i.status === 'processing').length
-                        }
-                      </p>
-                      <p className="text-sm text-gray-600">Processing</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
-                        {!selectedCourse 
-                          ? getFilteredAndSortedItems().filter(i => i.status === 'completed').length
-                          : courseLessons.filter(i => i.status === 'completed').length
-                        }
-                      </p>
-                      <p className="text-sm text-gray-600">Completed</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-600">
-                        {!selectedCourse 
-                          ? Math.round(getFilteredAndSortedItems().reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(getFilteredAndSortedItems().length, 1))
-                          : Math.round(courseLessons.reduce((acc, item) => acc + (item.qaqfComplianceScore ?? 0), 0) / Math.max(courseLessons.length, 1))
-                        }%
-                      </p>
-                      <p className="text-sm text-gray-600">Avg. Compliance</p>
-                    </div>
-                  </div>
-                )}
+                  ) : null;
+                })()}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="library" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <History className="h-5 w-5" />
-                <span>Module Library</span>
-              </CardTitle>
-              <CardDescription>Access your approved and completed content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                // Get verified items from generated items
-                const verifiedGeneratedItems = generatedItems.filter(item => 
-                  item.status === 'verified' || item.verificationStatus === 'verified'
-                );
-                
-                // Get verified items from course lessons
-                const verifiedCourseLessons = courseLessons.filter(lesson => 
-                  lesson.status === 'verified' || lesson.verificationStatus === 'verified'
-                );
-                
-                // Combine all verified items
-                const allVerifiedItems = [
-                  ...verifiedGeneratedItems.map(item => ({
-                    id: item.id,
-                    title: item.title,
-                    type: item.type,
-                    status: ((item.status === 'verified' || item.verificationStatus === 'verified') ? 'verified' : 'pending') as 'verified' | 'pending',
-                    verificationStatus: (item.verificationStatus || (item.status === 'verified' ? 'verified' : 'pending')) as 'verified' | 'pending',
-                    createdAt: item.createdAt,
-                    createdBy: item.createdBy,
-                    description: item.description,
-                    qaqfLevel: item.qaqfLevel,
-                    progress: item.progress,
-                    estimatedTime: item.estimatedTime,
-                    content: item.content,
-                    metadata: item.metadata,
-                  })),
-                  ...verifiedCourseLessons.map(lesson => ({
-                    id: lesson.id,
-                    title: lesson.title,
-                    type: lesson.type || '',
-                    status: ((lesson.status === 'verified' || lesson.verificationStatus === 'verified') ? 'verified' : 'pending') as 'verified' | 'pending',
-                    verificationStatus: (lesson.verificationStatus || (lesson.status === 'verified' ? 'verified' : 'pending')) as 'verified' | 'pending',
-                    createdAt: lesson.createddate || '',
-                    createdBy: lesson.userid ? `User ${lesson.userid}` : 'User',
-                    description: lesson.description || '',
-                    qaqfLevel: lesson.level || undefined,
-                    progress: undefined,
-                    estimatedTime: undefined,
-                    content: JSON.stringify(lesson, null, 2),
-                    metadata: lesson,
-                  }))
-                ];
 
-                if (allVerifiedItems.length === 0) {
-                  return (
-                    <div className="text-center py-12">
-                      <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-lg font-medium text-muted-foreground">No verified content yet</p>
-                      <p className="text-sm text-muted-foreground">
-                        Verify items in the Processing Center to see them here in your Module Library.
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">Verified Items ({allVerifiedItems.length})</span>
-                      </div>
-                      
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {allVerifiedItems.map((item) => (
-                        <ProcessingCenterItem
-                          key={item.id}
-                          item={item}
-                          onAction={async (action, itemId) => {
-                            if (action === 'deleted') {
-                              // Remove from both lists
-                              setGeneratedItems(prev => prev.filter(item => item.id !== itemId));
-                              setCourseLessons(prev => prev.filter(lesson => lesson.id !== itemId));
-                            } else if (action === 'status_changed') {
-                              // Refresh the data
-                              setGeneratedItems(prev => [...prev]);
-                              await fetchLessons();
-                            } else if (action === 'updated') {
-                              // Refresh both lists
-                              setGeneratedItems(prev => [...prev]);
-                              await fetchLessons();
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Lesson Plan Template Modal */}

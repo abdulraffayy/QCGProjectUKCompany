@@ -59,6 +59,10 @@ export const GeneratedCourseComponent: React.FC<GeneratedCourseProps> = ({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [explanations, setExplanations] = useState<ExplanationAttachment[]>([]);
   
+  // New state for Ask Query button
+  const [showAskQueryButton, setShowAskQueryButton] = useState<boolean>(false);
+  const [askQueryButtonPosition, setAskQueryButtonPosition] = useState({ x: 0, y: 0 });
+  
   // New state variables for AI API
   const [aiQuery, setAiQuery] = useState<string>('');
   const [aiReference, setAiReference] = useState<string>('');
@@ -252,10 +256,21 @@ const findSelectedLinePosition = (selectedText: string): number => {
       const linePosition = findSelectedLinePosition(selectedText.trim());
       setSelectedLinePosition(linePosition);
       
-      // Show popup after delay
+      // Show Ask Query button instead of popup
       setTimeout(() => {
-        setIsPopupOpen(true);
+        setShowAskQueryButton(true);
         setShowTooltip(false);
+        
+        // Position the button on the right side of the selection
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          setAskQueryButtonPosition({
+            x: rect.right + 10,
+            y: rect.top
+          });
+        }
       }, 300);
     }
   };
@@ -271,8 +286,15 @@ const findSelectedLinePosition = (selectedText: string): number => {
     setSelectedLinePosition(-1);
     setResponseHistory([]); // Clear response history when closing popup
     setSelectedText(''); // Clear selected text
+    setShowAskQueryButton(false); // Hide Ask Query button
     
     // TiptapEditor handles its own selection clearing
+  };
+
+  // Handle Ask Query button click
+  const handleAskQueryClick = () => {
+    setShowAskQueryButton(false);
+    setIsPopupOpen(true);
   };
 
   // Real AI request function
@@ -507,6 +529,25 @@ ${latestResponse.content}
     }
   }, [editableLessonContent]);
 
+  // Handle clicks outside Ask Query button to hide it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showAskQueryButton) {
+        const target = event.target as Element;
+        if (!target.closest('.ask-query-button') && !target.closest('[contenteditable="true"]')) {
+          setShowAskQueryButton(false);
+          setSelectedText('');
+          setSelectedLinePosition(-1);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAskQueryButton]);
+
 
 
   // Function to upload course to API
@@ -612,6 +653,25 @@ ${latestResponse.content}
             >
               Click to explain this text
               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-5 border-r-5 border-t-5 border-l-transparent border-r-transparent border-t-gray-900"></div>
+            </div>
+          )}
+
+          {/* Ask Query Button */}
+          {showAskQueryButton && (
+            <div 
+              className="fixed z-50 animate-fadeIn"
+              style={{ 
+                left: `${askQueryButtonPosition.x}px`, 
+                top: `${askQueryButtonPosition.y}px`
+              }}
+            >
+              <button
+                onClick={handleAskQueryClick}
+                className="ask-query-button bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 text-sm font-medium"
+              >
+                <span className="text-lg">🤖</span>
+                Ask Query
+              </button>
             </div>
           )}
 

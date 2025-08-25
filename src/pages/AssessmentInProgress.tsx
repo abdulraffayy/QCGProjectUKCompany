@@ -153,10 +153,10 @@ const AssessmentInProgressPage: React.FC = () => {
       console.log('Edit Lesson - Selected text:', text);
       console.log('Edit Lesson - Selection position:', selectionPosition);
       
-      // Show popup after delay
+      // Show tooltip with Ask Query button
       setTimeout(() => {
-        setEditLessonIsPopupOpen(true);
-        setEditLessonShowTooltip(false);
+        setEditLessonShowTooltip(true);
+        setEditLessonIsPopupOpen(false);
       }, 300);
     }
   };
@@ -982,21 +982,7 @@ const AssessmentInProgressPage: React.FC = () => {
           <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="max-w-6xl mx-auto">
        
-        {/* Edit Lesson Selection Tooltip */}
-        {editLessonShowTooltip && (
-          <div 
-            ref={editLessonTooltipRef}
-            className="fixed bg-gray-900 text-white py-2 px-3 rounded-lg text-sm z-50 transition-opacity"
-            style={{ 
-              left: `${editLessonTooltipPosition.x}px`, 
-              top: `${editLessonTooltipPosition.y}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            Click to explain this text
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-5 border-r-5 border-t-5 border-l-transparent border-r-transparent border-t-gray-900"></div>
-          </div>
-        )}
+
 
         {/* Edit Lesson Overlay */}
         {editLessonIsPopupOpen && (
@@ -1207,17 +1193,34 @@ const AssessmentInProgressPage: React.FC = () => {
             </div>
           )}
           
-          <TiptapEditor
-            content={lessonContent || editLessonForm.description || ''}
-            onContentChange={setLessonContent}
-            onTextSelection={handleEditLessonTextSelection}
-            onReady={() => {
-              console.log('🎉 Edit Lesson TiptapEditor is ready');
-              setEditLessonIsEditorReady(true);
-            }}
-            className="min-h-[400px]"
-            editorRef={editLessonTiptapEditorRef}
-          />
+          <div className="relative">
+            <TiptapEditor
+              content={lessonContent || editLessonForm.description || ''}
+              onContentChange={setLessonContent}
+              onTextSelection={handleEditLessonTextSelection}
+              onReady={() => {
+                console.log('🎉 Edit Lesson TiptapEditor is ready');
+                setEditLessonIsEditorReady(true);
+              }}
+              className="min-h-[400px]"
+              editorRef={editLessonTiptapEditorRef}
+            />
+            
+            {/* Ask Query Button - Right Side */}
+            {editLessonShowTooltip && (
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+                  onClick={() => {
+                    setEditLessonShowTooltip(false);
+                    setTimeout(() => setEditLessonIsPopupOpen(true), 100);
+                  }}
+                >
+                  Ask Query
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

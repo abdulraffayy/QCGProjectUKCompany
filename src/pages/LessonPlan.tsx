@@ -377,10 +377,10 @@ const LessonPlanPage: React.FC = () => {
         console.log('Selected text:', text);
         console.log('Selection position:', selectionPosition);
         
-        // Show popup after delay
+        // Show tooltip with Ask Query button
         setTimeout(() => {
-          setIsPopupOpen(true);
-          setShowTooltip(false);
+          setShowTooltip(true);
+          setIsPopupOpen(false);
         }, 300);
       }
     };
@@ -491,10 +491,10 @@ const LessonPlanPage: React.FC = () => {
         console.log('Edit Module - Selected text:', text);
         console.log('Edit Module - Selection position:', selectionPosition);
         
-        // Show popup after delay
+        // Show tooltip with Ask Query button
         setTimeout(() => {
-          setEditModuleIsPopupOpen(true);
-          setEditModuleShowTooltip(false);
+          setEditModuleShowTooltip(true);
+          setEditModuleIsPopupOpen(false);
         }, 300);
       }
     };
@@ -2306,21 +2306,7 @@ const LessonPlanPage: React.FC = () => {
             <div className="max-w-6xl mx-auto">
        
 
-        {/* Selection Tooltip */}
-        {showTooltip && (
-          <div 
-            ref={tooltipRef}
-            className="fixed bg-gray-900 text-white py-2 px-3 rounded-lg text-sm z-50 transition-opacity"
-            style={{ 
-              left: `${tooltipPosition.x}px`, 
-              top: `${tooltipPosition.y}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            Click to explain this text
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-5 border-r-5 border-t-5 border-l-transparent border-r-transparent border-t-gray-900"></div>
-          </div>
-        )}
+
 
         {/* Overlay */}
         {isPopupOpen && (
@@ -2530,17 +2516,34 @@ const LessonPlanPage: React.FC = () => {
             </div>
           )}
           
-          <TiptapEditor
-            content={lessonContent || ''}
-            onContentChange={setLessonContent}
-            onTextSelection={handleTextSelection}
-            onReady={() => {
-              console.log('🎉 TiptapEditor is ready in LessonPlan');
-              setIsEditorReady(true);
-            }}
-            className="min-h-[400px]"
-            editorRef={tiptapEditorRef}
-          />
+          <div className="relative">
+            <TiptapEditor
+              content={lessonContent || ''}
+              onContentChange={setLessonContent}
+              onTextSelection={handleTextSelection}
+              onReady={() => {
+                console.log('🎉 TiptapEditor is ready in LessonPlan');
+                setIsEditorReady(true);
+              }}
+              className="min-h-[400px]"
+              editorRef={tiptapEditorRef}
+            />
+            
+            {/* Ask Query Button - Right Side */}
+            {showTooltip && (
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+                  onClick={() => {
+                    setShowTooltip(false);
+                    setTimeout(() => setIsPopupOpen(true), 100);
+                  }}
+                >
+                  Ask Query
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -2811,21 +2814,7 @@ const LessonPlanPage: React.FC = () => {
           <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="max-w-6xl mx-auto">
        
-        {/* Edit Module Selection Tooltip */}
-        {editModuleShowTooltip && (
-          <div 
-            ref={editModuleTooltipRef}
-            className="fixed bg-gray-900 text-white py-2 px-3 rounded-lg text-sm z-50 transition-opacity"
-            style={{ 
-              left: `${editModuleTooltipPosition.x}px`, 
-              top: `${editModuleTooltipPosition.y}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            Click to explain this text
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-5 border-r-5 border-t-5 border-l-transparent border-r-transparent border-t-gray-900"></div>
-          </div>
-        )}
+
 
         {/* Edit Module Overlay */}
         {editModuleIsPopupOpen && (
@@ -3028,17 +3017,34 @@ const LessonPlanPage: React.FC = () => {
             </div>
           )}
           
-          <TiptapEditor
-            content={rightSideEditForm.description || ''}
-            onContentChange={(content) => setRightSideEditForm(prev => ({ ...prev, description: content }))}
-            className="min-h-[200px]"
-            onTextSelection={handleEditModuleTextSelection}
-            onReady={() => {
-              console.log('🎉 Edit Module TiptapEditor is ready');
-              setEditModuleIsEditorReady(true);
-            }}
-            editorRef={editModuleTiptapEditorRef}
-          />
+          <div className="relative">
+            <TiptapEditor
+              content={rightSideEditForm.description || ''}
+              onContentChange={(content) => setRightSideEditForm(prev => ({ ...prev, description: content }))}
+              className="min-h-[200px]"
+              onTextSelection={handleEditModuleTextSelection}
+              onReady={() => {
+                console.log('🎉 Edit Module TiptapEditor is ready');
+                setEditModuleIsEditorReady(true);
+              }}
+              editorRef={editModuleTiptapEditorRef}
+            />
+            
+            {/* Ask Query Button - Right Side */}
+            {editModuleShowTooltip && (
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+                  onClick={() => {
+                    setEditModuleShowTooltip(false);
+                    setTimeout(() => setEditModuleIsPopupOpen(true), 100);
+                  }}
+                >
+                  Ask Query
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

@@ -37,6 +37,11 @@ import Dummy from "./pages/Dummy";
 // Wrapper component to handle route props for Rafay
 const RafayWrapper = () => <Rafay />;
 
+// Wrapper component to handle courseId prop for UnifiedContentGenerator
+const UnifiedContentGeneratorWrapper = ({ courseId }: { courseId?: string }) => (
+  <UnifiedContentGenerator courseId={courseId} />
+);
+
 function AuthenticatedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -73,9 +78,12 @@ function AuthenticatedRoutes() {
         <Switch>
           <Route path="/" component={() => <Redirect to="/dashboard" />} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/content-generator" component={UnifiedContentGenerator} />
-          <Route path="/ai-content-studio" component={UnifiedContentGenerator} />
-          <Route path="/processing-center" component={UnifiedContentGenerator} />
+          <Route path="/content-generator" component={() => <UnifiedContentGeneratorWrapper />} />
+          <Route path="/content-generator/:courseId" component={({ params }: any) => <UnifiedContentGeneratorWrapper courseId={params.courseId} />} />
+          <Route path="/ai-content-studio" component={() => <UnifiedContentGeneratorWrapper />} />
+          <Route path="/ai-content-studio/:courseId" component={({ params }: any) => <UnifiedContentGeneratorWrapper courseId={params.courseId} />} />
+          <Route path="/processing-center" component={() => <UnifiedContentGeneratorWrapper />} />
+          <Route path="/processing-center/:courseId" component={({ params }: any) => <UnifiedContentGeneratorWrapper courseId={params.courseId} />} />
           <Route path="/video-generator" component={VideoGenerator} />
           <Route path="/my-content" component={MyContent} />
           <Route path="/lesson-plan" component={LessonPlan} />

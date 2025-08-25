@@ -50,6 +50,7 @@ export const generateCourseContent = async (
   // Persist generated content so the editor can load it later
   try {
     if (result?.generated_content) {
+      console.log('Saving generated content to :1011111111111111111111111', result.generated_content);
       localStorage.setItem('latest_generated_course_content', result.generated_content);
     }
   } catch {}

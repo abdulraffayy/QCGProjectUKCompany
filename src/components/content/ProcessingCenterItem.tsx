@@ -26,6 +26,8 @@ import {
   Settings,
   X,
   User,
+  Shield,
+  Edit3,
 } from "lucide-react";
 
 
@@ -169,6 +171,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   const [editLessonSelectedLinePosition, setEditLessonSelectedLinePosition] = useState<number>(-1);
   const [editLessonSelectedLineEndPosition, setEditLessonSelectedLineEndPosition] = useState<number>(-1);
   const [editLessonIsEditorReady, setEditLessonIsEditorReady] = useState<boolean>(false);
+  
+  // New state for Ask Query button
+  const [editLessonShowAskQueryButton, setEditLessonShowAskQueryButton] = useState<boolean>(false);
+  const [editLessonAskQueryButtonPosition, setEditLessonAskQueryButtonPosition] = useState({ x: 0, y: 0 });
 
   // Refs for Edit Lesson dialog
   const editLessonTiptapEditorRef = useRef<any>(null);
@@ -234,11 +240,40 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       console.log('Edit Lesson - Selected text:', text);
       console.log('Edit Lesson - Selection position:', selectionPosition);
       
-      // Show popup after delay
-      setTimeout(() => {
-        setEditLessonIsPopupOpen(true);
-        setEditLessonShowTooltip(false);
-      }, 300);
+      // Calculate button position based on selection
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        // Ensure button doesn't go off-screen
+        const buttonWidth = 100; // Approximate button width
+        const buttonHeight = 32; // Approximate button height
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        let x = rect.right + 10;
+        let y = rect.top;
+        
+        // Adjust if button would go off the right edge
+        if (x + buttonWidth > windowWidth - 20) {
+          x = rect.left - buttonWidth - 10;
+        }
+        
+        // Adjust if button would go off the bottom edge
+        if (y + buttonHeight > windowHeight - 20) {
+          y = rect.bottom - buttonHeight;
+        }
+        
+        // Ensure minimum values
+        x = Math.max(20, x);
+        y = Math.max(20, y);
+        
+        setEditLessonAskQueryButtonPosition({ x, y });
+        setEditLessonShowAskQueryButton(true);
+      }
+    } else {
+      setEditLessonShowAskQueryButton(false);
     }
   };
 
@@ -252,10 +287,39 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     setEditLessonSelectedLineEndPosition(-1);
     setEditLessonResponseHistory([]);
     setEditLessonIsEditorReady(false);
+    setEditLessonShowAskQueryButton(false);
     
     // Clear selection
     window.getSelection()?.removeAllRanges();
   };
+
+  // Handle Ask Query button click
+  const handleAskQueryClick = (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent event bubbling
+    if (editLessonSelectedText && editLessonSelectedText.trim() !== '') {
+      setEditLessonShowAskQueryButton(false);
+      setEditLessonIsPopupOpen(true);
+      setEditLessonShowTooltip(false);
+    }
+  };
+
+  // Handle click outside to hide Ask Query button
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editLessonShowAskQueryButton) {
+        const target = event.target as Element;
+        // Hide button if clicking outside the editor or the button itself
+        if (!target.closest('.ProseMirror') && !target.closest('[data-ask-query-button]')) {
+          setEditLessonShowAskQueryButton(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editLessonShowAskQueryButton]);
 
   // Send AI explanation request for Edit Lesson dialog
   const sendEditLessonExplanationRequest = async () => {
@@ -372,27 +436,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     console.log('Edit Lesson - Formatted explanation:', formattedExplanation);
 
     try {
-      // Check if text is selected and we have valid selection positions
-      const hasSelectedText = editLessonSelectedText && editLessonSelectedText.trim() !== '';
-      const hasValidSelection = editLessonSelectedLinePosition >= 0 && editLessonSelectedLineEndPosition >= 0;
+      // Always insert AI response at the end of the editor content
+      const contentLength = editLessonTiptapEditorRef.current.getEditor().state.doc.content.size;
+      const insertPosition = contentLength;
+      const successMessage = 'AI explanation attached successfully at the bottom!';
       
-      let insertPosition: number;
-      let successMessage: string;
+      console.log('Edit Lesson - Appending to end of editor, position:', insertPosition);
       
-      if (hasSelectedText && hasValidSelection) {
-        // Insert AI response after the selected text
-        insertPosition = editLessonSelectedLineEndPosition;
-        successMessage = 'AI explanation inserted after selected text!';
-        console.log('Edit Lesson - Inserting after selected text at position:', insertPosition);
-      } else {
-        // No text selected - append to the end of the editor content
-        const contentLength = editLessonTiptapEditorRef.current.getEditor().state.doc.content.size;
-        insertPosition = contentLength;
-        successMessage = 'AI explanation attached successfully at the bottom!';
-        console.log('Edit Lesson - Appending to end of editor, position:', insertPosition);
-      }
-      
-      // Insert content at the determined position
+      // Insert content at the end
       const result = editLessonTiptapEditorRef.current.insertContent(formattedExplanation, insertPosition);
       
       console.log('✅ Edit Lesson - AI response inserted successfully');
@@ -996,26 +1047,52 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-            {(item.verificationStatus || item.status) && (
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getVerificationStatusColor(item.verificationStatus || item.status || "pending")}`}>
-                        {getVerificationStatusIcon(item.verificationStatus || item.status || "pending")}
-                        <span>{getVerificationStatusText(item.verificationStatus || item.status || "pending")}</span>
-                      </div>
-                    )}
-                 <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={()=>handleEditClick(selectedCourseId || "")}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    </div>
-              <Button
+              {/* Status Section - Grid Layout */}
+              <div className="flex justify-between text-center space-x-6 p-2">
+  {/* Status */}
+  <div className="flex flex-col items-center ">
+    <span className="px-2 py-2 rounded-md text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+      Status
+    </span>
+    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 mt-2">
+      <Clock className="h-3 w-3 text-blue-600" />
+    </div>
+  </div>
+
+  {/* Verification */}
+  <div className="flex flex-col items-center">
+    <span className="px-2 py-2 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+      Verification
+    </span>
+    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 mt-2">
+      <CheckCircle className="h-3 w-3 text-yellow-600" />
+    </div>
+  </div>
+
+  {/* Moderation */}
+  <div className="flex flex-col items-center">
+    <span className="px-2 py-2 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+      Moderation
+    </span>
+    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 mt-2">
+      <Shield className="h-3 w-3 text-purple-600" />
+    </div>
+  </div>
+
+  <div className="flex">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={()=>handleEditClick(selectedCourseId || "")}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+
+                <Button
                 variant="ghost"
                 size="icon"
-                className="ml-1"
+                className=""
                 onClick={handleDeleteLesson}
                 disabled={deleteLoading || isDeleted}
                 aria-label="Close"
@@ -1026,6 +1103,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                   <X className="h-4 w-4" />
                 )}
               </Button>
+              </div>
+              
+            
+</div>
+
+              
+              {/* Action Buttons */}
+            
             </div>
           </div>
 
@@ -1056,6 +1141,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       {/* Fullscreen Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
         setIsEditDialogOpen(open);
+        if (!open) {
+          // Reset Ask Query button state when dialog closes
+          setEditLessonShowAskQueryButton(false);
+          setEditLessonSelectedText('');
+        }
       }}>
         <DialogContent className="w-[100%] h-screen max-w-full max-h-full p-0 flex flex-col mx-auto">
           <DialogHeader className="p-6">
@@ -1086,6 +1176,26 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 animate-fadeIn"
             onClick={closeEditLessonPopup}
           ></div>
+        )}
+
+        {/* Ask Query Button */}
+        {editLessonShowAskQueryButton && editLessonSelectedText && (
+          <div 
+            className="fixed z-50 animate-slideIn"
+            style={{
+              left: `${editLessonAskQueryButtonPosition.x}px`,
+              top: `${editLessonAskQueryButtonPosition.y}px`,
+            }}
+          >
+            <button
+              onClick={handleAskQueryClick}
+              data-ask-query-button
+              className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg shadow-lg hover:shadow-xl transition-all hover:from-blue-700 hover:to-purple-700 flex items-center gap-1 border border-white"
+              title="Ask AI about this text"
+            >
+              🤖 Ask Query
+            </button>
+          </div>
         )}
 
         {/* Edit Lesson Popup */}

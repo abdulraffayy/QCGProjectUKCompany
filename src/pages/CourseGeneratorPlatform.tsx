@@ -13,6 +13,7 @@ import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../hooks/use-toast';
 import TiptapEditor from '../components/TiptapEditor';
 import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 // TypeScript interfaces
 interface ExplanationAttachment {
@@ -40,6 +41,8 @@ const CourseGeneratorPlatform = () => {
 
   // Add lesson content state
   const [lessonContentInput, setLessonContentInput] = useState<string>('<p>Start typing your lesson content here...</p>');
+  const [forceEditorUpdate, setForceEditorUpdate] = useState<number>(0);
+  const [isUpdatingEditor, setIsUpdatingEditor] = useState<boolean>(false);
 
   // Data table states
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,12 +69,196 @@ const CourseGeneratorPlatform = () => {
   const [isAIGenerating, setIsAIGenerating] = useState<boolean>(false);
   const [responseHistory, setResponseHistory] = useState<Array<{type: string, content: string, timestamp: number}>>([]);
   
+  // Store the latest API response for direct access
+  const [latestApiResponse, setLatestApiResponse] = useState<string>('');
+  
+  // State for Ask Query button in Edit Course
+  const [showAskQueryButton, setShowAskQueryButton] = useState<boolean>(false);
+  
+  // Flag to prevent continuous syncing during content updates
+  const [isUpdatingContent, setIsUpdatingContent] = useState<boolean>(false);
+  
+  // Track if editor is ready
+  const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
+  
   // Refs
   const lessonContentRef = useRef<HTMLDivElement>(null);
   const tiptapEditorRef = useRef<any>(null);
   const selectedTextEditorRef = useRef<any>(null);
   const explanationCounter = useRef<number>(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Function to check if content contains AI responses
+  const hasAIResponse = (content: string): boolean => {
+    // Check for AI response markers in the content
+    return content.includes('🤖 AI Response:') || 
+           content.includes('## AI Response:') || 
+           content.includes('*Attached on') ||
+           content.includes('AI Response:') ||
+           content.includes('background: linear-gradient(135deg, #f0f9ff') ||
+           content.includes('📅 Attached on') ||
+           content.includes('📅 Generated on') ||
+           content.includes('🤖 AI Response:') ||
+           content.length > 200; // Fallback check for substantial content
+  };
+
+  // Function to properly format content for TiptapEditor
+  const formatContentForEditor = (content: string): string => {
+    if (!content) return '<p>Start typing your lesson content here...</p>';
+    
+    // If content already contains AI responses, preserve it as is
+    if (hasAIResponse(content)) {
+      return content;
+    }
+    
+    // If content doesn't have HTML tags, wrap it in paragraphs
+    if (!content.includes('<') && !content.includes('>')) {
+      return content.split('\n\n').map(paragraph => 
+        paragraph.trim() ? `<p>${paragraph.trim()}</p>` : '<p><br></p>'
+      ).join('');
+    }
+    
+    // If content has markdown formatting, convert to HTML
+    if (content.includes('**') || content.includes('*') || content.includes('`')) {
+      return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    }
+    
+    // Ensure content starts with a paragraph tag if it's not already HTML
+    if (!content.startsWith('<p>') && !content.startsWith('<div>') && !content.startsWith('<h')) {
+      return `<p>${content}</p>`;
+    }
+    
+    return content;
+  };
+
+  // Function to sync content from editor to state (for saving)
+  const syncContentToState = () => {
+    if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+      try {
+        const editorContent = tiptapEditorRef.current.editor.getHTML();
+        if (editorContent !== lessonContentInput) {
+          setLessonContentInput(editorContent);
+        }
+      } catch (error) {
+        console.error('❌ Error syncing content from editor:', error);
+      }
+    }
+  };
+
+  // Effect to ensure AI content is properly displayed in editor after attachment
+  useEffect(() => {
+    if (lessonContentInput && hasAIResponse(lessonContentInput)) {
+      // Add a small delay to ensure the editor is ready
+      const timer = setTimeout(() => {
+        if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+          try {
+            const currentContent = tiptapEditorRef.current.editor.getHTML();
+            // Only update if the content is different and contains AI response
+            if (currentContent !== lessonContentInput && hasAIResponse(lessonContentInput)) {
+              tiptapEditorRef.current.editor.commands.setContent(lessonContentInput);
+            }
+          } catch (error) {
+            console.error('❌ Error ensuring AI content display:', error);
+          }
+        }
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [lessonContentInput]);
+
+  // NEW: Effect to properly restore content when edit dialog opens
+  useEffect(() => {
+    if (showEditPopup && editingCourse && lessonContentInput) {
+      // Add a longer delay to ensure the editor is fully initialized
+      const timer = setTimeout(() => {
+        if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+          try {
+            const currentContent = tiptapEditorRef.current.editor.getHTML();
+            const expectedContent = formatContentForEditor(lessonContentInput);
+            
+            // Only update if the content is different
+            if (currentContent !== expectedContent) {
+              tiptapEditorRef.current.editor.commands.setContent(expectedContent);
+              
+              // Force a re-render to ensure content is displayed
+              setForceEditorUpdate(prev => prev + 1);
+            }
+          } catch (error) {
+            console.error('❌ Error restoring content in edit dialog:', error);
+          }
+        }
+      }, 500); // Increased delay for better reliability
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showEditPopup, editingCourse, lessonContentInput]);
+
+  // NEW: Effect to ensure content is properly formatted when lessonContentInput changes
+  useEffect(() => {
+    if (lessonContentInput && showEditPopup && !isUpdatingContent) {
+      // Only reformat if we're not currently updating content from API
+      const formattedContent = formatContentForEditor(lessonContentInput);
+      if (formattedContent !== lessonContentInput && !hasAIResponse(lessonContentInput)) {
+        setLessonContentInput(formattedContent);
+      }
+    }
+  }, [lessonContentInput, showEditPopup, isUpdatingContent]);
+
+  // Effect to update editor when lessonContentInput changes
+  useEffect(() => {
+    if (lessonContentInput && isEditorReady) {
+      if (tiptapEditorRef.current) {
+        try {
+          const currentContent = tiptapEditorRef.current.getHTML();
+          if (currentContent !== lessonContentInput) {
+            const success = tiptapEditorRef.current.setContent(lessonContentInput);
+            if (success) {
+              setForceEditorUpdate(prev => prev + 1);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error updating editor from lessonContentInput change:', error);
+        }
+      }
+    }
+  }, [lessonContentInput, isEditorReady]);
+
+  // Debug function to check content state
+  const debugContentState = () => {
+    // Debug function - console logs removed for cleaner code
+  };
+
+  // Force update editor content function
+  const forceUpdateEditorContent = () => {
+    if (!lessonContentInput) {
+      return;
+    }
+    
+    if (!isEditorReady) {
+      return;
+    }
+    
+    if (tiptapEditorRef.current) {
+      try {
+        // Use the exposed setContent method from TiptapEditor
+        const success = tiptapEditorRef.current.setContent(lessonContentInput);
+        
+        if (success) {
+          // Force a re-render
+          setForceEditorUpdate(prev => prev + 1);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error updating editor content:', error);
+      }
+    }
+  };
 
 
    // Function to upload course to API
@@ -115,8 +302,6 @@ const CourseGeneratorPlatform = () => {
         
         // Optionally, you can navigate to LessonPlan page or refresh the courses list
         // window.location.href = '/lesson-plan';
-        
-        console.log('Course uploaded successfully:', result);
       } else {
         const errorData = await response.json();
         toast({
@@ -152,9 +337,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
   const lines = lessonContent.split('\n');
   const cleanSelectedText = selectedText.trim().replace(/\s+/g, ' ').toLowerCase();
 
-  console.log('Finding position for selected text:', selectedText);
-  console.log('Clean selected text:', cleanSelectedText);
-
   const container = lessonContentRef.current;
 
   // ✅ Use the END of selection instead of the start
@@ -179,7 +361,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
     const elementIndex = allDivs.indexOf(targetElement as HTMLDivElement);
 
     if (elementIndex !== -1) {
-      console.log('Found element at index (end of selection):', elementIndex);
       return elementIndex; // ✅ always the last line
     }
   }
@@ -196,12 +377,10 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
 
     if (hasMatchingWord) {
       lastMatchingLine = i;
-      console.log('Found matching word in line:', i, 'Line content:', lines[i]);
     }
   }
 
   if (lastMatchingLine !== -1) {
-    console.log('Returning last matching line:', lastMatchingLine);
     return lastMatchingLine;
   }
 
@@ -212,12 +391,10 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       cleanLine.includes(cleanSelectedText) ||
       cleanSelectedText.includes(cleanLine)
     ) {
-      console.log('Found exact match at line:', i);
       return i;
     }
   }
 
-  console.log('No match found for selected text');
   return -1;
 };
 
@@ -260,7 +437,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
     try {
       selectedRange.surroundContents(span);
     } catch (e) {
-      console.log('Complex selection detected');
+      // Complex selection detected
     }
   };
 
@@ -272,6 +449,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
     setAiReference('');
     setSelectedLinePosition(-1);
     setResponseHistory([]); // Clear response history when closing popup
+    setShowAskQueryButton(false); // Hide Ask Query button when closing popup
     
     // Clear selection highlighting
     if (lessonContentRef.current) {
@@ -355,6 +533,67 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
          }).join('\n\n');
          
          setAiResponse(formattedResponses);
+         
+         // Store the latest API response for direct access
+         setLatestApiResponse(data.generated_content);
+         
+         // 🆕 AUTOMATICALLY ADD API RESPONSE TO LESSON CONTENT
+         const formattedResponse = `
+
+<div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 8px;">
+  <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">
+    🤖 AI Response: ${currentExplanationType.charAt(0).toUpperCase() + currentExplanationType.slice(1)}
+  </h3>
+  <div style="color: #374151; line-height: 1.6;">
+    ${data.generated_content}
+  </div>
+  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #dbeafe; font-size: 12px; color: #6b7280;">
+    📅 Generated on ${new Date().toLocaleString()}
+  </div>
+</div>
+
+`;
+         
+         // Get current content and append the new AI response
+         let currentContent = lessonContentInput || '';
+         
+         // Ensure we have the latest content from the editor if available
+         if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+           try {
+             const editorContent = tiptapEditorRef.current.editor.getHTML();
+             currentContent = editorContent;
+           } catch (error) {
+             console.error('❌ Error getting content from editor:', error);
+           }
+         }
+         
+         // Append the AI response to the existing content
+         const newContent = currentContent + formattedResponse;
+         
+         // Temporarily disable content change handling to prevent conflicts
+         setIsUpdatingContent(true);
+         
+         // Update the lesson content state
+         setLessonContentInput(newContent);
+         
+         // Update the TipTap editor content IMMEDIATELY
+         if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+           try {
+             // Set the entire content directly to ensure immediate visibility
+             tiptapEditorRef.current.editor.commands.setContent(newContent);
+             
+             // Force a re-render by updating the forceEditorUpdate counter
+             setForceEditorUpdate(prev => prev + 1);
+             
+           } catch (error) {
+             console.error('❌ Error updating editor content:', error);
+           }
+         }
+         
+         // Re-enable content change handling after a longer delay to ensure content is stable
+         setTimeout(() => {
+           setIsUpdatingContent(false);
+         }, 500);
        } else {
          setAiResponse('No content generated. Please try again.');
        }
@@ -367,144 +606,146 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
     }
   };
 
-  // Attach AI response to TipTap Editor content
+  // Attach AI response to TipTap Editor content - IMMEDIATE VISIBILITY
   const attachExplanation = () => {
     // Get the latest response (first in the array)
-    const latestResponse = responseHistory[0];
+    let latestResponse = responseHistory[0];
+    let responseContent = '';
+    let responseType = currentExplanationType;
+    
+    // If no response in history, try to use the latest API response
     if (!latestResponse) {
-      alert('No AI response available to attach. Please generate a response first.');
-      return;
+      if (latestApiResponse) {
+        responseContent = latestApiResponse;
+        responseType = currentExplanationType || 'explanation';
+      } else {
+        alert('No AI response available to attach. Please generate a response first.');
+        return;
+      }
+    } else {
+      responseContent = latestResponse.content;
+      responseType = latestResponse.type;
     }
     
-    // Format the AI response for better presentation (HTML format for TiptapEditor)
+    // Format the AI response for better presentation
     const formattedResponse = `
-<div style="margin-top: 2rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; border-radius: 8px;">
-  <h3 style="color: #1e40af; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">🤖 AI Response: ${latestResponse.type.charAt(0).toUpperCase() + latestResponse.type.slice(1)}</h3>
+
+<div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 8px;">
+  <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">
+    🤖 AI Response: ${responseType.charAt(0).toUpperCase() + responseType.slice(1)}
+  </h3>
   <div style="color: #374151; line-height: 1.6;">
-    ${latestResponse.content.replace(/\n/g, '<br>')}
+    ${responseContent}
   </div>
-  <hr style="margin: 1rem 0; border: none; border-top: 1px solid #d1d5db;">
-  <p style="margin: 0; font-size: 0.875rem; color: #6b7280; font-style: italic;">
+  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #dbeafe; font-size: 12px; color: #6b7280;">
     📅 Attached on ${new Date().toLocaleString()}
-  </p>
+  </div>
 </div>
+
 `;
     
-    console.log('=== Starting AI Content Attachment ===');
-    console.log('Latest response:', latestResponse);
-    console.log('Formatted response length:', formattedResponse.length);
-    
-    // Method 1: Try to use TiptapEditor's insertContent at the end
-    if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
-      try {
-        const editor = tiptapEditorRef.current.editor;
-        console.log('TiptapEditor found, attempting to append content');
-        
-        // Move cursor to the end of the document
-        const docSize = editor.state.doc.content.size;
-        editor.commands.setTextSelection(docSize);
-        
-        // Insert the AI response at the end
-        editor.commands.insertContent(formattedResponse);
-        
-        // Get the updated content and sync state
-        const updatedContent = editor.getHTML();
-        setLessonContentInput(updatedContent);
-        
-        console.log('✅ AI response successfully appended using insertContent');
-        console.log('Updated content length:', updatedContent.length);
-        
-        toast({
-          title: 'Success',
-          description: 'AI response has been attached to the end of your lesson content!'
-        });
-        
-      } catch (error) {
-        console.error('❌ Error with insertContent method:', error);
-        
-        // Method 2: Fallback - Get current content and append manually
+    try {
+      // Get current content from TipTap Editor
+      let currentContent = lessonContentInput || '';
+      
+      // Ensure we have the latest content from the editor
+      if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
         try {
-          const editor = tiptapEditorRef.current.editor;
-          const currentContent = editor.getHTML();
-          console.log('Current content length:', currentContent.length);
+          const editorContent = tiptapEditorRef.current.editor.getHTML();
+          currentContent = editorContent;
+        } catch (error) {
+          console.error('❌ Error getting content from editor:', error);
+        }
+      }
+      
+      // Always append the AI response to the bottom of existing content
+      const newContent = currentContent + formattedResponse;
+      
+      // Temporarily disable content change handling to prevent conflicts
+      setIsUpdatingContent(true);
+      
+      // Update the state first
+      setLessonContentInput(newContent);
+      
+      // Update the TipTap editor content IMMEDIATELY
+      if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+        try {
+          // Set the entire content directly to ensure immediate visibility
+          tiptapEditorRef.current.editor.commands.setContent(newContent);
           
-          const newContent = currentContent + formattedResponse;
-          editor.commands.setContent(newContent);
-          setLessonContentInput(newContent);
+          // Force a re-render by updating the forceEditorUpdate counter
+          setForceEditorUpdate(prev => prev + 1);
           
-          console.log('✅ AI response appended using setContent fallback');
-          console.log('New content length:', newContent.length);
-          
-          toast({
-            title: 'Success',
-            description: 'AI response has been attached to the end of your lesson content!'
-          });
-          
-        } catch (fallbackError) {
-          console.error('❌ Error with setContent fallback:', fallbackError);
-          
-          // Method 3: Final fallback - Update state directly
-          const currentContent = lessonContentInput || '';
-          const newContent = currentContent + formattedResponse;
-          setLessonContentInput(newContent);
-          
-          console.log('✅ AI response appended using state update fallback');
-          console.log('New content length:', newContent.length);
-          
-          // Force update the TiptapEditor content directly with a delay
+          // Add a temporary highlight to the newly attached content
           setTimeout(() => {
-            if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
-              try {
-                tiptapEditorRef.current.editor.commands.setContent(newContent);
-                console.log('✅ TiptapEditor content updated directly');
-              } catch (error) {
-                console.error('❌ Error updating TiptapEditor directly:', error);
-              }
+            const editorElement = tiptapEditorRef.current.editor.view.dom;
+            if (editorElement) {
+              const aiResponseElements = editorElement.querySelectorAll('[style*="background: linear-gradient(135deg, #f0f9ff"]');
+              aiResponseElements.forEach((element: any) => {
+                element.style.animation = 'highlightPulse 2s ease-in-out';
+              });
             }
           }, 200);
           
-          toast({
-            title: 'Success',
-            description: 'AI response attached to lesson content successfully!'
-          });
-        }
-      }
-    } else {
-      console.log('❌ TiptapEditor not available, using state update only');
-      
-      // Method 4: Editor not available - Update state only
-      const currentContent = lessonContentInput || '';
-      const newContent = currentContent + formattedResponse;
-      setLessonContentInput(newContent);
-      
-      console.log('✅ AI response appended using state update only');
-      console.log('New content length:', newContent.length);
-      
-      // Try to update editor later if it becomes available
-      setTimeout(() => {
-        if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+          // Scroll to the bottom to show the new content
+          setTimeout(() => {
+            const editorElement = tiptapEditorRef.current.editor.view.dom;
+            if (editorElement) {
+              editorElement.scrollTop = editorElement.scrollHeight;
+            }
+          }, 100);
+          
+          // Re-enable content change handling after a short delay
+          setTimeout(() => {
+            setIsUpdatingContent(false);
+          }, 500);
+        } catch (error) {
+          console.error('❌ Error setting content in editor:', error);
+          
+          // Try alternative approach: insert at end
           try {
-            tiptapEditorRef.current.editor.commands.setContent(newContent);
-            console.log('✅ TiptapEditor content updated with delay');
-          } catch (error) {
-            console.error('❌ Error updating TiptapEditor with delay:', error);
+            const editor = tiptapEditorRef.current.editor;
+            const docSize = editor.state.doc.content.size;
+            editor.commands.setTextSelection(docSize);
+            editor.commands.insertContent(formattedResponse);
+            
+            // Re-enable content change handling after a short delay
+            setTimeout(() => {
+              setIsUpdatingContent(false);
+            }, 500);
+          } catch (fallbackError) {
+            console.error('❌ Alternative approach also failed:', fallbackError);
+            
+            // Re-enable content change handling even if both approaches fail
+            setTimeout(() => {
+              setIsUpdatingContent(false);
+            }, 500);
           }
         }
-      }, 300);
+      }
       
+      // Show success message
       toast({
         title: 'Success',
-        description: 'AI response attached to lesson content successfully!'
+        description: 'AI response attached to lesson content successfully! Check the bottom of your content.',
+        variant: 'default'
+      });
+      
+    } catch (error) {
+      console.error('❌ Error in attachExplanation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to attach AI response. Please try again.',
+        variant: 'destructive'
       });
     }
-    
-    console.log('=== AI Content Attachment Complete ===');
     
     // Clear the AI response and close the dialog
     setAiResponse('');
     setResponseHistory([]);
-    setIsPopupOpen(false); // Close the popup
+    setIsPopupOpen(false);
   };
+
 
   // Update selected text in TiptapEditor when edited in popup
   const updateSelectedTextInEditor = (newText: string) => {
@@ -522,8 +763,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
           // Update the editor content
           tiptapEditorRef.current.setContent(newContent);
           setLessonContentInput(newContent);
-          
-          console.log('✅ Selected text updated in TiptapEditor');
         }
       } catch (error) {
         console.error('❌ Error updating selected text:', error);
@@ -548,11 +787,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
     const lines = lessonContent.split('\n');
     const sortedExplanations = [...explanations].sort((a, b) => a.position - b.position);
     
-    console.log('Rendering lesson content with explanations:', sortedExplanations);
-    console.log('Total explanations:', explanations.length);
-    console.log('Line positions of explanations:', sortedExplanations.map(exp => exp.position));
-    console.log('Total lines in content:', lines.length);
-    
     let result: ReactElement[] = [];
     let explanationIndex = 0;
     
@@ -565,7 +799,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       // Check if there are explanations to insert after this line
       while (explanationIndex < sortedExplanations.length && sortedExplanations[explanationIndex].position === i) {
         const explanation = sortedExplanations[explanationIndex];
-        console.log(`Inserting explanation ${explanation.id} after line ${i} for text: "${explanation.content.substring(0, 50)}..."`);
         result.push(
           <div 
             key={`explanation-${explanation.id}`}
@@ -645,7 +878,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       
       if (htmlContent !== lessonContentInput) {
         setLessonContentInput(htmlContent);
-        console.log('Auto-converted markdown to HTML in useEffect');
       }
     }
   }, [lessonContentInput]);
@@ -669,7 +901,6 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         const data = await res.json();
         const coursesData = Array.isArray(data) ? data : [];
         setCourses(coursesData);
-        console.log("Courses loaded:", coursesData);
       } catch (err) {
         console.error("Error fetching courses:", err);
       } finally {
@@ -702,22 +933,33 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         title: course.title,
         status: mappedStatus
       });
-      // Set lesson content to default or from course data if available
-      let content = course.description || '<p>Start typing your lesson content here...</p>';
       
-      // Convert markdown to HTML if the content contains markdown formatting
-      if (content && (content.includes('**') || content.includes('*') || content.includes('`'))) {
-        content = content
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/`(.*?)`/g, '<code>$1</code>')
-          .replace(/\n\n/g, '</p><p>')
-          .replace(/\n/g, '<br>');
-        console.log('Converted markdown content to HTML:', content.substring(0, 200));
-      }
+      // Set lesson content to default or from course data if available
+      let content = course.description || course.lessonContent || '<p>Start typing your lesson content here...</p>';
+      
+      // Use the formatting function to properly handle the content
+      content = formatContentForEditor(content);
       
       setLessonContentInput(content);
       setShowEditPopup(true);
+      
+      // Force update the TiptapEditor content after a longer delay to ensure it's fully initialized
+      setTimeout(() => {
+        if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+          try {
+            // Check if the editor already has the correct content
+            const currentEditorContent = tiptapEditorRef.current.editor.getHTML();
+            if (currentEditorContent !== content) {
+              tiptapEditorRef.current.editor.commands.setContent(content);
+              
+              // Force a re-render to ensure content is displayed
+              setForceEditorUpdate(prev => prev + 1);
+            }
+          } catch (error) {
+            console.error('❌ Error updating TiptapEditor content:', error);
+          }
+        }
+      }, 500); // Increased delay for better reliability
     }
   };
 
@@ -753,7 +995,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         setEditingCourse(null);
         setEditForm({ title: '', status: 'active' });
         
-        console.log('Course updated successfully');
+        // Course updated successfully
       } else {
         console.error('Failed to update course');
       }
@@ -765,6 +1007,22 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
   // Handle save for right side module edit
   const handleSaveRightSideModuleEdit = async () => {
     if (!editingCourse) return;
+
+    // Sync content from editor to state before saving
+    syncContentToState();
+
+    // Get the final content to save
+    let contentToSave = lessonContentInput;
+    
+          // Ensure we have the latest content from the editor
+      if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
+        try {
+          const editorContent = tiptapEditorRef.current.editor.getHTML();
+          contentToSave = editorContent;
+        } catch (error) {
+          console.error('❌ Error getting content from editor:', error);
+        }
+      }
 
     try {
       const token = localStorage.getItem('token');
@@ -779,7 +1037,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         body: JSON.stringify({
           title: editForm.title,
           status: editForm.status,
-          description: lessonContentInput,
+          description: contentToSave,
           userid: userid
         })
       });
@@ -788,7 +1046,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         // Update the courses list
         setCourses(prev => prev.map(course => 
           course.id === editingCourse.id 
-            ? { ...course, title: editForm.title, status: editForm.status, description: lessonContentInput }
+            ? { ...course, title: editForm.title, status: editForm.status, description: contentToSave }
             : course
         ));
        
@@ -797,9 +1055,8 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         setEditingCourse(null);
         setEditForm({ title: '', status: 'active' });
         
-        console.log('Course updated successfully via right side module edit');
         toast({
-          title: "API Created Successfully!",
+          title: "Course Updated Successfully!",
           description: "Course and lesson content have been updated successfully.",
           variant: "default",
         });
@@ -822,9 +1079,13 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
   };
 
   const handleCancelEdit = () => {
+    // Sync content from editor to state before closing
+    syncContentToState();
+    
     setShowEditPopup(false);
     setEditingCourse(null);
     setEditForm({ title: '', status: 'Active' });
+    setShowAskQueryButton(false); // Reset Ask Query button when closing edit popup
   };
 
   const handleDeleteCourse = (courseId: string) => {
@@ -852,7 +1113,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       });
       if (res.ok) {
         setCourses(prev => prev.filter(course => course.id !== deletingCourse.id));
-        console.log('Course deleted successfully');
+        // Course deleted successfully
       } else {
         console.error('Failed to delete course');
       }
@@ -1295,55 +1556,96 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
                   <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400"></div>
                   
                   {/* TiptapEditor for rich text editing */}
-                  <div className="mt-4">
-                                      <TiptapEditor
-                    content={lessonContentInput}
-                    onContentChange={(content) => {
-                      console.log('TiptapEditor content changed:', content.substring(0, 200));
-                      setLessonContentInput(content);
-                    }}
-                    onTextSelection={(selectedText) => {
-                      setSelectedText(selectedText);
-                      if (selectedText.trim()) {
-                        setIsPopupOpen(true);
-                      }
-                    }}
-                    className="min-h-[400px] prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none"
-                    editorRef={tiptapEditorRef}
-                    onReady={() => {
-                      console.log('TiptapEditor is ready');
-                      // Force a content update to ensure proper rendering
-                      if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
-                        setTimeout(() => {
+                  <div className="mt-4 relative">
+                    <TiptapEditor
+                      key={`edit-editor-${editingCourse?.id || 'new'}-${forceEditorUpdate}`}
+                      content={lessonContentInput}
+                      onContentChange={(content) => {
+                        // Only update state if it's a user-initiated change, not programmatic
+                        if (!isUpdatingContent && content !== lessonContentInput) {
+                          setLessonContentInput(content);
+                        }
+                      }}
+                      onTextSelection={(selectedText) => {
+                        setSelectedText(selectedText);
+                        if (selectedText.trim()) {
+                          setShowAskQueryButton(true);
+                        }
+                      }}
+                      className="min-h-[400px] prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none"
+                      editorRef={tiptapEditorRef}
+                      onReady={() => {
+                        setIsEditorReady(true);
+                        
+                        // Enhanced content restoration logic
+                        if (tiptapEditorRef.current && tiptapEditorRef.current.editor) {
                           try {
-                            const currentContent = lessonContentInput;
-                            if (currentContent && currentContent.includes('**')) {
-                              // Convert markdown to HTML if needed
-                              const htmlContent = currentContent
-                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/`(.*?)`/g, '<code>$1</code>');
-                              tiptapEditorRef.current.editor.commands.setContent(htmlContent);
-                              setLessonContentInput(htmlContent);
-                              console.log('Converted markdown to HTML:', htmlContent.substring(0, 200));
+                            const currentEditorContent = tiptapEditorRef.current.editor.getHTML();
+                            const expectedContent = formatContentForEditor(lessonContentInput);
+                            
+                            // Check if content needs to be restored
+                            if (currentEditorContent !== expectedContent) {
+                              // Only set content if the editor is empty or has default content
+                              if (currentEditorContent === '<p>Start typing your lesson content here...</p>' || 
+                                  currentEditorContent === '<p></p>' ||
+                                  currentEditorContent === '' ||
+                                  currentEditorContent === '<p><br></p>' ||
+                                  !hasAIResponse(currentEditorContent)) {
+                                
+                                if (lessonContentInput && 
+                                    lessonContentInput !== '<p>Start typing your lesson content here...</p>' &&
+                                    lessonContentInput.trim() !== '') {
+                                  tiptapEditorRef.current.editor.commands.setContent(expectedContent);
+                                  
+                                  // Force a re-render to ensure content is displayed
+                                  setForceEditorUpdate(prev => prev + 1);
+                                }
+                              }
                             }
                           } catch (error) {
-                            console.error('Error updating TiptapEditor content:', error);
+                            console.error('❌ Error setting content after editor ready:', error);
                           }
-                        }, 100);
-                      }
-                    }}
-                  />
+                        }
+                      }}
+                    />
+                    
+                    {/* Ask Query Button - Right Side */}
+                    {showAskQueryButton && (
+                      <div className="absolute top-4 right-4 z-10">
+                        <button
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+                          onClick={() => {
+                            setShowAskQueryButton(false);
+                            setTimeout(() => setIsPopupOpen(true), 100);
+                          }}
+                        >
+                          Ask Query
+                        </button>
+                      </div>
+                    )}
                     
                     {/* Visual indicator when content has been attached */}
-                    {lessonContentInput && lessonContentInput.includes('<h2>AI Response:') && (
+                    {lessonContentInput && hasAIResponse(lessonContentInput) && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <div className="flex items-center text-green-700">
                           <span className="mr-2">✅</span>
                           <span className="text-sm font-medium">AI content has been attached to this lesson</span>
                         </div>
+                        <div className="mt-2 text-xs text-green-600">
+                          Scroll down to see the attached AI responses at the bottom of your content.
+                        </div>
                       </div>
                     )}
+                    
+                    {/* Debug Info */}
+                    <div className="mt-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+                      <button
+                        onClick={debugContentState}
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        🔍 Debug Content State
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1493,12 +1795,15 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
                   </div>
                   
                   <div className="mt-4 flex gap-2">
-                    <button
-                      className="flex-1 py-2 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center"
-                      onClick={attachExplanation}
-                    >
-                      ✅ Attach to Course
-                    </button>
+                                          <button
+                        className="flex-1 py-2 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center"
+                        onClick={() => {
+                          forceUpdateEditorContent();
+                          attachExplanation();
+                        }}
+                      >
+                        ✅ Attach to Course
+                      </button>
                   </div>
                 </div>
               )}
@@ -1568,12 +1873,69 @@ const styles = `
     }
   }
   
+  @keyframes highlightPulse {
+    0% { 
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+      transform: scale(1);
+    }
+    50% { 
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0.3);
+      transform: scale(1.02);
+    }
+    100% { 
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+      transform: scale(1);
+    }
+  }
+  
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-out;
   }
   
   .animate-popupIn {
     animation: popupIn 0.3s ease-out;
+  }
+  
+  /* Prevent blinking in TiptapEditor */
+  .ProseMirror {
+    transition: none !important;
+  }
+  
+  .ProseMirror * {
+    transition: none !important;
+  }
+  
+  /* Fix for AI response formatting */
+  .ProseMirror div[style*="background: linear-gradient(135deg, #f0f9ff"] {
+    margin: 16px 0 !important;
+    padding: 16px !important;
+    border-radius: 8px !important;
+    border-left: 4px solid #3b82f6 !important;
+  }
+  
+  /* Ensure proper content flow */
+  .ProseMirror p {
+    margin: 0.5em 0 !important;
+  }
+  
+  /* Fix for content overflow */
+  .ProseMirror {
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+  }
+  
+  /* Ensure AI response content is properly styled */
+  .ProseMirror h3[style*="color: #1e40af"] {
+    margin: 0 0 12px 0 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Fix for timestamp styling */
+  .ProseMirror div[style*="font-size: 12px; color: #6b7280"] {
+    margin-top: 12px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #dbeafe !important;
   }
 `;
 
