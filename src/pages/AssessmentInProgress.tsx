@@ -287,7 +287,6 @@ const AssessmentInProgressPage: React.FC = () => {
 
       const generation_type = generationTypeMap[editLessonCurrentExplanationType] || 'explanation';
       const material = editLessonAiReference || editLessonSelectedText;
-      const qaqf_level = "1"; // Default QAQF level
       const subject = editLessonSelectedText;
       const userquery = editLessonAiQuery || `Please ${editLessonCurrentExplanationType} this text: ${editLessonSelectedText}`;
 
@@ -300,10 +299,10 @@ const AssessmentInProgressPage: React.FC = () => {
         body: JSON.stringify({
           generation_type,
           material,
-          qaqf_level,
+          qaqf_level: editLessonForm.qaqfLevel,
           subject,
           userquery,
-          courseid: '', // You can add course ID if needed
+          courseid: selectedCourse, // You can add course ID if needed
         }),
       });
 
@@ -1018,6 +1017,24 @@ const AssessmentInProgressPage: React.FC = () => {
                     className="bg-white border border-gray-200 rounded-lg min-h-[100px]"
                   />
                 </div>
+
+                <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700 ">QAQF Level</label>
+      <select
+        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        value={editLessonForm.qaqfLevel}
+        onChange={e => setEditLessonForm(f => ({ ...f, qaqfLevel: e.target.value as QAQF_LEVELS }))}
+      >
+        {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+          <option key={qaqfLevel} value={qaqfLevel}>
+            {qaqfLevel}
+          </option>
+        ))}
+      </select>
+    </div>
+
+                
+                
               </div>
               
               <div className="p-5 flex flex-wrap gap-2">

@@ -13,14 +13,11 @@ import { useToast } from '@/hooks/use-toast';
 import TiptapEditor from '@/components/TiptapEditor';
 import 'react-toastify/dist/ReactToastify.css';
 import { QAQF_LEVELS } from '@/types/index';
-import { marked } from "marked";
-
 
 // TypeScript interfaces
 interface ExplanationAttachment {
   id: number;
   content: string;
-  
   explanationType: string;
   isCollapsed: boolean;
   position: number; // Track position in content
@@ -123,21 +120,100 @@ const CourseGeneratorPlatform = () => {
         .trim();
     }
     
-    // If content doesn't have HTML tags, wrap it in paragraphs
+    // If content already contains proper HTML structure, preserve it
+    if (content.includes('<h') || content.includes('<ul>') || content.includes('<ol>') || content.includes('<li>')) {
+      return content
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .replace(/>\s+</g, '><') // Remove spaces between HTML tags
+        .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
+        .trim();
+    }
+    
+    // If content doesn't have HTML tags, process it for formatting
     if (!content.includes('<') && !content.includes('>')) {
-      return content.split('\n\n').map(paragraph => 
-        paragraph.trim() ? `<p>${paragraph.trim()}</p>` : '<p><br></p>'
-      ).join('');
+      let formattedContent = content;
+      
+      // Convert markdown-style lists to HTML lists
+      // Handle unordered lists with + and *
+      formattedContent = formattedContent.replace(/^(\s*)[+*]\s+(.+)$/gm, '$1<li>$2</li>');
+      
+      // Handle numbered lists
+      formattedContent = formattedContent.replace(/^(\s*)\d+\.\s+(.+)$/gm, '$1<li>$2</li>');
+      
+      // Wrap consecutive list items in <ul> tags
+      formattedContent = formattedContent.replace(/(<li>.*?<\/li>)/gs, (match) => {
+        const items = match.match(/<li>.*?<\/li>/g);
+        if (items && items.length > 0) {
+          return '<ul>' + items.join('') + '</ul>';
+        }
+        return match;
+      });
+      
+      // Handle bold, italic, and code formatting
+      formattedContent = formattedContent
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>');
+      
+      // Handle headings (lines that end with colon and are followed by content)
+      formattedContent = formattedContent.replace(/^([^:]+:)\s*$/gm, '<h3>$1</h3>');
+      
+      // Handle paragraph breaks
+      formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
+      formattedContent = formattedContent.replace(/\n/g, '<br>');
+      
+      // Ensure proper HTML structure
+      if (!formattedContent.startsWith('<p>') && !formattedContent.startsWith('<ul>') && !formattedContent.startsWith('<h')) {
+        formattedContent = '<p>' + formattedContent + '</p>';
+      }
+      
+      // Fix any nested ul/ol inside p tags by moving them outside
+      formattedContent = formattedContent.replace(/<p>(.*?)<ul>(.*?)<\/ul>(.*?)<\/p>/g, '<p>$1</p><ul>$2</ul><p>$3</p>');
+      formattedContent = formattedContent.replace(/<p>(.*?)<ol>(.*?)<\/ol>(.*?)<\/p>/g, '<p>$1</p><ol>$2</ol><p>$3</p>');
+      
+      return formattedContent;
     }
     
     // If content has markdown formatting, convert to HTML
-    if (content.includes('**') || content.includes('*') || content.includes('`')) {
-      return content
+    if (content.includes('**') || content.includes('*') || content.includes('`') || content.includes('+')) {
+      let formattedContent = content;
+      
+      // Convert markdown-style lists to HTML lists
+      formattedContent = formattedContent.replace(/^(\s*)[+*]\s+(.+)$/gm, '$1<li>$2</li>');
+      formattedContent = formattedContent.replace(/^(\s*)\d+\.\s+(.+)$/gm, '$1<li>$2</li>');
+      
+      // Wrap consecutive list items in <ul> tags
+      formattedContent = formattedContent.replace(/(<li>.*?<\/li>)/gs, (match) => {
+        const items = match.match(/<li>.*?<\/li>/g);
+        if (items && items.length > 0) {
+          return '<ul>' + items.join('') + '</ul>';
+        }
+        return match;
+      });
+      
+      // Handle bold, italic, and code formatting
+      formattedContent = formattedContent
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
+        .replace(/`(.*?)`/g, '<code>$1</code>');
+      
+      // Handle headings
+      formattedContent = formattedContent.replace(/^([^:]+:)\s*$/gm, '<h3>$1</h3>');
+      
+      // Handle paragraph breaks
+      formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
+      formattedContent = formattedContent.replace(/\n/g, '<br>');
+      
+      // Ensure proper HTML structure
+      if (!formattedContent.startsWith('<p>') && !formattedContent.startsWith('<ul>') && !formattedContent.startsWith('<h')) {
+        formattedContent = '<p>' + formattedContent + '</p>';
+      }
+      
+      // Fix any nested ul/ol inside p tags by moving them outside
+      formattedContent = formattedContent.replace(/<p>(.*?)<ul>(.*?)<\/ul>(.*?)<\/p>/g, '<p>$1</p><ul>$2</ul><p>$3</p>');
+      formattedContent = formattedContent.replace(/<p>(.*?)<ol>(.*?)<\/ol>(.*?)<\/p>/g, '<p>$1</p><ol>$2</ol><p>$3</p>');
+      
+      return formattedContent;
     }
     
     // Ensure content starts with a paragraph tag if it's not already HTML
@@ -150,7 +226,7 @@ const CourseGeneratorPlatform = () => {
 
   // Function to sync content from editor to state (for saving)
   const syncContentToState = () => {
-    if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+    if (tiptapEditorRef.current) {
       try {
         const editorContent = tiptapEditorRef.current.getHTML();
         if (editorContent !== lessonContentInput) {
@@ -167,7 +243,7 @@ const CourseGeneratorPlatform = () => {
     if (lessonContentInput && hasAIResponse(lessonContentInput)) {
       // Add a small delay to ensure the editor is ready
       const timer = setTimeout(() => {
-        if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+        if (tiptapEditorRef.current) {
           try {
             const currentContent = tiptapEditorRef.current.getHTML();
             // Only update if the content is different and contains AI response
@@ -243,31 +319,27 @@ const CourseGeneratorPlatform = () => {
     if (showEditPopup && editingCourse && lessonContentInput) {
       // Add a longer delay to ensure the editor is fully initialized
       const timer = setTimeout(() => {
-        if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+        if (tiptapEditorRef.current) {
           try {
             const currentContent = tiptapEditorRef.current.getHTML();
-            // Use the original formatContentForEditor for consistenc
+            // Format the content properly for display
             const expectedContent = formatContentForEditor(lessonContentInput);
             
-            // Only update if the content is different and not just whitespace differences
-            const normalizedCurrent = currentContent.replace(/\s+/g, ' ').trim();
-            const normalizedExpected = expectedContent.replace(/\s+/g, ' ').trim();
+            // Always update the content to ensure proper formatting is displayed
+            console.log('🔄 Restoring content in edit dialog');
+            console.log('Current:', currentContent.substring(0, 100));
+            console.log('Expected:', expectedContent.substring(0, 100));
             
-            if (normalizedCurrent !== normalizedExpected) {
-              console.log('🔄 Restoring content in edit dialog');
-              console.log('Current:', normalizedCurrent.substring(0, 100));
-              console.log('Expected:', normalizedExpected.substring(0, 100));
-              
-              tiptapEditorRef.current.setContent(expectedContent);
-              
-              // Force a re-render to ensure content is displayed
-              setForceEditorUpdate(prev => prev + 1);
-            }
+            tiptapEditorRef.current.setContent(expectedContent);
+            
+            // Force a re-render to ensure content is displayed
+            setForceEditorUpdate(prev => prev + 1);
+            
           } catch (error) {
             console.error('❌ Error restoring content in edit dialog:', error);
           }
         }
-      }, 500); // Increased delay for better reliability
+      }, 800); // Increased delay for better reliability
       
       return () => clearTimeout(timer);
     }
@@ -287,7 +359,7 @@ const CourseGeneratorPlatform = () => {
   // Effect to update editor when lessonContentInput changes
   useEffect(() => {
     if (lessonContentInput && isEditorReady) {
-      if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+      if (tiptapEditorRef.current) {
         try {
           const currentContent = tiptapEditorRef.current.getHTML();
           if (currentContent !== lessonContentInput) {
@@ -318,7 +390,7 @@ const CourseGeneratorPlatform = () => {
       return;
     }
     
-    if (tiptapEditorRef.current && typeof tiptapEditorRef.current.setContent === 'function') {
+    if (tiptapEditorRef.current) {
       try {
         // Use the exposed setContent method from TiptapEditor
         const success = tiptapEditorRef.current.setContent(lessonContentInput);
@@ -658,7 +730,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
          let currentContent = lessonContentInput || '';
          
          // Ensure we have the latest content from the editor if available
-         if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+         if (tiptapEditorRef.current) {
            try {
              const editorContent = tiptapEditorRef.current.getHTML();
              currentContent = editorContent;
@@ -677,7 +749,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
          setLessonContentInput(newContent);
          
          // Update the TipTap editor content IMMEDIATELY
-         if (tiptapEditorRef.current && typeof tiptapEditorRef.current.setContent === 'function') {
+         if (tiptapEditorRef.current) {
            try {
              // Set the entire content directly to ensure immediate visibility
              tiptapEditorRef.current.setContent(newContent);
@@ -749,7 +821,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       let currentContent = lessonContentInput || '';
       
       // Ensure we have the latest content from the editor
-      if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+      if (tiptapEditorRef.current) {
         try {
           const editorContent = tiptapEditorRef.current.getHTML();
           currentContent = editorContent;
@@ -768,7 +840,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
       setLessonContentInput(newContent);
       
       // Update the TipTap editor content IMMEDIATELY
-      if (tiptapEditorRef.current && typeof tiptapEditorRef.current.setContent === 'function') {
+      if (tiptapEditorRef.current) {
         try {
           // Set the entire content directly to ensure immediate visibility
           tiptapEditorRef.current.setContent(newContent);
@@ -853,7 +925,7 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
 
   // Update selected text in TiptapEditor when edited in popup
   const updateSelectedTextInEditor = (newText: string) => {
-    if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function' && selectedText && newText !== selectedText) {
+    if (tiptapEditorRef.current && selectedText && newText !== selectedText) {
       try {
         const currentContent = tiptapEditorRef.current.getHTML();
         const selectedTextIndex = currentContent.indexOf(selectedText);
@@ -1003,11 +1075,8 @@ const findSelectedLinePosition = (selectedText: string, range: Range): number =>
         });
         if (!res.ok) throw new Error('Failed to fetch courses');
         const data = await res.json();
-const coursesData = Array.isArray(data) ? data.map(c => ({
-  ...c,
-  lessonContent: c.lessonContent || c.description || ''
-})) : [];
-setCourses(coursesData);
+        const coursesData = Array.isArray(data) ? data : [];
+        setCourses(coursesData);
       } catch (err) {
         console.error("Error fetching courses:", err);
       } finally {
@@ -1043,21 +1112,16 @@ setCourses(coursesData);
       });
       
       // Set lesson content to default or from course data if available
-      let content = course.lessonContent || course.description || '<p>Start typing your lesson content here...</p>';
-
-      // 🔑 Convert Markdown → HTML if description exists
-      if (course.description) {
-        content = marked(course.description);
-        content = content
+      let content = course.description || course.lessonContent || '<p>Start typing your lesson content here...</p>';
+      
+      // Clean up the content before formatting to remove any formatting issues
+      content = content
         .replace(/\s+/g, ' ') // Replace multiple spaces with single space
         .replace(/>\s+</g, '><') // Remove spaces between HTML tags
         .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
         .trim();
-      }
-      // Clean up the content before formatting to remove any formatting issues
       
-      
-      // Use the original formatContentForEditor for consistency
+      // Format the content properly for display
       content = formatContentForEditor(content);
       
       console.log('📝 Setting lesson content for edit:', content.substring(0, 200) + '...');
@@ -1067,7 +1131,7 @@ setCourses(coursesData);
       
       // Force update the TiptapEditor content after a longer delay to ensure it's fully initialized
       setTimeout(() => {
-        if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+        if (tiptapEditorRef.current) {
           try {
             // Check if the editor already has the correct content
             const currentEditorContent = tiptapEditorRef.current.getHTML();
@@ -1095,13 +1159,12 @@ setCourses(coursesData);
     try {
       const token = localStorage.getItem('token');
       const userString = localStorage.getItem('user') || '{"id":1}'; 
+      
       const user = JSON.parse(userString);
       const userid = user.id;
-      
-      const response = await fetch(`/api/courses/${editingCourse.id}`, {
+      const response = await fetch(`http://69.197.176.134:5000/api/courses/${editingCourse.id}`, {
         method: 'PUT',
         headers: {
-
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` })
         },
@@ -1144,7 +1207,7 @@ setCourses(coursesData);
     let contentToSave = lessonContentInput;
     
           // Ensure we have the latest content from the editor
-      if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
+      if (tiptapEditorRef.current) {
         try {
           const editorContent = tiptapEditorRef.current.getHTML();
           contentToSave = editorContent;
@@ -1155,10 +1218,10 @@ setCourses(coursesData);
 
     try {
       const token = localStorage.getItem('token');
-     
       const userString = localStorage.getItem('user') || '{"id":1}'; 
       const user = JSON.parse(userString);
       const userid = user.id;
+      
       const response = await fetch(`http://69.197.176.134:5000/api/courses/${editingCourse.id}`, {
         method: 'PUT',
         headers: {
@@ -1236,7 +1299,7 @@ setCourses(coursesData);
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/courses/${deletingCourse.id}`, {
+      const res = await fetch(`http://69.197.176.134:5000/api/courses/${deletingCourse.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -1690,7 +1753,7 @@ setCourses(coursesData);
                   {/* TiptapEditor for rich text editing */}
                   <div className="mt-4 relative">
                     <TiptapEditor
-                     
+                      key={`edit-editor-${editingCourse?.id || 'new'}-${forceEditorUpdate}`}
                       content={lessonContentInput}
                       onContentChange={(content) => {
                         // Only update state if it's a user-initiated change, not programmatic
@@ -1709,48 +1772,29 @@ setCourses(coursesData);
                       onReady={() => {
                         setIsEditorReady(true);
                         
-                        // Use a delay to ensure the ref methods are available
-                        setTimeout(() => {
-                          // Enhanced content restoration logic
-                          if (tiptapEditorRef.current && typeof tiptapEditorRef.current.getHTML === 'function') {
-                            try {
-                              const currentEditorContent = tiptapEditorRef.current.getHTML();
-                              const expectedContent = formatContentForEditor(lessonContentInput);
+                        // Enhanced content restoration logic
+                        if (tiptapEditorRef.current) {
+                          try {
+                            const currentEditorContent = tiptapEditorRef.current.getHTML();
+                            const expectedContent = formatContentForEditor(lessonContentInput);
+                            
+                            // Always set the properly formatted content
+                            if (lessonContentInput && 
+                                lessonContentInput !== '<p>' &&
+                                lessonContentInput.trim() !== '') {
                               
-                              // Normalize content for comparison to avoid whitespace issues
-                              const normalizedCurrent = currentEditorContent.replace(/\s+/g, ' ').trim();
-                              const normalizedExpected = expectedContent.replace(/\s+/g, ' ').trim();
+                              console.log('🔄 Setting content in onReady callback');
+                              console.log('Expected content preview:', expectedContent.substring(0, 100));
                               
-                              // Check if content needs to be restored
-                              if (normalizedCurrent !== normalizedExpected) {
-                                // Only set content if the editor is empty or has default content
-                                if (currentEditorContent === '<p>' || 
-                                    currentEditorContent === '<p></p>' ||
-                                    currentEditorContent === '' ||
-                                    currentEditorContent === '<p><br></p>' ||
-                                    !hasAIResponse(currentEditorContent)) {
-                                  
-                                  if (lessonContentInput && 
-                                      lessonContentInput !== '<p>' &&
-                                      lessonContentInput.trim() !== '') {
-                                    
-                                    console.log('🔄 Setting content in onReady callback');
-                                    console.log('Expected content preview:', normalizedExpected.substring(0, 100));
-                                    
-                                    tiptapEditorRef.current.setContent(expectedContent);
-                                    
-                                    // Force a re-render to ensure content is displayed
-                                    setForceEditorUpdate(prev => prev + 1);
-                                  }
-                                }
-                              }
-                            } catch (error) {
-                              console.error('❌ Error setting content after editor ready:', error);
+                              tiptapEditorRef.current.setContent(expectedContent);
+                              
+                              // Force a re-render to ensure content is displayed
+                              setForceEditorUpdate(prev => prev + 1);
                             }
-                          } else {
-                            console.log('⏳ Editor ref methods not ready yet, will retry...');
+                          } catch (error) {
+                            console.error('❌ Error setting content after editor ready:', error);
                           }
-                        }, 100); // Small delay to ensure ref is set up
+                        }
                       }}
                     />
                     
@@ -2155,6 +2199,48 @@ const styles = `
   /* Fix for nested lists */
   .ProseMirror ul ul, .ProseMirror ol ol, .ProseMirror ul ol, .ProseMirror ol ul {
     margin: 0.5em 0 !important;
+  }
+  
+  /* Ensure proper heading display */
+  .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
+    font-weight: 600 !important;
+    margin: 1em 0 0.5em 0 !important;
+    line-height: 1.4 !important;
+  }
+  
+  .ProseMirror h3 {
+    font-size: 1.25em !important;
+    color: #1f2937 !important;
+  }
+  
+  /* Ensure proper spacing for content sections */
+  .ProseMirror p {
+    margin: 0.75em 0 !important;
+    line-height: 1.6 !important;
+  }
+  
+  /* Fix for content that should be formatted as lists */
+  .ProseMirror ul li, .ProseMirror ol li {
+    margin: 0.25em 0 !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Ensure proper display of strong and em tags */
+  .ProseMirror strong {
+    font-weight: 600 !important;
+  }
+  
+  .ProseMirror em {
+    font-style: italic !important;
+  }
+  
+  /* Fix for code blocks */
+  .ProseMirror code {
+    background-color: #f3f4f6 !important;
+    padding: 0.125em 0.25em !important;
+    border-radius: 0.25em !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 0.875em !important;
   }
 `;
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { CourseData, LearningObjective, GeneratedCourse } from '@/types/courseTypes';
-import { Button } from '@/components/ui/button';
+import { CourseData, LearningObjective, GeneratedCourse } from '../../types/courseTypes';
+import { Button } from '../ui/button';
 import { BookOpen } from 'lucide-react';
-import { generateCourseContent } from '@/lib/api';
+import { generateCourseContent } from '../../lib/api';
+import { toast } from 'react-toastify';
 
 interface ReviewStepProps {
   courseData: CourseData;
@@ -41,7 +42,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
         duration_weeks: durationWeeks,
         modules_count: 4, // Default to 4 modules as shown in the generated course
         delivery_mode: 'online',
-        qaqf_level: basicInfo.qaqfLevel || 'Qaqf level 1 – Awareness',
+        qaqf_level: basicInfo.difficultyLevel || 'Qaqf level 1 - Awareness',
       };
       
       // Log the data being sent to API (for debugging)
@@ -53,11 +54,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
       // Log the API response (for debugging)
       console.log('📥 API Response received:', json);
 
-      // Extract only essential data from API response
+      // Extract essential data from API response
       const description: string = json?.generated_content || basicInfo.description || '';
+      const courseId = json?.courseid ? json.courseid.toString() : 'api';
+      
+      console.log('🎯 Course ID from API response:', json?.courseid);
+      console.log('🎯 Final course ID for mapped course:', courseId);
+      
+      // Show success message with course ID
+      if (json?.courseid) {
+        console.log('✅ Course generated successfully with ID:', json.courseid);
+        toast.success(`Course generated successfully! Course ID: ${json.courseid}`);
+      }
 
       const mapped: GeneratedCourse = {
-        id: 'api',
+        id: courseId,
         title: basicInfo.title || 'Generated Course',
         description,
         courseType: courseData.courseType,
@@ -118,8 +129,8 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                 <p className="text-gray-900">{basicInfo.targetAudience}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-700">QAQF Level:</span>
-                <p className="text-gray-900">{basicInfo.qaqfLevel || 'Not selected'}</p>
+                <span className="text-sm font-medium text-gray-700">Level:</span>
+                <p className="text-gray-900">{basicInfo.difficultyLevel}</p>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-700">Duration:</span>
@@ -185,6 +196,19 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           {basicInfo.description}
         </p>
       </div>
+
+      {/* Debug Section - Shows what data will be sent to API */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">🔍 Data that will be sent to API:</h4>
+        <div className="text-xs text-blue-800 space-y-1">
+          <div><strong>Title:</strong> {basicInfo.title}</div>
+          <div><strong>Audience:</strong> {basicInfo.targetAudience}</div>
+          <div><strong>Level:</strong> {basicInfo.difficultyLevel}</div>
+          <div><strong>Duration:</strong> {learningObjectives.duration} ({parseInt(learningObjectives.duration.match(/\d+/)?.[0] || '0')} weeks)</div>
+          <div><strong>Objectives:</strong> {(learningObjectives.objectives || []).map(o => o.text).join(', ')}</div>
+        </div>
+      </div>
+
       {/* Generate Button */}
       <div className="flex justify-center pt-6">
         <Button

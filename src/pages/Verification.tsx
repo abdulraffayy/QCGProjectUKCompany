@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useToast } from "../hooks/use-toast";
+import { useVerification } from "../contexts/VerificationContext";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
@@ -134,10 +135,11 @@ const VerificationPage: React.FC = () => {
   // When a lesson is selected, set the dropdown to its cached status and load cached scoring data
   React.useEffect(() => {
     if (selectedContent && selectedContent.id) {
-      // Use cached status if available, otherwise use lesson's status, otherwise default to 'pending'
+      // Use cached status if available, otherwise use lesson's verificationStatus, then status, otherwise default to 'pending'
       const cachedStatus = statusCache[selectedContent.id];
+      const lessonVerificationStatus = selectedContent.verificationStatus;
       const lessonStatus = selectedContent.status;
-      const finalStatus = cachedStatus || lessonStatus || 'pending';
+      const finalStatus = cachedStatus || lessonVerificationStatus || lessonStatus || 'pending';
       console.log('Setting initial status for lesson', selectedContent.id, 'to:', finalStatus);
       setStatusValue(finalStatus);
       
@@ -191,7 +193,8 @@ const VerificationPage: React.FC = () => {
       setStatusCache(() => {
         const updated: { [lessonId: number]: string } = {};
         lessons.forEach((lesson: any) => {
-          updated[lesson.id] = lesson.status || 'pending';
+          // Use verificationStatus if available, otherwise fall back to status
+          updated[lesson.id] = lesson.verificationStatus || lesson.status || 'pending';
         });
         return updated;
       });
@@ -236,7 +239,10 @@ const VerificationPage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ 
+          status,
+          verificationStatus: status // Also update verificationStatus
+        }),
       });
 
       if (!response.ok) {
@@ -278,6 +284,7 @@ const VerificationPage: React.FC = () => {
       const saveData = {
         lessonId: selectedContent.id,
         status: statusValue,
+        verificationStatus: statusValue, // Also save as verificationStatus
         britishStandard: britishStandardValue,
         scores: {
           clarity: clarityScore,

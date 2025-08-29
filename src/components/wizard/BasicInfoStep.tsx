@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BasicInfo } from '@/types/courseTypes';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QAQF_LEVELS } from '@/types';
+import { BasicInfo } from '../../types/courseTypes';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { getDifficultyOptions } from '../../types/courseTypes';
 
 interface BasicInfoStepProps {
   data: BasicInfo | undefined;
@@ -19,7 +19,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     title: data?.title || '',
     description: data?.description || '',
     targetAudience: data?.targetAudience || '',
-    qaqfLevel: data?.qaqfLevel || QAQF_LEVELS.Awareness
+    difficultyLevel: data?.difficultyLevel || 'Beginner'
   });
 
   useEffect(() => {
@@ -83,18 +83,19 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           </div>
 
           <div className="w-full">
-            <Label>QAQF Level</Label>
+            <Label>Difficulty Level</Label>
             <Select
-              value={formData.qaqfLevel}
-              onValueChange={(value) => handleChange('qaqfLevel', value)}
+              value={formData.difficultyLevel}
+              onValueChange={(value) => handleChange('difficultyLevel', value as BasicInfo['difficultyLevel'])}
+              
             >
               <SelectTrigger className='w-full focus:ring-0 focus:ring-offset-0'>
-                <SelectValue placeholder="Select QAQF level" />
+                <SelectValue placeholder="Select level" />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(QAQF_LEVELS).map((level) => (
-                  <SelectItem key={level} value={level}>
-                    {level}
+                {getDifficultyOptions().map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>

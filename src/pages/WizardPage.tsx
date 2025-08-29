@@ -398,6 +398,8 @@ export const WizardPage: React.FC<WizardPageProps> = ({
     }
   };
 
+  let isDisabled =!canProceedToNext();
+
   return (
     <div className="h-[100%] w-full bg-gray-50">
       {/* Header */}
@@ -452,7 +454,7 @@ export const WizardPage: React.FC<WizardPageProps> = ({
             
             <Button
               onClick={nextStep}
-              disabled={!canProceedToNext()}
+              disabled={isDisabled}
             >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />

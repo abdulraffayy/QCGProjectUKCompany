@@ -35,6 +35,7 @@ const TiptapEditor = React.forwardRef<any, TiptapEditorProps>(({
     content: content || '<p>Start typing your lesson content here...</p>',
     onUpdate: ({ editor }: { editor: any }) => {
       const html = editor.getHTML();
+      console.log('TiptapEditor onUpdate - Content changed:', html.substring(0, 100) + '...');
       onContentChange(html);
     },
     onSelectionUpdate: ({ editor }: { editor: any }) => {
@@ -107,6 +108,17 @@ const TiptapEditor = React.forwardRef<any, TiptapEditorProps>(({
       }, 0);
     }
   }, [content, editor, cursorPosition]);
+
+  // Better content synchronization
+  useEffect(() => {
+    if (editor && content) {
+      const currentContent = editor.getHTML();
+      if (currentContent !== content) {
+        console.log('TiptapEditor: Syncing content from prop:', content.substring(0, 100) + '...');
+        editor.commands.setContent(content);
+      }
+    }
+  }, [content, editor]);
 
   // Enhanced editor readiness check with retry mechanism
   const ensureEditorReady = (callback: () => void, retryCount = 0) => {
@@ -398,13 +410,13 @@ const TiptapEditor = React.forwardRef<any, TiptapEditorProps>(({
               top: popupPosition.y,
             }}
           >
-            <button
+            {/* <button
               onClick={handleAiExplanation}
               className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
               title="Get AI Explanation"
             >
-              🤖 Get AI Explanation
-            </button>
+              
+            </button> */}
           </div>
         )}
       </div>

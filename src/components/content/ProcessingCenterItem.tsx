@@ -69,6 +69,7 @@ interface ProcessingCenterItemProps {
     content?: string;
     metadata?: any;
     verificationStatus?: "verified" | "unverified" | "rejected" | "pending"; // Add verification status
+    moderationStatus?: "verified" | "unverified" | "rejected" | "pending"; // Add moderation status
   };
   lessons?: any[];
   onAction?: (action: string, itemId: string, newDescription?: string) => void;
@@ -81,8 +82,9 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
   selectedCourseId,
 }) => {
 
-  const [status] = useState(item.status || "pending");
+  const [status, setStatus] = useState(item.status || "pending");
   const [editorContent, setEditorContent] = useState<string>('');
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
  
   
   // Helper function to convert numeric level to full QAQF string
@@ -346,7 +348,6 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
       const generation_type = generationTypeMap[editLessonCurrentExplanationType] || 'explanation';
       const material = editLessonAiReference || editLessonSelectedText;
-      const qaqf_level = "1"; // Default QAQF level
       const subject = editLessonSelectedText;
       const userquery = editLessonAiQuery || `Please ${editLessonCurrentExplanationType} this text: ${editLessonSelectedText}`;
 
@@ -359,10 +360,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
         body: JSON.stringify({
           generation_type,
           material,
-          qaqf_level,
+          qaqf_level: editableData.level,
           subject,
           userquery,
-          courseid: '', // You can add course ID if needed
+          courseid: selectedCourseId, // You can add course ID if needed
         }),
       });
 
@@ -708,6 +709,11 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
 
 
 
+  // Update status when item prop changes
+  useEffect(() => {
+    setStatus(item.status || "pending");
+  }, [item.status]);
+
   // Update editableData when item prop changes (e.g., after API update)
   useEffect(() => {
     // Force update with fresh data from item prop
@@ -727,7 +733,7 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
       }));
       setEditorContent(newDescription);
     }
-  }, [item.title, item.type, item.description, item.level, item.qaqfLevel, item.metadata, editorContent]);
+  }, [item.title, item.type, item.description, item.level, item.qaqfLevel, item.metadata, editorContent, item.status, item.verificationStatus, item.moderationStatus]);
 
   // Mouse event handlers for resizing (vertical only)
   useEffect(() => {
@@ -1050,12 +1056,14 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
               {/* Status Section - Grid Layout */}
               <div className="flex justify-between text-center space-x-6 p-2">
   {/* Status */}
-  <div className="flex flex-col items-center ">
+  <div className="flex flex-col items-center">
     <span className="px-2 py-2 rounded-md text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
       Status
     </span>
-    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 mt-2">
-      <Clock className="h-3 w-3 text-blue-600" />
+    <div className="flex items-center justify-center mt-2">
+      <span className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-300 ${getVerificationStatusColor(item.status)} ${isStatusLoading ? 'animate-pulse' : ''}`}>
+        {isStatusLoading ? 'Updating...' : getVerificationStatusText(item.status)}
+      </span>
     </div>
   </div>
 
@@ -1064,8 +1072,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     <span className="px-2 py-2 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
       Verification
     </span>
-    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 mt-2">
-      <CheckCircle className="h-3 w-3 text-yellow-600" />
+    <div className="flex items-center justify-center mt-2">
+      <span className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-300 ${getVerificationStatusColor(item.verificationStatus)} ${isStatusLoading ? 'animate-pulse' : ''}`}>
+      {isStatusLoading ? 'Updating...' : getVerificationStatusText(item.status)}
+      </span>
     </div>
   </div>
 
@@ -1074,8 +1084,10 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
     <span className="px-2 py-2 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
       Moderation
     </span>
-    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 mt-2">
-      <Shield className="h-3 w-3 text-purple-600" />
+    <div className="flex items-center justify-center mt-2">
+      <span className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-300 ${getVerificationStatusColor(item.moderationStatus)} ${isStatusLoading ? 'animate-pulse' : ''}`}>
+        {isStatusLoading ? 'Updating...' : getVerificationStatusText(item.moderationStatus)}
+      </span>
     </div>
   </div>
 
@@ -1224,6 +1236,23 @@ const ProcessingCenterItem: React.FC<ProcessingCenterItemProps> = ({
                     className="bg-white border border-gray-200 rounded-lg min-h-[100px]"
                   />
                 </div>
+
+                <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700 ">QAQF Level</label>
+      <select
+        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        value={editableData.level}
+        onChange={e => setEditableData(f => ({ ...f, level: e.target.value }))}
+      >
+        {Object.values(QAQF_LEVELS).map(qaqfLevel => (
+          <option key={qaqfLevel} value={qaqfLevel}>
+            {qaqfLevel}
+          </option>
+        ))}
+      </select>
+    </div>
+
+
               </div>
               
               <div className="p-5 flex flex-wrap gap-2">

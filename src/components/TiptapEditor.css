@@ -115,8 +115,13 @@
 
 /* Selection styles */
 .ProseMirror ::selection {
-  background-color: #3b82f6;
-  color: white;
+  background-color: blue;
+  color: inherit;
+}
+
+.ProseMirror ::-moz-selection {
+  background-color: transparent;
+  color: inherit;
 }
 
 /* Bubble menu styles */

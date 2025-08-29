@@ -615,7 +615,7 @@ export default function StudyMaterial() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <FileText className="h-8 w-8 text-blue-500 mb-2" />
-                        {getQAQFLevelBadge(material.qaqfLevel)}
+                        {getQAQFLevelBadge(material.qaqf_level)}
                       </div>
                       <CardTitle className="text-lg">{material.title}</CardTitle>
                     </CardHeader>

@@ -14,6 +14,10 @@ export interface CourseGenerationRequest {
 
 export interface CourseGenerationResponse {
   generated_content: string;
+  courseid?: number;
+  content_type?: string;
+  qaqf_level?: string;
+  status?: string;
   modules?: Array<{
     title?: string;
     name?: string;
@@ -27,8 +31,6 @@ export const generateCourseContent = async (
   requestData: CourseGenerationRequest,
   token?: string
 ): Promise<CourseGenerationResponse> => {
-  console.log('🌐 Making API call to:', 'http://69.197.176.134:5000/api/ai/generate-content');
-  console.log('📤 Request data:', requestData);
   
   const response = await fetch('http://69.197.176.134:5000/api/ai/generate-content', {
     method: 'POST',
@@ -47,12 +49,20 @@ export const generateCourseContent = async (
 
   const result = await response.json();
   console.log('✅ API call successful:', result);
-  // Persist generated content so the editor can load it later
+  // Persist generated content and course ID so the editor can load it later
   try {
     if (result?.generated_content) {
-      console.log('Saving generated content to :1011111111111111111111111', result.generated_content);
+      console.log('Saving generated content to localStorage:', result.generated_content);
       localStorage.setItem('latest_generated_course_content', result.generated_content);
     }
-  } catch {}
+    if (result?.courseid) {
+      console.log('Saving course ID to localStorage:', result.courseid);
+      localStorage.setItem('latest_generated_course_id', result.courseid.toString());
+    }
+    // Save complete response for later use
+    localStorage.setItem('latest_course_generation_response', JSON.stringify(result));
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
   return result;
 };

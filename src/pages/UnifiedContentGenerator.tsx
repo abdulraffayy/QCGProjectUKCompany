@@ -297,6 +297,17 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
     fetchLessons();
   }, [selectedCourse]);
 
+  // Add a mechanism to refresh data periodically to catch status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (selectedCourse) {
+        fetchLessons();
+      }
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [selectedCourse]);
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -586,7 +597,7 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
     <GraduationCap className="h-8 w-8 text-primary" />
     <div>
       <h1 className="text-3xl font-bold">
-        Unified Content & Course Generator
+        Content Generator
       </h1>
       <p className="text-muted-foreground">
         Create content and courses with integrated QAQF compliance
@@ -677,13 +688,7 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
 
         <TabsContent value="generator" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Generation Type</CardTitle>
-              <CardDescription>Choose what you want to create</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Generation type cards removed from UI but values still included in API data */}
-            </CardContent>
+            
           </Card>
 
           <form onSubmit={form.handleSubmit((data: UnifiedGenerationData) => {
@@ -1222,6 +1227,8 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
                                   title: item.title,
                                   type: item.type || 'lesson',
                                   status: item.status || 'pending',
+                                  verificationStatus: item.verification_status || item.status || 'pending',
+                                  moderationStatus: item.moderation_status || 'pending',
                                   createdAt: item.createddate || '',
                                   createdBy: item.userid ? `User ${item.userid}` : 'User',
                                   description: item.description || item.content || (item.metadata && item.metadata.description) || '',
@@ -1241,6 +1248,9 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
                                   } else if (action === 'updated') {
                                     // Refresh the lessons data when an item is updated
                                     await fetchLessons();
+                                  } else if (action === 'refresh') {
+                                    // Refresh the lessons data when status is updated
+                                    await fetchLessons();
                                   }
                                 }}
                               />
@@ -1255,6 +1265,8 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
                                   title: item.title,
                                   type: item.type,
                                   status: (['verified', 'unverified', 'rejected', 'pending'].includes(item.status) ? item.status : 'pending') as 'verified' | 'unverified' | 'rejected' | 'pending',
+                                  verificationStatus: item.verificationStatus || item.status || 'pending',
+                                  moderationStatus: item.moderationStatus || 'pending',
                                   createdAt: item.createdAt,
                                   createdBy: item.createdBy,
                                   description: item.description,
@@ -1282,6 +1294,9 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
                                       title: "Content updated successfully!",
                                       description: "Your changes have been saved."
                                     });
+                                  } else if (action === 'refresh') {
+                                    // Refresh the lessons data when status is updated
+                                    await fetchLessons();
                                   }
                                 }}
                               />

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
-import { LearningObjectives, LearningObjective, CourseType } from '@/types/courseTypes';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { getDurationOptions } from '@/types/courseTypes';
+import { LearningObjectives, LearningObjective, CourseType } from '../../types/courseTypes';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Button } from '../ui/button';
+import { getDurationOptions } from '../../types/courseTypes';
 
 interface LearningObjectivesStepProps {
   data: LearningObjectives | undefined;
@@ -39,7 +39,7 @@ export const LearningObjectivesStep: React.FC<LearningObjectivesStepProps> = ({
       try {
         setMaterialsLoading(true);
         const token = localStorage.getItem('token');
-        const res = await fetch('http://69.197.176.134:8000/api/study-materials', {
+        const res = await fetch('http://38.29.145.85:8000/api/study-materials', {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error('Failed to fetch study materials');
@@ -63,7 +63,7 @@ export const LearningObjectivesStep: React.FC<LearningObjectivesStepProps> = ({
     const fetchCollections = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('http://69.197.176.134:8000/api/collection-study-materials', {
+        const res = await fetch('http://38.29.145.85:8000/api/collection-study-materials', {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) return;

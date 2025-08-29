@@ -74,10 +74,12 @@ export const useCourseWizard = () => {
   }, []);
 
   const canProceedToNext = useCallback(() => {
+    console.log('currentStep', currentStep);
+    console.log('courseData', courseData);
     switch (currentStep) {
       case 1:
         return !!(courseData.basicInfo?.title && courseData.basicInfo?.description && 
-                 courseData.basicInfo?.targetAudience && courseData.basicInfo?.difficultyLevel);
+                 courseData.basicInfo?.targetAudience && courseData.basicInfo?.qaqfLevel);
       case 2:
         return !!(courseData.learningObjectives?.objectives?.length && 
                  courseData.learningObjectives?.duration);

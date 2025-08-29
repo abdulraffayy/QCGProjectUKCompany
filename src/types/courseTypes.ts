@@ -15,7 +15,8 @@ export interface BasicInfo {
   title: string;
   description: string;
   targetAudience: string;
-  difficultyLevel: 'Beginner' | 'Intermediate' | 'Advanced';
+  qaqfLevel?: string;
+  difficultyLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
 export interface LearningObjectives {

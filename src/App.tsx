@@ -30,8 +30,6 @@ import CourseGeneratorPlatform from "./pages/CourseGeneratorPlatform";
 import { WizardPage } from "./pages/WizardPage";
 import { courseTypes } from "./types/courseTypes";
 
-import Dummy from "./pages/Dummy";
-
 
 
 // Wrapper component to handle route props for Rafay
@@ -98,7 +96,7 @@ function AuthenticatedRoutes() {
           <Route path="/settings" component={Settings} />
           <Route path="/rafay" component={RafayWrapper} />
           <Route path="/course-generator" component={CourseGeneratorPlatform} />
-          <Route path="/dummylesson" component={Dummy} />
+          
 
           <Route
             path="/course-generator/wizard/:type"

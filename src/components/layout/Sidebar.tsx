@@ -184,13 +184,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                 Settings
               </Link>
               
-              {/* Assessment - only for Admin */}
+              {/* Assessment - only for Admin
               {isAdmin && (
                 <Link href="/assessment" className={navItemClass("/assessment")}>
                   <span className="material-icons mr-3 text-inherit">school</span>
                   Assessment
                 </Link>
-              )}
+              )} */}
            </>
          )}
         
@@ -222,10 +222,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               <span className="material-icons mr-3 text-inherit">rafay</span>
               Rafay
             </Link> */}
-<Link href="/dummylesson" className={navItemClass("/dummylesson")}>
+{/* <Link href="/dummylesson" className={navItemClass("/dummylesson")}>
                   <span className="material-icons mr-3 text-inherit">school</span>
                   Dummy Lesson
-                </Link>
+                </Link> */}
       </nav>
     </aside>
   );
