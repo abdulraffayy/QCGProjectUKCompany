@@ -959,7 +959,7 @@ const LessonPlanPage: React.FC = () => {
 
   const fetchCoursesFromAPI = async (userid?: string) => {
     try {
-      let url = "/api/courses";
+      let url = "http://69.197.176.134:5000/api/courses";
 
       if (userid) {
         url += `?userid=${encodeURIComponent(userid)}`;
@@ -994,7 +994,7 @@ const LessonPlanPage: React.FC = () => {
 
   const fetchModulesFromAPI = async (courseId?: string) => {
     try {
-      let url = "/api/lessons";
+      let url = "http://69.197.176.134:5000/api/lessons";
       if (courseId) {
         url += `?courseid=${encodeURIComponent(courseId)}`;
       }

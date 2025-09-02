@@ -1047,7 +1047,7 @@ setCourses(coursesData);
 
       // 🔑 Convert Markdown → HTML if description exists
       if (course.description) {
-        content = marked(course.description);
+        content = marked.parse(course.description) as string;
         content = content
         .replace(/\s+/g, ' ') // Replace multiple spaces with single space
         .replace(/>\s+</g, '><') // Remove spaces between HTML tags

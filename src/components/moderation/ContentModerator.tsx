@@ -90,7 +90,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/courses', {
+        const res = await fetch('http://69.197.176.134:5000/api/courses', {
           headers: {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` })
@@ -112,7 +112,7 @@ const ContentModerator: React.FC<ContentModeratorProps> = ({
       return;
     }
     setIsLoadingLessons(true);
-    fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`)
+    fetch(`http://69.197.176.134:5000/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`)
       .then(res => res.json())
       .then(data => {
         setLessons(Array.isArray(data) ? data : []);

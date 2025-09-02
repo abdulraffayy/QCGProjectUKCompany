@@ -251,7 +251,7 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/courses', {
+        const res = await fetch('http://69.197.176.134:5000/api/courses', {
           headers: {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` })
@@ -276,7 +276,7 @@ const UnifiedContentGenerator: React.FC<UnifiedContentGeneratorProps> = ({ cours
       return;
     }
     try {
-      const res = await fetch(`/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`);
+      const res = await fetch(`http://69.197.176.134:5000/api/lessons?courseid=${encodeURIComponent(selectedCourse)}`);
       if (!res.ok) throw new Error('Failed to fetch lessons');
       const data = await res.json();
       setCourseLessons(Array.isArray(data) ? data : []);

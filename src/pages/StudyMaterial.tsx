@@ -9,6 +9,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+import { AI_API_BASE_URL } from '@/lib/api';
 
 
 import { toast } from 'react-toastify';
@@ -94,7 +95,7 @@ export default function StudyMaterial() {
     queryFn: async () => {
       const token = localStorage.getItem('token');
       console.log('Token used for /api/study-materials:', token);
-      const response = await fetch('http://69.197.176.134:8000/api/study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error('Failed to fetch study materials');
@@ -109,7 +110,7 @@ export default function StudyMaterial() {
       const token = localStorage.getItem('token');
       console.log('=== Fetching collections ===');
       console.log('Token used for /api/collection-study-materials:', token);
-      const response = await fetch('http://69.197.176.134:8000/api/collection-study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/collection-study-materials', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       console.log('Collections response status:', response.status);
@@ -130,7 +131,7 @@ export default function StudyMaterial() {
     mutationFn: async (formData: FormData) => {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://69.197.176.134:8000/api/study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -170,7 +171,7 @@ export default function StudyMaterial() {
     mutationFn: async ({formData }: { id: number; formData: FormData }) => {
       const token = localStorage.getItem('token');
       console.log('Token used for update /api/update-study-materials:', token);
-      const response = await fetch('http://69.197.176.134:8000/api/update-study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/update-study-materials', {
         method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         body: formData,
@@ -245,7 +246,7 @@ export default function StudyMaterial() {
         console.log(`${key}: ${value}`);
       }
       
-        const response = await fetch('http://69.197.176.134:8000/api/updatecollection-study-materials', {
+        const response = await fetch(AI_API_BASE_URL+'/api/updatecollection-study-materials', {
         method: 'POST',
         headers: token
           ? { 'Authorization': `Bearer ${token}` }
@@ -330,7 +331,7 @@ export default function StudyMaterial() {
       const formData = new FormData();
       formData.append('id', id.toString());
       
-      const response = await fetch('http://69.197.176.134:8000/api/delete-study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/delete-study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -386,7 +387,7 @@ export default function StudyMaterial() {
       formData.append('id', id.toString());
       console.log('FormData created with id:', id.toString());
       
-      const response = await fetch('http://38.29.145.85:8000/api/deletecollection-study-materials', {
+      const response = await fetch(AI_API_BASE_URL+'/api/deletecollection-study-materials', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),

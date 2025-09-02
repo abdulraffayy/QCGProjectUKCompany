@@ -1,5 +1,28 @@
 // API service functions for course generation
 
+// Utility function for authenticated fetch calls
+export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("token");
+  
+  const headers: Record<string, string> = {};
+  
+  // Copy existing headers if they exist
+  if (options.headers) {
+    if (typeof options.headers === 'object' && !Array.isArray(options.headers)) {
+      Object.assign(headers, options.headers);
+    }
+  }
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return fetch(url, {
+    ...options,
+    headers,
+  });
+};
+
 export interface CourseGenerationRequest {
   generation_type: 'course';
   title: string;
@@ -66,3 +89,7 @@ export const generateCourseContent = async (
   }
   return result;
 };
+
+
+
+export const AI_API_BASE_URL = 'http://69.197.176.134:8000';

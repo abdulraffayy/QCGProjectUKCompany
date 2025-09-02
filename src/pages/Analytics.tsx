@@ -29,14 +29,19 @@ const AnalyticsPage: React.FC = () => {
   
   // Get lessons data
   const { data: lessons = [], isLoading: isLoadingLessons, refetch } = useQuery<Lesson[]>({
-    queryKey: ['/api/lessons'],
+    queryKey: ['http://69.197.176.134:5000/api/lessons'],
   });
   
   // Fetch courses on component mount
   React.useEffect(() => {
     const fetchCourses = async () => {
+      const token = localStorage.getItem('token');
       try {
-        const res = await fetch('/api/courses');
+        const res = await fetch('http://69.197.176.134:5000/api/courses', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
         if (!res.ok) throw new Error('Failed to fetch courses');
         const data = await res.json();
         setCourses(Array.isArray(data) ? data : []);

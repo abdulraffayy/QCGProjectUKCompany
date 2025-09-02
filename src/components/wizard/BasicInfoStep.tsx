@@ -86,7 +86,9 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             <Label>Difficulty Level</Label>
             <Select
               value={formData.difficultyLevel}
-              onValueChange={(value) => handleChange('difficultyLevel', value as BasicInfo['difficultyLevel'])}
+              onValueChange={(value) => {
+                handleChange('difficultyLevel', value!);
+              }}
               
             >
               <SelectTrigger className='w-full focus:ring-0 focus:ring-offset-0'>
